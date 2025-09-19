@@ -1,0 +1,127 @@
+version: '3.8'
+
+ 
+
+services:
+
+  postgres:
+
+    image: postgres:15
+
+    container_name: metaportal_postgres
+
+    environment:
+
+      POSTGRES_USER: metaportal_user
+
+      POSTGRES_PASSWORD: metaportal_pass
+
+      POSTGRES_DB: metaportal_db
+
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+
+      - "5434:5432"
+
+    volumes:
+
+      - postgres_data:/var/lib/postgresql/data/pgdata
+
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+
+    networks:
+
+      - metaportal_network
+
+    healthcheck:
+
+      test: ["CMD-SHELL", "pg_isready -U metaportal_user -d metaportal_db -p 5432"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 5
+
+ 
+
+  pgadmin:
+
+    image: dpage/pgadmin4
+
+    container_name: metaportal_pgadmin
+
+    environment:
+
+      PGADMIN_DEFAULT_EMAIL: admin@metaportal.com
+
+      PGADMIN_DEFAULT_PASSWORD: admin123
+
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+
+    ports:
+
+      - "5050:80"
+
+    volumes:
+
+      - pgadmin_data:/var/lib/pgadmin
+
+    networks:
+
+      - metaportal_network
+
+    depends_on:
+
+      - postgres
+
+    restart: unless-stopped
+
+ 
+
+  redis:
+
+    image: redis:7-alpine
+
+    container_name: metaportal_redis
+
+    ports:
+
+      - "6379:6379"
+
+    volumes:
+
+      - redis_data:/data
+
+    networks:
+
+      - metaportal_network
+
+    healthcheck:
+
+      test: ["CMD", "redis-cli", "ping"]
+
+      interval: 5s
+
+      timeout: 3s
+
+      retries: 5
+
+ 
+
+volumes:
+
+  postgres_data:
+
+  redis_data:
+
+  pgadmin_data:
+
+ 
+
+networks:
+
+  metaportal_network:
+
+    driver: bridge
