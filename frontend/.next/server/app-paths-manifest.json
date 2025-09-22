@@ -1,0 +1,9 @@
+{
+  "/catalog/page": "app/catalog/page.js",
+  "/page": "app/page.js",
+  "/favorites/page": "app/favorites/page.js",
+  "/lineage/page": "app/lineage/page.js",
+  "/domains/page": "app/domains/page.js",
+  "/catalog/[id]/page": "app/catalog/[id]/page.js",
+  "/quality/page": "app/quality/page.js"
+}
