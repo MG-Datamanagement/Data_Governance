@@ -1,0 +1,23 @@
+<config>
+  <!-- Required for Solr 9+ -->
+  <luceneMatchVersion>9.6.1</luceneMatchVersion>
+
+  <!-- PostgreSQL JDBC driver (optional, only needed for DataImportHandler) -->
+  <lib dir="/solr-config/lib" regex="postgresql-.*\.jar" />
+
+  <!-- DataImportHandler configuration -->
+  <requestHandler name="/dataimport" class="org.apache.solr.handler.dataimport.DataImportHandler">
+    <lst name="defaults">
+      <str name="config">solr-data-config.xml</str>
+    </lst>
+  </requestHandler>
+
+  <!-- Update processor chain -->
+  <updateRequestProcessorChain name="add-schema-fields">
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <!-- Use managed schema -->
+  <schemaFactory class="ManagedIndexSchemaFactory" />
+</config>

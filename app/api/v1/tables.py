@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import structlog
-
+from datetime import datetime
 from ...core.database import get_db
 from ...core.security import get_current_user, get_optional_user
 from ...core.dependencies import PaginationParams, SearchParams
@@ -16,7 +16,7 @@ from ...schemas.table import (
 from ...schemas.common import SuccessResponse, TagResponse
 from pydantic import BaseModel
 from typing import List
-
+from app.models.table import Table, SensitivityLevelEnum
 class BulkTagRequest(BaseModel):
     tag_ids: List[int]
 
@@ -67,58 +67,55 @@ async def list_tables(
         # Convert to response models
         table_responses = []
         for table in tables:
-            table_response = {
-                "id": table.id,
-                "urn": table.urn or f"urn:metaportal:dev:table:{table.id}",
-                "name": table.name,
-                "schema_name": table.schema_name or "public",
-                "description": table.description or "",
-                "table_type": table.table_type or "table",
-                "sensitivity_level": getattr(table, 'sensitivity_level', 'internal'),
-                "is_active": getattr(table, 'is_active', True),
-                "is_certified": getattr(table, 'is_certified', False),
-                "certification_notes": getattr(table, 'certification_notes', None),
-                "data_source": {
-                    "id": table.data_source.id,
-                    "name": table.data_source.name,
-                    "type": table.data_source.type
-                } if table.data_source else None,
-                "domain": {
-                    "id": table.domain.id,
-                    "name": table.domain.name,
-                    "color": getattr(table.domain, 'color', '#3b82f6')
-                } if table.domain else None,
-                "owner": {
-                    "id": table.owner.id,
-                    "name": table.owner.name,
-                    "email": table.owner.email
-                } if table.owner else None,
-                "created_at": table.created_at,
-                "updated_at": table.updated_at,
-                "last_schema_check_at": getattr(table, 'last_schema_check_at', None),
-                "stats": None,
-                "column_count": len(table.columns) if hasattr(table, 'columns') else 0,
-                "tags": []
-            }
+            table_response = TableResponse(
+                id=table.id,
+                urn=table.urn or f"urn:metaportal:dev:table:{table.id}",
+                name=table.name,
+                schema_name=table.schema_name or "public",
+                description=table.description or "",
+                table_type=table.table_type or "table",
+                sensitivity_level=getattr(table, 'sensitivity_level', SensitivityLevelEnum.INTERNAL),
+                is_active=getattr(table, 'is_active', True),
+                is_certified=getattr(table, 'is_certified', False),
+                certification_notes=getattr(table, 'certification_notes', None),
+                
+                # Assign flattened fields from related objects
+                data_source_id=table.data_source.id if table.data_source else None,
+                data_source_name=table.data_source.name if table.data_source else None,
+                data_source_type=table.data_source.type if table.data_source else None,
+                
+                domain_id=table.domain.id if table.domain else None,
+                domain_name=table.domain.name if table.domain else None,
+                
+                owner_id=table.owner.id if table.owner else None,
+                owner_name=table.owner.name if table.owner else None,
+                
+                created_at=table.created_at,
+                updated_at=table.updated_at,
+                last_schema_check_at=getattr(table, 'last_schema_check_at', None),
+                stats=None,
+                column_count=len(table.columns) if hasattr(table, 'columns') else 0,
+                tags=[]
+            )
             table_responses.append(table_response)
         
         has_next = (pagination.offset + pagination.size) < total
         
-        return {
-            "tables": table_responses,
-            "total": total,
-            "page": pagination.page,
-            "size": pagination.size,
-            "has_next": has_next
-        }
+        return TableListResponse(
+            tables=table_responses,
+            total=total,
+            page=pagination.page,
+            size=pagination.size,
+            has_next=has_next
+        )
         
     except Exception as e:
         logger.error("Failed to list tables", error=str(e), exc_info=True)
+        # You can add more specific error handling here if needed
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list tables: {str(e)}"
         )
-
 
 @router.post("", response_model=TableResponse)
 async def create_table(

@@ -36,6 +36,7 @@ class SearchParams(BaseModel):
     sort_order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order")
 
 
+
 class SearchResponse(BaseModel, Generic[T]):
     """Generic schema for search responses."""
     results: List[T] = Field(..., description="Search results")
@@ -44,9 +45,9 @@ class SearchResponse(BaseModel, Generic[T]):
     size: int = Field(..., description="Page size")
     has_next: bool = Field(..., description="Whether there are more results")
     query: Optional[str] = Field(None, description="Search query used")
+    query_fields: List[str] = Field(default_factory=list, description="Fields that matched the search query")
     filters_applied: Dict[str, Any] = Field(default_factory=dict, description="Filters applied")
     search_time_ms: int = Field(..., description="Search execution time in milliseconds")
-
 
 class SearchSuggestion(BaseModel):
     """Schema for search suggestions."""

@@ -9,6 +9,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 from fastapi.routing import APIRouter
+from fastapi.encoders import jsonable_encoder
 
 from .core.config import settings
 from .core.database import DatabaseManager, RedisManager
@@ -129,7 +130,7 @@ app = FastAPI(
 if settings.allowed_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -189,14 +190,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=ErrorResponse(
+        content=jsonable_encoder(ErrorResponse(
             error="validation_error",
             message="Invalid request data",
             details={"errors": exc.errors()}
-        ).dict()
+        
+    ))
+
     )
-
-
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions."""

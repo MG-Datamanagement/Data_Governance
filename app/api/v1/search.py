@@ -3,15 +3,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import Optional
 import structlog
+import time
 
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...core.dependencies import PaginationParams
+# Ensure all necessary models are imported
 from ...models.table import Table, DataSource, Domain
 from ...models.user import User
+from ...models.tagging import Tag, TableTag # Correct import statement
 from ...schemas.common import SearchResponse, SearchSuggestionsResponse, SearchSuggestion
 from ...schemas.table import TableResponse
-from ...models.tagging import Tag
+
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -31,21 +34,42 @@ async def search_tables(
 ):
     """Search tables with advanced filtering."""
     try:
-        import time
         start_time = time.time()
         
+        # Base query to filter only active tables
         query = db.query(Table).filter(Table.is_active == True)
+        
+        # Determine which fields matched the query
+        query_fields = []
         
         # Apply text search
         if q:
+            # We'll build the final query by joining the necessary tables
+            query = query.join(Domain, isouter=True)
+            # Corrected join: use TableTag instead of TableTagLink
+            query = query.join(TableTag, isouter=True).join(Tag, isouter=True)
+            
+            # Use a single filter for all search fields
             search_filter = or_(
                 Table.name.ilike(f"%{q}%"),
-                Table.description.ilike(f"%{q}%"),
                 Table.schema_name.ilike(f"%{q}%"),
-                Table.domain.has(Domain.name.ilike(f"%{q}%")),
-                Table.tags.any(Tag.name.ilike(f"%{q}%"))
+                Table.description.ilike(f"%{q}%"),
+                Domain.name.ilike(f"%{q}%"),
+                Tag.name.ilike(f"%{q}%")
             )
             query = query.filter(search_filter)
+
+            # Check which fields match the query to populate 'query_fields'
+            if db.query(Table.id).filter(Table.name.ilike(f"%{q}%")).first():
+                query_fields.append("table_name")
+            if db.query(Table.id).filter(Table.schema_name.ilike(f"%{q}%")).first():
+                query_fields.append("schema_name")
+            if db.query(Table.id).filter(Table.description.ilike(f"%{q}%")).first():
+                query_fields.append("description")
+            if db.query(Domain.id).filter(Domain.name.ilike(f"%{q}%")).first():
+                query_fields.append("domain")
+            if db.query(Tag.id).filter(Tag.name.ilike(f"%{q}%")).first():
+                query_fields.append("tag")
         
         # Apply filters
         if domain_ids:
@@ -63,8 +87,8 @@ async def search_tables(
         if is_certified is not None:
             query = query.filter(Table.is_certified == is_certified)
         
-        # Count total results
-        total = query.count()
+        # Count total results (use distinct tables to avoid double counting from joins)
+        total = query.group_by(Table.id).count()
         
         # Apply pagination and ordering
         tables = query.order_by(Table.updated_at.desc()).offset(pagination.offset).limit(pagination.size).all()
@@ -79,12 +103,12 @@ async def search_tables(
                         tags_list.append({
                             "id": tag_link.tag.id,
                             "name": tag_link.tag.name,
-                            "is_system_tag": tag_link.tag.is_system_tag, # Add the missing field
-                            "is_active": tag_link.tag.is_active,         # Add the missing field
-                            "created_at": tag_link.tag.created_at,       # Add the missing field
-                            "updated_at": tag_link.tag.updated_at        # Add the missing field
-                    # Add any other required fields from your Pydantic model
-                })
+                            "is_system_tag": tag_link.tag.is_system_tag,
+                            "is_active": tag_link.tag.is_active,
+                            "created_at": tag_link.tag.created_at,
+                            "updated_at": tag_link.tag.updated_at
+                        })
+            
             table_response = TableResponse(
                 id=table.id,
                 name=table.name,
@@ -96,8 +120,8 @@ async def search_tables(
                 is_certified=table.is_certified,
                 certification_notes=table.certification_notes,
                 data_source_id=table.data_source_id,
-                data_source_name=table.data_source.name,
-                data_source_type=table.data_source.type,
+                data_source_name=table.data_source.name if table.data_source else None,
+                data_source_type=table.data_source.type if table.data_source else None,
                 domain_id=table.domain_id,
                 domain_name=table.domain.name if table.domain else None,
                 owner_id=table.owner_id,
@@ -107,7 +131,7 @@ async def search_tables(
                 last_schema_check_at=table.last_schema_check_at,
                 row_count=table.stats.row_count if table.stats else None,
                 size_bytes=table.stats.size_bytes if table.stats else None,
-                column_count=len(table.columns),
+                column_count=len(table.columns) if table.columns else 0,
                 query_count_last_30d=table.stats.query_count_last_30d if table.stats else 0,
                 unique_users_last_30d=table.stats.unique_users_last_30d if table.stats else 0,
                 tags=tags_list
@@ -118,17 +142,13 @@ async def search_tables(
         search_time_ms = int((time.time() - start_time) * 1000)
         
         # Prepare filters applied
-        filters_applied = {}
-        if domain_ids:
-            filters_applied["domain_ids"] = domain_ids
-        if data_source_ids:
-            filters_applied["data_source_ids"] = data_source_ids
-        if owner_ids:
-            filters_applied["owner_ids"] = owner_ids
-        if sensitivity_levels:
-            filters_applied["sensitivity_levels"] = sensitivity_levels
-        if is_certified is not None:
-            filters_applied["is_certified"] = is_certified
+        filters_applied = {
+            "domain_ids": domain_ids,
+            "data_source_ids": data_source_ids,
+            "owner_ids": owner_ids,
+            "sensitivity_levels": sensitivity_levels,
+            "is_certified": is_certified
+        }
         
         has_next = (pagination.offset + pagination.size) < total
         
@@ -139,6 +159,7 @@ async def search_tables(
             size=pagination.size,
             has_next=has_next,
             query=q,
+            query_fields=query_fields,
             filters_applied=filters_applied,
             search_time_ms=search_time_ms
         )
