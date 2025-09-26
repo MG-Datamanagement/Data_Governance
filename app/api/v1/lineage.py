@@ -153,22 +153,27 @@ async def get_full_lineage_graph(
             visited_ids.add(current_table_id)
             lineage_results = []
 
-            # Eagerly load related models to prevent N+1 query problems
+            # --- REFINEMENT 1: More robust eager loading ---
+            # This now handles lineage via columns by loading the column's parent table.
             query_options = [
                 joinedload(LineageEdge.source_table).joinedload(Table.data_source),
-                joinedload(LineageEdge.target_table).joinedload(Table.data_source)
+                joinedload(LineageEdge.target_table).joinedload(Table.data_source),
+                joinedload(LineageEdge.source_column).joinedload(Column.table).joinedload(Table.data_source),
+                joinedload(LineageEdge.target_column).joinedload(Column.table).joinedload(Table.data_source),
             ]
-            if include_columns:
-                query_options.extend([
-                    joinedload(LineageEdge.source_column),
-                    joinedload(LineageEdge.target_column)
-                ])
 
-            # Determine the filter condition based on direction
+            # --- REFINEMENT 2: Correctly query for all lineage types ---
+            # The filter now checks for connections via table OR via columns, which is crucial.
             if direction == "upstream":
-                filter_condition = (LineageEdge.target_table_id == current_table_id)
+                filter_condition = or_(
+                    LineageEdge.target_table_id == current_table_id,
+                    LineageEdge.target_column.has(Column.table_id == current_table_id)
+                )
             else:  # downstream
-                filter_condition = (LineageEdge.source_table_id == current_table_id)
+                filter_condition = or_(
+                    LineageEdge.source_table_id == current_table_id,
+                    LineageEdge.source_column.has(Column.table_id == current_table_id)
+                )
 
             edges = db.query(LineageEdge).options(*query_options).filter(
                 filter_condition,
@@ -176,46 +181,60 @@ async def get_full_lineage_graph(
             ).all()
 
             for edge in edges:
-                # Determine the next table in the traversal
-                next_table = edge.source_table if direction == "upstream" else edge.target_table
-                if not next_table:
-                    continue
+                # --- REFINEMENT 3: Reliably determine source and target entities ---
+                source_table = edge.source_table or (edge.source_column and edge.source_column.table)
+                target_table = edge.target_table or (edge.target_column and edge.target_column.table)
                 
-                # Build the basic information for this lineage link
-                lineage_info = {
-                    "table_id": next_table.id,
-                    "table_name": next_table.name,
-                    "schema_name": next_table.schema_name,
-                    "data_source_name": next_table.data_source.name if next_table.data_source else None,
+                # Skip if for some reason the edge is malformed
+                if not source_table or not target_table:
+                    continue
+
+                # Helper to create a clean table info dictionary
+                def get_table_info(table: Table) -> Dict:
+                    return {
+                        "id": table.id,
+                        "name": table.name,
+                        "schema_name": table.schema_name,
+                        "data_source_name": table.data_source.name if table.data_source else None,
+                    }
+
+                # Build the materialized "link" object
+                link_info = {
+                    "source_table": get_table_info(source_table),
+                    "target_table": get_table_info(target_table),
                     "transformation_logic": edge.transformation_logic,
                     "depth": depth + 1,
                     "direction": direction,
                     "lineage_type": edge.lineage_type.value
                 }
                 
-                # If requested, add the full column objects for column-level lineage
-                if include_columns and edge.lineage_type == LineageTypeEnum.COLUMN_TO_COLUMN:
-                    if edge.source_column and edge.target_column:
-                        lineage_info["column_mapping"] = {
-                            "source_column": ColumnResponse.model_validate(edge.source_column),
-                            "target_column": ColumnResponse.model_validate(edge.target_column)
-                        }
+                # Add simplified column info if requested and available
+                if include_columns:
+                    column_map = {}
+                    if edge.source_column:
+                        column_map["source_column"] = {"id": edge.source_column.id, "name": edge.source_column.name}
+                    if edge.target_column:
+                        column_map["target_column"] = {"id": edge.target_column.id, "name": edge.target_column.name}
+                    
+                    if column_map:
+                        link_info["column_mapping"] = column_map
                 
-                lineage_results.append(lineage_info)
+                lineage_results.append(link_info)
 
-                # Recursively call for the next level
+                # Determine the next table for recursive traversal
+                next_table = source_table if direction == "upstream" else target_table
                 lineage_results.extend(
                     get_connected_lineage(next_table.id, direction, visited_ids, depth + 1)
                 )
             
             return lineage_results
 
-        # 3. Fetch both upstream and downstream lineage starting from the center table
+        # 3. Fetch lineage
         visited_upstream_ids = set()
-        upstream_tables = get_connected_lineage(table_id, "upstream", visited_upstream_ids)
+        upstream_links = get_connected_lineage(table_id, "upstream", visited_upstream_ids)
 
         visited_downstream_ids = set()
-        downstream_tables = get_connected_lineage(table_id, "downstream", visited_downstream_ids)
+        downstream_links = get_connected_lineage(table_id, "downstream", visited_downstream_ids)
 
         # 4. Assemble the final graph response object
         lineage_graph = {
@@ -225,12 +244,12 @@ async def get_full_lineage_graph(
                 "schema_name": center_table.schema_name,
                 "data_source_name": center_table.data_source.name if center_table.data_source else None
             },
-            "upstream_tables": upstream_tables,
-            "downstream_tables": downstream_tables,
+            "upstream_links": upstream_links,
+            "downstream_links": downstream_links,
             "metadata": {
                 "max_depth_reached": max_depth,
-                "total_upstream_nodes": len(upstream_tables),
-                "total_downstream_nodes": len(downstream_tables),
+                "total_upstream_links": len(upstream_links),
+                "total_downstream_links": len(downstream_links),
                 "include_columns": include_columns
             }
         }
@@ -238,15 +257,16 @@ async def get_full_lineage_graph(
         return lineage_graph
         
     except HTTPException:
-        # Re-raise HTTP exceptions to let FastAPI handle them
         raise
     except Exception as e:
-        # Log the error for debugging
-        # logger.error(f"Failed to get lineage graph for table {table_id}: {e}", exc_info=True)
+        # For debugging, it's helpful to log the actual error
+        # import logging
+        # logging.error(f"Failed to get lineage graph for table {table_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while generating the lineage graph."
         )
+
 
 @router.get("/table/{table_id}/impact-analysis")
 async def get_impact_analysis(
