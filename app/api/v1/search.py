@@ -193,7 +193,8 @@ async def get_search_suggestions(
         for table in tables:
             suggestions.append(SearchSuggestion(
                 text=table.name,
-                type="table",
+                id=table.id,
+                type="catalog",
                 category="Tables",
                 score=0.9
             ))
@@ -209,6 +210,7 @@ async def get_search_suggestions(
         for ds in data_sources:
             suggestions.append(SearchSuggestion(
                 text=ds.name,
+                id=ds.id,
                 type="data_source",
                 category="Data Sources",
                 score=0.8
@@ -222,8 +224,23 @@ async def get_search_suggestions(
         for domain in domains:
             suggestions.append(SearchSuggestion(
                 text=domain.name,
-                type="domain",
+                id=domain.id,
+                type="domains",
                 category="Domains",
+                score=0.7
+            ))
+        
+              # tag suggestions
+        tags = db.query(Tag).filter(
+            Tag.name.ilike(f"%{q}%")
+        ).limit(3).all()
+        
+        for tag in tags:
+            suggestions.append(SearchSuggestion(
+                text=tag.name,
+                id=tag.id,
+                type="tags",
+                category="tags",
                 score=0.7
             ))
         
@@ -238,6 +255,7 @@ async def get_search_suggestions(
         for owner in owners:
             suggestions.append(SearchSuggestion(
                 text=owner.name,
+                id=owner.id,
                 type="owner",
                 category="Owners",
                 score=0.6

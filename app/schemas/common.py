@@ -52,6 +52,7 @@ class SearchResponse(BaseModel, Generic[T]):
 class SearchSuggestion(BaseModel):
     """Schema for search suggestions."""
     text: str = Field(..., description="Suggested search text")
+    id: int = Field(..., description="Unique identifier for the suggestion")
     type: str = Field(..., description="Suggestion type (table, column, tag, etc.)")
     category: str = Field(..., description="Suggestion category")
     score: float = Field(..., description="Relevance score")
@@ -200,3 +201,18 @@ class ConnectionTestResponse(BaseModel):
     latency_ms: Optional[int] = Field(None, description="Connection latency in milliseconds")
     details: Optional[Dict[str, Any]] = Field(None, description="Additional test details")
     tested_at: datetime = Field(default_factory=datetime.utcnow, description="Test timestamp")
+
+
+class ColumnResponse(BaseModel):
+    """Pydantic schema for returning column details."""
+    id: int
+    urn: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    data_type: str
+    is_pii: bool
+    is_nullable: bool
+
+    class Config:
+        # This tells Pydantic to read the data from SQLAlchemy model attributes
+        from_attributes = True
