@@ -1,10 +1,11 @@
 from collections.abc import Set
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func
+from sqlalchemy.exc import DatabaseError
 from typing import List, Dict, Any, Optional
 import structlog
-
+import logging
 from ...core.database import get_db
 from ...core.security import get_current_user
 from ...models.lineage import LineageEdge, LineageJob, LineageJobRun, LineageImpactAnalysis, LineageTypeEnum
@@ -118,154 +119,185 @@ async def get_downstream_lineage(
             detail="Failed to get downstream lineage"
         )
 
-
 @router.get("/table/{table_id}/full-graph", tags=["Lineage"])
 async def get_full_lineage_graph(
     table_id: int,
     max_depth: int = Query(3, ge=1, le=10, description="Maximum lineage depth to traverse"),
     include_columns: bool = Query(False, description="Include column-level lineage details"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of edges per direction"),
     db: Session = Depends(get_db)
-):
+) -> Dict:
     """
     Get the complete lineage graph for a given table, including both upstream
-    (sources) and downstream (dependencies).
+    (sources) and downstream (dependencies)
+
+    
     """
     try:
-        # 1. Verify that the central table exists
-        center_table = db.query(Table).filter(Table.id == table_id).first()
-        if not center_table:
+        if table_id <= 0:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Table with id {table_id} not found"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Table ID must be a positive integer"
             )
 
-        # 2. Define the recursive function to traverse the lineage graph
-        def get_connected_lineage(
-            current_table_id: int,
-            direction: str,
-            visited_ids: Set[int],
-            depth: int = 0
-        ) -> List[Dict]:
-            """Recursively fetches lineage, avoiding circular dependencies."""
-            if depth >= max_depth or current_table_id in visited_ids:
-                return []
-
-            visited_ids.add(current_table_id)
-            lineage_results = []
-
-            # --- REFINEMENT 1: More robust eager loading ---
-            # This now handles lineage via columns by loading the column's parent table.
-            query_options = [
-                joinedload(LineageEdge.source_table).joinedload(Table.data_source),
-                joinedload(LineageEdge.target_table).joinedload(Table.data_source),
-                joinedload(LineageEdge.source_column).joinedload(Column.table).joinedload(Table.data_source),
-                joinedload(LineageEdge.target_column).joinedload(Column.table).joinedload(Table.data_source),
-            ]
-
-            # --- REFINEMENT 2: Correctly query for all lineage types ---
-            # The filter now checks for connections via table OR via columns, which is crucial.
-            if direction == "upstream":
-                filter_condition = or_(
-                    LineageEdge.target_table_id == current_table_id,
-                    LineageEdge.target_column.has(Column.table_id == current_table_id)
-                )
-            else:  # downstream
-                filter_condition = or_(
-                    LineageEdge.source_table_id == current_table_id,
-                    LineageEdge.source_column.has(Column.table_id == current_table_id)
+        with db.begin():
+            # 1. Verify that the central table exists
+            center_table = db.query(Table).filter(Table.id == table_id).first()
+            if not center_table:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Table with id {table_id} not found"
                 )
 
-            edges = db.query(LineageEdge).options(*query_options).filter(
-                filter_condition,
-                LineageEdge.is_active == True
-            ).all()
+            # 2. Define the recursive function to traverse the lineage graph
+            def get_connected_lineage(
+                current_table_id: int,
+                direction: str,
+                visited_ids: Set[int],
+                depth: int = 0
+            ) -> List[Dict]:
+                """Recursively fetches lineage, avoiding circular dependencies."""
+                if depth >= max_depth or current_table_id in visited_ids:
+                    return []
 
-            for edge in edges:
-                # --- REFINEMENT 3: Reliably determine source and target entities ---
-                source_table = edge.source_table or (edge.source_column and edge.source_column.table)
-                target_table = edge.target_table or (edge.target_column and edge.target_column.table)
-                
-                # Skip if for some reason the edge is malformed
-                if not source_table or not target_table:
-                    continue
+                visited_ids.add(current_table_id)
+                lineage_results = []
+                seen_edges = set()  # To deduplicate edges
 
-                # Helper to create a clean table info dictionary
-                def get_table_info(table: Table) -> Dict:
-                    return {
-                        "id": table.id,
-                        "name": table.name,
-                        "schema_name": table.schema_name,
-                        "data_source_name": table.data_source.name if table.data_source else None,
-                    }
+                # Define query options for efficient loading
+                query_options = [
+                    selectinload(LineageEdge.source_table).selectinload(Table.data_source),
+                    selectinload(LineageEdge.target_table).selectinload(Table.data_source),
+                    selectinload(LineageEdge.source_column).selectinload(Column.table).selectinload(Table.data_source),
+                    selectinload(LineageEdge.target_column).selectinload(Column.table).selectinload(Table.data_source),
+                ]
 
-                # Build the materialized "link" object
-                link_info = {
-                    "source_table": get_table_info(source_table),
-                    "target_table": get_table_info(target_table),
-                    "transformation_logic": edge.transformation_logic,
-                    "depth": depth + 1,
-                    "direction": direction,
-                    "lineage_type": edge.lineage_type.value
-                }
-                
-                # Add simplified column info if requested and available
+                # Filter for active edges
+                def active_edges(query):
+                    return query.filter(LineageEdge.is_active == True)
+
+                # Define filter conditions
+                if direction == "upstream":
+                    table_filter = LineageEdge.target_table_id == current_table_id
+                    column_filter = LineageEdge.target_column.has(Column.table_id == current_table_id)
+                else:  # downstream
+                    table_filter = LineageEdge.source_table_id == current_table_id
+                    column_filter = LineageEdge.source_column.has(Column.table_id == current_table_id)
+
+                # Query edges based on include_columns
+                query = active_edges(db.query(LineageEdge).options(*query_options))
                 if include_columns:
-                    column_map = {}
-                    if edge.source_column:
-                        column_map["source_column"] = {"id": edge.source_column.id, "name": edge.source_column.name}
-                    if edge.target_column:
-                        column_map["target_column"] = {"id": edge.target_column.id, "name": edge.target_column.name}
+                    query = query.filter(or_(table_filter, column_filter))
+                else:
+                    query = query.filter(table_filter)
+                edges = query.limit(limit).all()
+
+                for edge in edges:
+                    # Skip column_to_column edges if include_columns=False
+                    if not include_columns and edge.lineage_type.value == "column_to_column":
+                        continue
+
+                    # Determine source and target tables
+                    source_table = edge.source_table or (edge.source_column and edge.source_column.table)
+                    target_table = edge.target_table or (edge.target_column and edge.target_column.table)
                     
-                    if column_map:
-                        link_info["column_mapping"] = column_map
+                    # Skip and log malformed edges
+                    if not source_table or not target_table:
+                        logging.warning(f"Malformed edge found for table_id {current_table_id}: {edge.id if hasattr(edge, 'id') else 'unknown'}")
+                        continue
+
+                    # Create a unique key for deduplication
+                    edge_key = (
+                        source_table.id,
+                        target_table.id,
+                        edge.lineage_type.value,
+                        edge.transformation_logic
+                    )
+                    if edge_key in seen_edges:
+                        continue
+                    seen_edges.add(edge_key)
+
+                    # Helper to create a clean table info dictionary
+                    def get_table_info(table: Table) -> Dict:
+                        return {
+                            "id": table.id,
+                            "name": table.name,
+                            "schema_name": table.schema_name,
+                            "data_source_name": table.data_source.name if table.data_source else None,
+                        }
+
+                    # Build the link object
+                    link_info = {
+                        "source_table": get_table_info(source_table),
+                        "target_table": get_table_info(target_table),
+                        "transformation_logic": edge.transformation_logic,
+                        "depth": depth + 1,
+                        "direction": direction,
+                        "lineage_type": edge.lineage_type.value
+                    }
+                    
+                    # Add column info if requested and available
+                    if include_columns and edge.lineage_type.value == "column_to_column":
+                        column_map = {}
+                        if edge.source_column:
+                            column_map["source_column"] = {"id": edge.source_column.id, "name": edge.source_column.name}
+                        if edge.target_column:
+                            column_map["target_column"] = {"id": edge.target_column.id, "name": edge.target_column.name}
+                        
+                        if column_map:
+                            link_info["column_mapping"] = column_map
+                    
+                    lineage_results.append(link_info)
+
+                    # Determine the next table for recursive traversal
+                    next_table = source_table if direction == "upstream" else target_table
+                    lineage_results.extend(
+                        get_connected_lineage(next_table.id, direction, visited_ids, depth + 1)
+                    )
                 
-                lineage_results.append(link_info)
+                return lineage_results
 
-                # Determine the next table for recursive traversal
-                next_table = source_table if direction == "upstream" else target_table
-                lineage_results.extend(
-                    get_connected_lineage(next_table.id, direction, visited_ids, depth + 1)
-                )
-            
-            return lineage_results
+            # 3. Fetch lineage with separate visited sets for upstream and downstream
+            visited_upstream_ids: Set[int] = set()
+            upstream_links = get_connected_lineage(table_id, "upstream", visited_upstream_ids)
 
-        # 3. Fetch lineage
-        visited_upstream_ids = set()
-        upstream_links = get_connected_lineage(table_id, "upstream", visited_upstream_ids)
+            visited_downstream_ids: Set[int] = set()
+            downstream_links = get_connected_lineage(table_id, "downstream", visited_downstream_ids)
 
-        visited_downstream_ids = set()
-        downstream_links = get_connected_lineage(table_id, "downstream", visited_downstream_ids)
-
-        # 4. Assemble the final graph response object
-        lineage_graph = {
-            "center_table": {
-                "table_id": center_table.id,
-                "table_name": center_table.name,
-                "schema_name": center_table.schema_name,
-                "data_source_name": center_table.data_source.name if center_table.data_source else None
-            },
-            "upstream_links": upstream_links,
-            "downstream_links": downstream_links,
-            "metadata": {
-                "max_depth_reached": max_depth,
-                "total_upstream_links": len(upstream_links),
-                "total_downstream_links": len(downstream_links),
-                "include_columns": include_columns
+            # 4. Assemble the final graph response object
+            lineage_graph = {
+                "center_table": {
+                    "id": center_table.id,
+                    "name": center_table.name,
+                    "schema_name": center_table.schema_name,
+                    "data_source_name": center_table.data_source.name if center_table.data_source else None
+                },
+                "upstream_links": upstream_links,
+                "downstream_links": downstream_links,
+                "metadata": {
+                    "max_depth_reached": max_depth,
+                    "total_upstream_links": len(upstream_links),
+                    "total_downstream_links": len(downstream_links),
+                    "include_columns": include_columns
+                }
             }
-        }
-        
-        return lineage_graph
+            
+            return lineage_graph
         
     except HTTPException:
         raise
+    except DatabaseError as db_err:
+        logging.error(f"Database error while getting lineage graph for table {table_id}: {db_err}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database error occurred while generating the lineage graph."
+        ) from db_err
     except Exception as e:
-        # For debugging, it's helpful to log the actual error
-        # import logging
-        # logging.error(f"Failed to get lineage graph for table {table_id}: {e}", exc_info=True)
+        logging.error(f"Failed to get lineage graph for table {table_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while generating the lineage graph."
-        )
+        ) from e
 
 
 @router.get("/table/{table_id}/impact-analysis")
