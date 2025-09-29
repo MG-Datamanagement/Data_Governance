@@ -37,11 +37,12 @@ export default function DomainsPage() {
   useEffect(() => {
     const fetchDomains = async () => {
       try {
-        const response = await fetch('http://172.188.2.173:8000/api/v1/domains');
+        const response = await fetch('http://localhost:8000/api/v1/domains');
         if (!response.ok) {
           throw new Error('Failed to fetch domains');
         }
         const data: DomainsResponse = await response.json();
+         console.log("Domain API response:", data);
         setDomains(data.domains);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load domains');

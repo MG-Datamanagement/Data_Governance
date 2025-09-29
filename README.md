@@ -54,7 +54,8 @@ docker-compose ps
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate 
+venv/Scripts/activate // For Windows
 
 # Install dependencies
 pip install -r requirements.txt
@@ -64,7 +65,13 @@ alembic upgrade head
 
 # Generate sample data
 python scripts/generate_sample_data.py
+python scripts/comprehensive_seed_data.py
 
+--git bash--
+cd scripts
+./configure_solr_schema.sh
+
+python scripts/load_data_to_solr.py
 # Start backend server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -112,9 +119,10 @@ The platform includes comprehensive airport management sample data:
 
 ## 🔐 Login Credentials
 
-**Admin User:**
-- Email: `john.smith@airport.com`
-- Password: `password123`
+ Login Information:
+  Admin User:
+    Email: alice.sterling@megabank.com
+    Password: password123
 
 **Other Test Users:**
 - `sarah.johnson@airport.com` (Data Steward)

@@ -45,3 +45,5 @@ responses>=0.24.0
 
 
 pydantic[email]
+pysolr
+bcrypt==3.2.2
