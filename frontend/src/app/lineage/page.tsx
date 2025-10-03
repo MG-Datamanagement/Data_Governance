@@ -11,6 +11,7 @@ import {
   X,
   BarChart3
 } from 'lucide-react';
+import LineageGraph from '@/components/LineageGraph/LineageGraph';
 
 interface Table {
   table_id: number;
@@ -25,8 +26,8 @@ interface Table {
 
 interface LineageGraph {
   center_table: Table;
-  upstream_tables: Table[];
-  downstream_tables: Table[];
+  upstream_links: Table[];
+  downstream_links: Table[];
   metadata: {
     max_depth_reached: number;
     total_upstream_tables: number;
@@ -96,6 +97,8 @@ interface LineageStatistics {
     lineage_edges_created: number;
   }>;
 }
+
+const API_BASE_URL = 'http://172.188.2.173:3000';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
   <div className={`bg-white rounded-lg shadow-md border border-gray-200 ${className}`}>
@@ -183,16 +186,17 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
 
   return (
     <div className="w-full p-6">
-      <div className="flex flex-col lg:flex-row items-center gap-8">
-        {/* Upstream tables */}
+      <LineageGraph lineageData={lineageData} />
+      {/* <div className="flex flex-col lg:flex-row items-center gap-8">
+
         <div className="flex-1">
           <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Upstream Dependencies ({lineageData.metadata.total_upstream_tables})
           </h3>
-          {lineageData.upstream_tables.length > 0 ? (
+          {lineageData.upstream_links.length > 0 ? (
             <div className="flex flex-wrap justify-center">
-              {lineageData.upstream_tables.map(table => renderTableCard(table))}
+              {lineageData.upstream_links.map(table => renderTableCard(table))}
             </div>
           ) : (
             <div className="text-center text-gray-500 text-sm py-8">
@@ -201,7 +205,7 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
           )}
         </div>
 
-        {/* Center table */}
+
         <div className="flex-shrink-0">
           <div className="text-center mb-2">
             <Badge variant="outline" className="text-xs">Current Table</Badge>
@@ -209,15 +213,15 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
           {renderTableCard(lineageData.center_table, true)}
         </div>
 
-        {/* Downstream tables */}
+
         <div className="flex-1">
           <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
             Downstream Consumers ({lineageData.metadata.total_downstream_tables})
             <ArrowRight className="h-4 w-4" />
           </h3>
-          {lineageData.downstream_tables.length > 0 ? (
+          {lineageData.downstream_links.length > 0 ? (
             <div className="flex flex-wrap justify-center">
-              {lineageData.downstream_tables.map(table => renderTableCard(table))}
+              {lineageData.downstream_links.map(table => renderTableCard(table))}
             </div>
           ) : (
             <div className="text-center text-gray-500 text-sm py-8">
@@ -225,7 +229,7 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
             </div>
           )}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -343,7 +347,7 @@ export default function LineagePage() {
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const response = await fetch('/api/v1/tables');
+        const response = await fetch(`${API_BASE_URL}/api/v1/tables`);
         const data = await response.json();
         if (data.tables) {
           setAvailableTables(data.tables.map((t: any) => ({
@@ -363,7 +367,7 @@ export default function LineagePage() {
   const fetchLineageGraph = async (tableId: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/lineage/table/${tableId}/full-graph?max_depth=${maxDepth}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${tableId}/full-graph?max_depth=${maxDepth}`);
       const data = await response.json();
       setLineageData(data);
     } catch (error) {
@@ -375,7 +379,7 @@ export default function LineagePage() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await fetch('/api/v1/lineage/statistics');
+      const response = await fetch(`${API_BASE_URL}/api/v1/lineage/statistics`);
       const data = await response.json();
       setStatistics(data);
     } catch (error) {
@@ -473,13 +477,13 @@ export default function LineagePage() {
                 <select 
                   value={maxDepth} 
                   onChange={(e) => setMaxDepth(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={1}>Depth: 1</option>
                   <option value={2}>Depth: 2</option>
                   <option value={3}>Depth: 3</option>
-                  <option value={4}>Depth: 4</option>
-                  <option value={5}>Depth: 5</option>
+                  {/* <option value={4}>Depth: 4</option>
+                  <option value={5}>Depth: 5</option> */}
                 </select>
                 <Button 
                   onClick={handleSearch} 

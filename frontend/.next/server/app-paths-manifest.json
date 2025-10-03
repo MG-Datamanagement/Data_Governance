@@ -1,1 +1,5 @@
-{}
+{
+  "/catalog/page": "app/catalog/page.js",
+  "/lineage/page": "app/lineage/page.js",
+  "/catalog/[id]/page": "app/catalog/[id]/page.js"
+}

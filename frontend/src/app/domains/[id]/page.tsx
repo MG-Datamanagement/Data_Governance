@@ -55,7 +55,7 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchDomain = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/domains/${params.id}`);
+        const response = await fetch(`http://172.188.2.173:8000/api/v1/domains/${params.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch domain');
         }
@@ -63,7 +63,7 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
         setDomain(domainData);
         
         // Fetch tables for this domain
-        const tablesResponse = await fetch(`http://localhost:8000/api/v1/tables?domain_ids=${params.id}`);
+        const tablesResponse = await fetch(`http://172.188.2.173:8000/api/v1/tables?domain_ids=${params.id}`);
         if (tablesResponse.ok) {
           const tablesData: TablesResponse = await tablesResponse.json();
           setTables(tablesData.tables);

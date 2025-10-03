@@ -34,8 +34,8 @@ declare namespace __next_route_internal_types__ {
     | `/domains`
     | `/favorites`
     | `/lineage`
-    | `/quality`
     | `/tags`
+    | `/quality`
   type DynamicRoutes<T extends string = string> = 
     | `/catalog/${SafeSlug<T>}`
     | `/domains/${SafeSlug<T>}`

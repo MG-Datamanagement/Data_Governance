@@ -62,7 +62,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchTag = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/tags/${params.id}`);
+        const response = await fetch(`http://172.188.2.173:8000/api/v1/tags/${params.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch tag');
         }
@@ -70,7 +70,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
         setTag(tagData);
         
         // Fetch tables that use this tag
-        const tablesResponse = await fetch(`http://localhost:8000/api/v1/tables?page=1&per_page=100`);
+        const tablesResponse = await fetch(`http://172.188.2.173:8000/api/v1/tables?page=1&per_page=100`);
         if (tablesResponse.ok) {
           const tablesData: TablesResponse = await tablesResponse.json();
           // Filter tables that have this tag

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:8000/api/v1';
 
 // Mock favorite tables data since backend endpoints are stubs
 const mockFavorites = [

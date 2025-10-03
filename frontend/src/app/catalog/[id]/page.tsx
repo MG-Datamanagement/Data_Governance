@@ -35,8 +35,9 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import LineageGraph from '@/components/LineageGraph/LineageGraph';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:8000/api/v1';
 
 interface TableDetails {
   id: number;
@@ -170,10 +171,13 @@ interface LineageTable {
   direction?: string;
 }
 
+// downstream_tables => downstream_links
+// upstream_tables => upstream_links
+
 interface LineageGraph {
   center_table: LineageTable;
-  upstream_tables: LineageTable[];
-  downstream_tables: LineageTable[];
+  upstream_links: LineageTable[];
+  downstream_links: LineageTable[];
   metadata: {
     max_depth_reached: number;
     total_upstream_tables: number;
@@ -276,8 +280,8 @@ export default function TableDetailsPage() {
     const edges: Edge[] = [];
 
     // Calculate better positioning
-    const upstreamCount = lineageData.upstream_tables.length;
-    const downstreamCount = lineageData.downstream_tables.length;
+    const upstreamCount = lineageData.upstream_links.length;
+    const downstreamCount = lineageData.downstream_links.length;
     const maxCount = Math.max(upstreamCount, downstreamCount);
     
     // Center table position
@@ -305,7 +309,7 @@ export default function TableDetailsPage() {
     });
 
     // Add upstream table nodes
-    lineageData.upstream_tables.forEach((table, index) => {
+    lineageData.upstream_links.forEach((table, index) => {
       const nodeId = `table_${table.table_id}`;
       const yPosition = upstreamCount === 1 ? centerY : index * 150 + 50;
       
@@ -351,7 +355,7 @@ export default function TableDetailsPage() {
     });
 
     // Add downstream table nodes
-    lineageData.downstream_tables.forEach((table, index) => {
+    lineageData.downstream_links.forEach((table, index) => {
       const nodeId = `table_${table.table_id}`;
       const yPosition = downstreamCount === 1 ? centerY : index * 150 + 50;
       
@@ -986,8 +990,9 @@ export default function TableDetailsPage() {
 
                         {/* React Flow Lineage Graph */}
                         <div className="bg-white border rounded-lg">
-                          <div style={{ height: '500px', width: '100%' }}>
-                            <ReactFlow
+                          <div style={{ width: '100%' }}>
+                            <LineageGraph lineageData={lineageData} />
+                            {/* <ReactFlow
                               nodes={nodes}
                               edges={edges}
                               onNodesChange={onNodesChange}
@@ -1009,17 +1014,17 @@ export default function TableDetailsPage() {
                                 showFitView={true}
                                 showInteractive={false}
                               />
-                            </ReactFlow>
+                            </ReactFlow> */}
                           </div>
                         </div>
 
                         {/* Transformation Details */}
-                        {(lineageData.upstream_tables.some(t => t.transformation_logic) ||
-                          lineageData.downstream_tables.some(t => t.transformation_logic)) && (
+                        {(lineageData.upstream_links.some(t => t.transformation_logic) ||
+                          lineageData.downstream_links.some(t => t.transformation_logic)) && (
                           <div>
                             <h4 className="text-lg font-medium text-gray-900 mb-4">Transformation Details</h4>
                             <div className="space-y-3">
-                              {lineageData.upstream_tables.filter(t => t.transformation_logic).map(table => (
+                              {lineageData.upstream_links.filter(t => t.transformation_logic).map(table => (
                                 <div key={table.table_id} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                   <div className="font-medium text-blue-900">
                                     {table.schema_name}.{table.table_name} → {lineageData.center_table.table_name}
@@ -1027,7 +1032,7 @@ export default function TableDetailsPage() {
                                   <div className="text-sm text-blue-700 mt-1">{table.transformation_logic}</div>
                                 </div>
                               ))}
-                              {lineageData.downstream_tables.filter(t => t.transformation_logic).map(table => (
+                              {lineageData.downstream_links.filter(t => t.transformation_logic).map(table => (
                                 <div key={table.table_id} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                                   <div className="font-medium text-orange-900">
                                     {lineageData.center_table.table_name} → {table.schema_name}.{table.table_name}
