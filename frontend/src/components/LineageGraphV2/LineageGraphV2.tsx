@@ -5,6 +5,7 @@ import * as d3 from 'd3';
 import { fetchTableLineage } from '@/app/catalog/[id]/page';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 
 interface SourceTable {
   id: number;
@@ -89,20 +90,23 @@ interface SavePayload {
 }
 
 const GRAPH_CONFIG = {
-  nodeWidth: 200,
-  nodeHeight: 80,
+  nodeWidth: 215,
+  nodeHeight: 61,
   horizontalSpacing: 300,
   verticalSpacing: 120,
   zoom: { min: 0.1, max: 3 },
   colors: {
-    center: '#16A34A',
-    upstream: '#2563EB',
-    downstream: '#EA580C',
-    custom: '#8b5cf6',
+    center: '#fff',
+    upstream: '#fff',
+    downstream: '#fff',
+    custom: '#fff',
+    nodeBorder: '#75757533',
+    nodeBorderOnHover: '#1570EF',
+    label: '#181d27',
     link: {
-      upstream: '#2563EB',
-      downstream: '#EA580C',
-      custom: '#8b5cf6'
+      upstream: '#B1B1B7',
+      downstream: '#B1B1B7',
+      custom: '#B1B1B7'
     }
   }
 };
@@ -112,7 +116,7 @@ interface LineageGraphProps {
   showControls?: boolean;
 }
 
-const API_BASE_URL = 'https://80gh8wp1-8000.inc1.devtunnels.ms';
+const API_BASE_URL = 'https://nmqhfvs3-9000.inc1.devtunnels.ms';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
   const { lineageData, showControls = false } = props;
@@ -124,9 +128,9 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   const [customLinks, setCustomLinks] = useState<GraphLink[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [listOfTables, setListOfTables] = useState<RawLineageResponse | undefined>();
-  const [linkingMode, setLinkingMode] = useState<{ active: boolean; sourceId: number | null }>({ 
-    active: false, 
-    sourceId: null 
+  const [linkingMode, setLinkingMode] = useState<{ active: boolean; sourceId: number | null }>({
+    active: false,
+    sourceId: null
   });
   const [isControlPanelOpen, setIsControlPanelOpen] = useState<boolean>(false);
   const [tempLink, setTempLink] = useState<{ sourceId: number; x: number; y: number } | null>(null);
@@ -149,10 +153,10 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${tableId}/add_new_connection`);
       const tablesList = await response?.json();
       setListOfTables(tablesList);
-    } catch(error) {
+    } catch (error) {
       console.error('Error fetching list of tables:', error);
     }
-  }
+  };
 
   const processLineageData = useCallback((data: LineageData) => {
     const nodes = new Map<number, GraphNode>();
@@ -214,7 +218,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   const calculateLayout = useCallback((nodes: GraphNode[], width: number, height: number) => {
     const { nodeWidth, horizontalSpacing, verticalSpacing } = GRAPH_CONFIG;
     const depthMap = new Map<number, GraphNode[]>();
-    
+
     nodes.forEach(node => {
       if (!depthMap.has(node.depth)) {
         depthMap.set(node.depth, []);
@@ -226,7 +230,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     sortedDepths.forEach((depth, idx) => {
       const nodesAtDepth = depthMap.get(depth)!;
       const x = idx * horizontalSpacing;
-      
+
       nodesAtDepth.forEach((node, i) => {
         const totalHeight = nodesAtDepth.length * verticalSpacing;
         const y = (height / 2) - (totalHeight / 2) + (i * verticalSpacing);
@@ -239,21 +243,33 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
     const offsetX = (width - (maxX - minX + nodeWidth)) / 2 - minX;
-    
+
     nodes.forEach(node => {
       node.x = node.x! + offsetX;
     });
   }, []);
+
+  const formatNodeLabel = (name: string, maxLength = 20) => {
+    if (!name) return '';
+
+    const formatted = name
+      .replace(/[-_]/g, ' ')                     // Replace hyphens/underscores with spaces
+      .replace(/\b\w/g, c => c.toUpperCase());  // Capitalize each word
+
+    return formatted.length > maxLength
+      ? formatted.substring(0, maxLength) + '...'
+      : formatted;
+  }
 
   const handleAddTable = useCallback(() => {
     if (!selectedTable) {
       alert('Please select a table to add');
       return;
     }
-    
+
     const tableId = parseInt(selectedTable);
     const tableInfo = listOfTables?.available_tables.find(t => t.table_id === tableId);
-   
+
     if (!tableInfo) {
       alert('Table not found');
       return;
@@ -281,24 +297,24 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleStartLinking = useCallback((nodeId: number, event?: any) => {
     if (event) event.stopPropagation();
-    
+
     const graphData = processLineageData(lineageData);
     const allNodes = [...graphData.nodes, ...customNodes];
     const node = allNodes.find(n => n.id === nodeId);
-    
+
     if (node && node.x !== undefined && node.y !== undefined) {
       setLinkingMode({ active: true, sourceId: nodeId });
-      setTempLink({ 
-        sourceId: nodeId, 
-        x: node.x + GRAPH_CONFIG.nodeWidth, 
-        y: node.y + GRAPH_CONFIG.nodeHeight / 2 
+      setTempLink({
+        sourceId: nodeId,
+        x: node.x + GRAPH_CONFIG.nodeWidth,
+        y: node.y + GRAPH_CONFIG.nodeHeight / 2
       });
     }
   }, [lineageData, customNodes, processLineageData]);
 
   const handleEndLinking = useCallback((targetId: number, event?: any) => {
     if (event) event.stopPropagation();
-    
+
     if (!linkingMode.active || !linkingMode.sourceId || linkingMode.sourceId === targetId) {
       setLinkingMode({ active: false, sourceId: null });
       setTempLink(null);
@@ -322,7 +338,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       transform: 'Custom transformation',
       type: 'custom'
     }]);
-    
+
     setLinkingMode({ active: false, sourceId: null });
     setTempLink(null);
   }, [linkingMode, customLinks]);
@@ -352,14 +368,14 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     }
 
     setIsSaving(true);
-    
+
     try {
       const centerTableId = lineageData.center_table.table_id;
       const payloads: SavePayload[] = [];
 
       customLinks.forEach(link => {
         const customNode = customNodes.find(n => n.id === link.source || n.id === link.target);
-        
+
         if (!customNode) return;
 
         let connectionType: 'upstream' | 'downstream';
@@ -374,7 +390,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         } else {
           const graphData = processLineageData(lineageData);
           const existingNode = graphData.nodes.find(n => n.id === link.source || n.id === link.target);
-          
+
           if (existingNode) {
             connectionTableId = existingNode.id;
             connectionType = existingNode.id === link.source ? 'upstream' : 'downstream';
@@ -394,26 +410,25 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         payloads.push(payload);
       });
 
-    //   for (const payload of payloads) {
-        const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${centerTableId}/update-lineage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloads[0]),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('API Response:', result);
-    //   }
-      
+      // Send first (or loop) payload(s)
+      const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${centerTableId}/update-lineage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloads[0]),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('API Response:', result);
+
       alert(`Successfully saved ${payloads.length} connection(s)!`);
       fetchTableLineage(centerTableId.toString());
       setCustomNodes([]);
       setCustomLinks([]);
-      
+
     } catch (error) {
       console.error('Error saving data:', error);
       alert('Error saving data. Check console for details.');
@@ -424,7 +439,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleResetZoom = useCallback(() => {
     if (!svgRef.current || !zoomRef.current) return;
-    
+
     const svg = d3.select(svgRef.current);
     svg.transition()
       .duration(750)
@@ -434,7 +449,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleZoomIn = useCallback(() => {
     if (!svgRef.current || !zoomRef.current) return;
-    
+
     const svg = d3.select(svgRef.current);
     svg.transition()
       .duration(300)
@@ -443,7 +458,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleZoomOut = useCallback(() => {
     if (!svgRef.current || !zoomRef.current) return;
-    
+
     const svg = d3.select(svgRef.current);
     svg.transition()
       .duration(300)
@@ -455,7 +470,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
     const graphData = processLineageData(lineageData);
     const allNodes = [...graphData.nodes, ...customNodes];
-    
+
     if (allNodes.length === 0) return;
 
     const bounds = gRef.current.node()?.getBBox();
@@ -483,7 +498,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         zoomRef.current!.transform as any,
         d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
       );
-    
+
     setZoomLevel(scale);
   }, [dimensions, lineageData, customNodes, processLineageData]);
 
@@ -502,13 +517,39 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   useEffect(() => {
     if (!svgRef.current) return;
 
+    // Clear previous SVG content
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
     const { width, height } = dimensions;
     const { nodeWidth, nodeHeight } = GRAPH_CONFIG;
+
+    // Define dot background pattern
+    const patternSize = 15;
+    const defs = svg.append('defs');
+    defs.append('pattern')
+      .attr('id', 'dotted-bg')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', patternSize)
+      .attr('height', patternSize)
+      .append('circle')
+      .attr('cx', 1)
+      .attr('cy', 1)
+      .attr('r', 1)
+      .attr('fill', '#cacace');
+
+    // Now append g for zoom / content
     const g = svg.append('g');
 
+    g.append('rect')
+      .attr('class', 'background')
+      .attr('width', width * 5) // extend it to allow for pan/zoom
+      .attr('height', height * 5)
+      .attr('x', -width * 2) // center it around 0,0
+      .attr('y', -height * 2)
+      .attr('fill', 'url(#dotted-bg)');
+
+    // Setup zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([GRAPH_CONFIG.zoom.min, GRAPH_CONFIG.zoom.max])
       .on('zoom', (event) => {
@@ -521,12 +562,13 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     gRef.current = g;
     svg.on('click', () => linkingMode.active && handleCancelLinking());
 
-    const defs = svg.append('defs');
+    // Define arrow markers
+    const arrowDefs = defs;
     ['upstream', 'downstream', 'custom'].forEach(type => {
-      defs.append('marker')
+      arrowDefs.append('marker')
         .attr('id', `arrow-${type}`)
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 15)
+        .attr('refX', 10)
         .attr('refY', 0)
         .attr('orient', 'auto')
         .attr('markerWidth', 6)
@@ -536,37 +578,38 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         .attr('fill', GRAPH_CONFIG.colors.link[type as keyof typeof GRAPH_CONFIG.colors.link]);
     });
 
+    // Render graph data
     const graphData = processLineageData(lineageData);
     calculateLayout(graphData.nodes, width, height);
 
     const allNodes = [...graphData.nodes, ...customNodes];
     const allLinks = [...graphData.links, ...customLinks];
-    
     const nodeById = new Map(allNodes.map(n => [n.id, n]));
-    const validLinks = allLinks.filter(link => 
+    const validLinks = allLinks.filter(link =>
       nodeById.has(link.source) && nodeById.has(link.target)
     );
 
+    // Draw links
     const linkGroup = g.append('g').attr('class', 'links');
-    
     const updateLinks = () => {
       linkGroup.selectAll('*').remove();
-      
+
       const linkElements = linkGroup.selectAll('g').data(validLinks).join('g');
 
+      // Link paths
       linkElements.append('path')
         .attr('d', d => {
           const source = nodeById.get(d.source);
           const target = nodeById.get(d.target);
           if (!source || !target) return '';
-          
+
           const sx = source.x! + nodeWidth;
           const sy = source.y! + nodeHeight / 2;
           const tx = target.x!;
           const ty = target.y! + nodeHeight / 2;
           const dx = tx - sx;
           const offsetX = dx * 0.5;
-          
+
           return `M${sx},${sy} C${sx + offsetX},${sy} ${tx - offsetX},${ty} ${tx},${ty}`;
         })
         .attr('stroke', d => GRAPH_CONFIG.colors.link[d.type])
@@ -575,18 +618,19 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         .attr('opacity', 0.6)
         .attr('marker-end', d => `url(#arrow-${d.type})`)
         .style('cursor', 'pointer')
-        .on('mouseenter', function() {
+        .on('mouseenter', function () {
           d3.select(this).attr('stroke-width', 3).attr('opacity', 1);
         })
-        .on('mouseleave', function() {
+        .on('mouseleave', function () {
           d3.select(this).attr('stroke-width', 2).attr('opacity', 0.6);
         });
 
-      linkElements.filter(d => d.type === 'custom').each(function(d) {
+      // Custom link labels (×) etc.
+      linkElements.filter(d => d.type === 'custom').each(function (d) {
         const source = nodeById.get(d.source);
         const target = nodeById.get(d.target);
         if (!source || !target) return;
-        
+
         const sx = source.x! + nodeWidth;
         const sy = source.y! + nodeHeight / 2;
         const tx = target.x!;
@@ -594,9 +638,10 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         const midX = (sx + tx) / 2;
         const midY = (sy + ty) / 2;
 
-        const g = d3.select(this);
-        
-        g.append('circle')
+        // Remove previous elements
+        const gThis = d3.select(this);
+        // Add circle background
+        gThis.append('circle')
           .attr('cx', midX).attr('cy', midY).attr('r', 10)
           .attr('fill', '#ef4444').style('cursor', 'pointer')
           .on('click', function(event) {
@@ -604,13 +649,33 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
             handleRemoveLink(d.source, d.target);
           });
 
-        g.append('text')
-          .attr('x', midX).attr('y', midY + 4)
-          .attr('text-anchor', 'middle').attr('fill', 'white')
-          .attr('font-size', '12px').attr('font-weight', 'bold')
-          .style('pointer-events', 'none').text('×');
+        // // Add '×' text
+        // gThis.append('text')
+        //   .attr('x', midX).attr('y', midY + 4)
+        //   .attr('text-anchor', 'middle').attr('fill', 'white')
+        //   .attr('font-size', '12px').attr('font-weight', 'bold')
+        //   .style('pointer-events', 'none')
+        //   .text('×');
+
+        const iconSize = 10; 
+        const scale = iconSize / 24;
+
+        // Append Lucide 'x' icon
+        const xIconGroup = gThis.append('g')
+          .attr('transform', `translate(${midX}, ${midY}) scale(${scale}) translate(-12, -12)`) // Centering and scaling
+          .attr('stroke', 'white')
+          .attr('stroke-width', 2)
+          .attr('fill', 'none')
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round')
+          .style('pointer-events', 'none'); // Remove interactivity if needed
+
+        xIconGroup.append('path').attr('d', 'M18 6 6 18');
+        xIconGroup.append('path').attr('d', 'm6 6 12 12');
+
+          
       });
-      
+
       if (tempLink) {
         const source = nodeById.get(tempLink.sourceId);
         if (source) {
@@ -625,79 +690,97 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
     updateLinks();
 
+    // Draw nodes
     const nodeGroup = g.append('g').attr('class', 'nodes');
     const nodes = nodeGroup.selectAll('g')
       .data(allNodes).join('g')
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .style('cursor', 'grab')
       .call(d3.drag<SVGGElement, GraphNode>()
-        .on('start', function() { d3.select(this).style('cursor', 'grabbing'); })
-        .on('drag', function(event, d) {
+        .on('start', function () { d3.select(this).style('cursor', 'grabbing'); })
+        .on('drag', function (event, d) {
           d.x = event.x;
           d.y = event.y;
           d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
           updateLinks();
         })
-        .on('end', function() { d3.select(this).style('cursor', 'grab'); }) as any
+        .on('end', function () { d3.select(this).style('cursor', 'grab'); }) as any
       );
 
     nodes.append('rect')
       .attr('width', nodeWidth).attr('height', nodeHeight).attr('rx', 8)
       .attr('fill', d => GRAPH_CONFIG.colors[d.type])
-      .attr('stroke', d => d.type === 'center' ? '#dc2626' : linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
-      .attr('stroke-width', d => d.type === 'center' ? 3 : linkingMode.active && linkingMode.sourceId === d.id ? 4 : 2)
-      .style('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))')
-      .on('click', function(event, d) {
+      .attr('stroke', d => d.type === 'center' ? `${GRAPH_CONFIG.colors.nodeBorder}` :
+        (linkingMode.active && linkingMode.sourceId === d.id ? `#8b5cf6` : `${GRAPH_CONFIG.colors.nodeBorder}`))
+      .attr('stroke-width', d => d.type === 'center' ? 1 :
+        (linkingMode.active && linkingMode.sourceId === d.id ? 2 : 1))
+      .style('filter', 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1))')
+      .on('click', function (event, d) {
         event.stopPropagation();
         if (linkingMode.active && linkingMode.sourceId !== d.id) {
           handleEndLinking(d.id, event);
         }
       })
-      .on('mouseenter', function() {
-        d3.select(this).style('filter', 'drop-shadow(0 6px 8px rgba(0, 0, 0, 0.15)) brightness(1.1)');
-      })
-      .on('mouseleave', function() {
-        d3.select(this).style('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))');
-      });
+    .on('mouseenter', function () {
+      d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorderOnHover}`);
+    })
+    .on('mouseleave', function () {
+      d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorder}`);
+    });
 
+    // Node labels
     nodes.append('text')
-      .attr('x', nodeWidth / 2).attr('y', 28).attr('text-anchor', 'middle')
-      .attr('fill', 'white').attr('font-size', '14px').attr('font-weight', '600')
+      .attr('x', nodeWidth / 2).attr('y', nodeHeight / 1.85).attr('text-anchor', 'middle')
+      .attr('fill', '#181d27').attr('font-size', '16px').attr('font-weight', '600')
       .style('pointer-events', 'none')
-      .text(d => d.name.length > 20 ? d.name.substring(0, 20) + '...' : d.name);
+      .text(d => formatNodeLabel(d.name));
 
-    nodes.append('text')
-      .attr('x', nodeWidth / 2).attr('y', 48).attr('text-anchor', 'middle')
-      .attr('fill', 'rgba(255, 255, 255, 0.85)').attr('font-size', '11px')
-      .style('pointer-events', 'none')
-      .text(d => d.schema.length > 22 ? d.schema.substring(0, 22) + '...' : d.schema);
-
-    nodes.append('text')
-      .attr('x', nodeWidth / 2).attr('y', 64).attr('text-anchor', 'middle')
-      .attr('fill', 'rgba(255, 255, 255, 0.7)').attr('font-size', '9px')
-      .style('pointer-events', 'none')
-      .text(d => d.dataSource.length > 28 ? d.dataSource.substring(0, 28) + '...' : d.dataSource);
-
+    // Remove button for custom nodes
     nodes.filter(d => d.type === 'custom')
       .append('circle')
-      .attr('cx', nodeWidth - 10).attr('cy', 10).attr('r', 8)
-      .attr('fill', '#ef4444').style('cursor', 'pointer')
-      .on('click', function(event, d) {
+      .attr('cx', nodeWidth - 12).attr('cy', 12).attr('r', 8)
+      .attr('fill', `#ef4444`).style('cursor', 'pointer')
+      .on('click', function (event, d) {
         event.stopPropagation();
         handleRemoveNode(d.id);
       });
 
+    // '×' icon using Lucide paths
     nodes.filter(d => d.type === 'custom')
-      .append('text')
-      .attr('x', nodeWidth - 10).attr('y', 14).attr('text-anchor', 'middle')
-      .attr('fill', 'white').attr('font-size', '12px').attr('font-weight', 'bold')
-      .style('pointer-events', 'none').text('×');
+      .append('g')
+      .attr('transform', `translate(${nodeWidth - 18},6) scale(0.5)`)
+      .attr('stroke', 'white')
+      .attr('stroke-width', 2)
+      .attr('fill', 'none')
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-linejoin', 'round')
+      .each(function () {
+        const g = d3.select(this);
+        g.append('path').attr('d', 'M18 6 6 18');
+        g.append('path').attr('d', 'M6 6 18 18');
+      });
 
+    
+    // // Connection port (circle)
+    // const portGroup = nodes.append('g')
+    //   .attr('class', 'connection-port')
+    //   .attr('transform', `translate(${nodeWidth}, ${nodeHeight / 2})`)
+    //   .style('cursor', 'pointer')
+    //   .on('click', function (event, d) {
+    //     event.stopPropagation();
+    //     if (linkingMode.active && linkingMode.sourceId !== d.id) {
+    //       handleEndLinking(d.id, event);
+    //     } else if (!linkingMode.active) {
+    //       handleStartLinking(d.id, event);
+    //     }
+    //   });
+
+    // Connection port (circle with +)
     const portGroup = nodes.append('g')
       .attr('class', 'connection-port')
       .attr('transform', `translate(${nodeWidth}, ${nodeHeight / 2})`)
       .style('cursor', 'pointer')
-      .on('click', function(event, d) {
+      .on('click', function (event, d) {
         event.stopPropagation();
         if (linkingMode.active && linkingMode.sourceId !== d.id) {
           handleEndLinking(d.id, event);
@@ -706,20 +789,39 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         }
       });
 
+    // Port circle
     portGroup.append('circle')
       .attr('r', 8)
-      .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#3b82f6')
-      .attr('stroke', 'white').attr('stroke-width', 2)
-      .style('filter', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))')
-      .on('mouseenter', function() { d3.select(this).transition().duration(200).attr('r', 10); })
-      .on('mouseleave', function() { d3.select(this).transition().duration(200).attr('r', 8); });
+      .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
+      .attr('stroke', '#F0F0F2').attr('stroke-width', 1)
+      .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))')
+    
+    portGroup.append('circle')
+      .attr('r', 8)
+      .attr('class', 'connection-port')
+      .attr('transform', `translate(${-nodeWidth}, ${nodeHeight / 100})`)
+      .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
+      .attr('stroke', '#F0F0F2').attr('stroke-width', 1)
+      .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))')
+    // .on('mouseenter', function () { d3.select(this).transition().duration(200).attr('r', 10); })
+    // .on('mouseleave', function () { d3.select(this).transition().duration(200).attr('r', 8); });
 
-    portGroup.append('text')
-      .attr('text-anchor', 'middle').attr('dy', '0.35em')
-      .attr('fill', 'white').attr('font-size', '12px').attr('font-weight', 'bold')
-      .style('pointer-events', 'none').text('+');
+    // Port '+' icon using Lucide paths
+    const iconSize = 10;
+    const plusIconGroup = portGroup.append('g')
+      .attr('transform', `translate(-5, -5) scale(${iconSize / 24})`) // Center & scale
+      .attr('stroke', '#757575')
+      .attr('stroke-width', 2)
+      .attr('fill', 'none')
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-linejoin', 'round')
+      .style('pointer-events', 'none'); // Keep icon non-interactive if needed
 
-    svg.on('mousemove', function(event) {
+    plusIconGroup.append('path').attr('d', 'M5 12h14');
+    plusIconGroup.append('path').attr('d', 'M12 5v14');
+
+    // Initial zoom to fit
+    svg.on('mousemove', function (event) {
       if (linkingMode.active && tempLink) {
         const [x, y] = d3.pointer(event, g.node());
         setTempLink(prev => prev ? { ...prev, x, y } : null);
@@ -729,11 +831,11 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   }, [dimensions, lineageData, customNodes, customLinks, linkingMode, tempLink, processLineageData, calculateLayout, handleStartLinking, handleEndLinking, handleCancelLinking, handleRemoveNode, handleRemoveLink]);
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="w-full h-screen bg-gradient-to-br from-slate-0 to-slate-50">
       <div className="w-full h-full relative overflow-hidden" ref={containerRef}>
         <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" />
 
-        {showControls ? <div className={`absolute top-1 right-1 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
+        {showControls ? <div className={`absolute top-1 left-11 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
           <button
             onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
             className="absolute -left-9 top-1 w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg"
@@ -765,7 +867,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
                   Add Table
                 </button>
               </div>
-              
+
               <button
                 onClick={handleSaveData}
                 disabled={isSaving || customLinks.length === 0}
@@ -773,7 +875,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
               >
                 {isSaving ? 'Saving...' : 'Save Connections'}
               </button>
-              
+
               {linkingMode.active && (
                 <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded-md text-sm text-blue-700">
                   <div className="flex items-center justify-between">
@@ -790,42 +892,39 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
               )}
 
             </div>
-          ) : (
-            null
-          )}
+          ) : null}
         </div> : null}
 
-        <div className="absolute top-2 left-2 bg-white rounded-lg shadow-lg p-1 z-10 flex flex-col space-y-2">
+        <div className="absolute top-2 right-2 border border-[#eaecf5] bg-white rounded-lg shadow-lg z-10 flex flex-col space-y-2">
           <button
             onClick={handleZoomIn}
-            className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center text-md font-bold"
+            className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
             title="Zoom In"
           >
-            +
+            <ZoomInIcon size={20} />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center text-md font-semibold"
+            className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
             title="Zoom Out"
           >
-            −
+            <ZoomOutIcon size={20} />
           </button>
           <button
             onClick={handleResetZoom}
-            className="w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center text-sm font-semibold"
+            className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center text-sm font-medium"
             title="Reset Zoom"
           >
             1:1
           </button>
           <button
             onClick={handleFitToView}
-            className="w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center text-sm font-semibold"
+            className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center text-sm font-medium"
             title="Fit to View"
           >
             FIT
           </button>
         </div>
-
       </div>
     </div>
   );
