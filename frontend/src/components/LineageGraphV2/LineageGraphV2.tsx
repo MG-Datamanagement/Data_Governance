@@ -1,0 +1,834 @@
+'use client';
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import * as d3 from 'd3';
+import { fetchTableLineage } from '@/app/catalog/[id]/page';
+import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+
+interface SourceTable {
+  id: number;
+  name: string;
+  schema_name: string;
+  data_source_name: string;
+}
+
+interface LineageLink {
+  source_table: SourceTable;
+  target_table: SourceTable;
+  transformation_logic: string;
+  depth: number;
+  direction: 'upstream' | 'downstream';
+  lineage_type: string;
+}
+
+interface LineageData {
+  center_table: {
+    table_id: number;
+    table_name: string;
+    schema_name: string;
+    data_source_name: string;
+  };
+  upstream_links: LineageLink[];
+  downstream_links: LineageLink[];
+  metadata: {
+    max_depth_reached: number;
+    total_upstream_links: number;
+    total_downstream_links: number;
+    include_columns: boolean;
+  };
+}
+
+interface GraphNode {
+  id: number;
+  name: string;
+  schema: string;
+  dataSource: string;
+  type: 'center' | 'upstream' | 'downstream' | 'custom';
+  depth: number;
+  x?: number;
+  y?: number;
+}
+
+interface GraphLink {
+  source: number;
+  target: number;
+  transform: string;
+  type: 'upstream' | 'downstream' | 'custom';
+}
+
+interface RawAvailableTable {
+  table_id: number;
+  table_name: string;
+  schema_name: string;
+  data_source_name: string;
+  table_type: string;
+  created_at: string;
+  description: string;
+  upstream_tables: string[];
+  downstream_tables: string[];
+}
+
+interface RawLineageResponse {
+  source_table: {
+    table_id: number;
+    table_name: string;
+    schema_name: string;
+    data_source_name: string;
+    upstream_tables: string[];
+    downstream_tables: string[];
+  };
+  available_tables: RawAvailableTable[];
+}
+
+interface SavePayload {
+  table_id: number;
+  new_table_id: number;
+  connection_table_id: number;
+  connection_type: 'upstream' | 'downstream';
+}
+
+const GRAPH_CONFIG = {
+  nodeWidth: 200,
+  nodeHeight: 80,
+  horizontalSpacing: 300,
+  verticalSpacing: 120,
+  zoom: { min: 0.1, max: 3 },
+  colors: {
+    center: '#16A34A',
+    upstream: '#2563EB',
+    downstream: '#EA580C',
+    custom: '#8b5cf6',
+    link: {
+      upstream: '#2563EB',
+      downstream: '#EA580C',
+      custom: '#8b5cf6'
+    }
+  }
+};
+
+interface LineageGraphProps {
+  lineageData: LineageData;
+  showControls?: boolean;
+}
+
+const API_BASE_URL = 'https://80gh8wp1-8000.inc1.devtunnels.ms';
+
+const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
+  const { lineageData, showControls = false } = props;
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  const [customNodes, setCustomNodes] = useState<GraphNode[]>([]);
+  const [customLinks, setCustomLinks] = useState<GraphLink[]>([]);
+  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [listOfTables, setListOfTables] = useState<RawLineageResponse | undefined>();
+  const [linkingMode, setLinkingMode] = useState<{ active: boolean; sourceId: number | null }>({ 
+    active: false, 
+    sourceId: null 
+  });
+  const [isControlPanelOpen, setIsControlPanelOpen] = useState<boolean>(false);
+  const [tempLink, setTempLink] = useState<{ sourceId: number; x: number; y: number } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
+
+  const params = useParams();
+  const tableId = params.id as string;
+
+  const { isLoading } = useQuery({
+    queryKey: ['listOfTables', tableId],
+    queryFn: () => handleFetchListTables(),
+    enabled: !!(showControls && lineageData.center_table.table_id)
+  });
+
+  const handleFetchListTables = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${tableId}/add_new_connection`);
+      const tablesList = await response?.json();
+      setListOfTables(tablesList);
+    } catch(error) {
+      console.error('Error fetching list of tables:', error);
+    }
+  }
+
+  const processLineageData = useCallback((data: LineageData) => {
+    const nodes = new Map<number, GraphNode>();
+    const links: GraphLink[] = [];
+
+    const centerTable = data.center_table;
+    nodes.set(centerTable.table_id, {
+      id: centerTable.table_id,
+      name: centerTable.table_name,
+      schema: centerTable.schema_name,
+      dataSource: centerTable.data_source_name,
+      type: 'center',
+      depth: 0
+    });
+
+    data.upstream_links.forEach(link => {
+      const src = link.source_table;
+      if (!nodes.has(src.id)) {
+        nodes.set(src.id, {
+          id: src.id,
+          name: src.name,
+          schema: src.schema_name,
+          dataSource: src.data_source_name,
+          type: 'upstream',
+          depth: -link.depth
+        });
+      }
+      links.push({
+        source: src.id,
+        target: link.target_table.id,
+        transform: link.transformation_logic,
+        type: 'upstream'
+      });
+    });
+
+    data.downstream_links.forEach(link => {
+      const tgt = link.target_table;
+      if (!nodes.has(tgt.id)) {
+        nodes.set(tgt.id, {
+          id: tgt.id,
+          name: tgt.name,
+          schema: tgt.schema_name,
+          dataSource: tgt.data_source_name,
+          type: 'downstream',
+          depth: link.depth
+        });
+      }
+      links.push({
+        source: link.source_table.id,
+        target: tgt.id,
+        transform: link.transformation_logic,
+        type: 'downstream'
+      });
+    });
+
+    return { nodes: Array.from(nodes.values()), links };
+  }, []);
+
+  const calculateLayout = useCallback((nodes: GraphNode[], width: number, height: number) => {
+    const { nodeWidth, horizontalSpacing, verticalSpacing } = GRAPH_CONFIG;
+    const depthMap = new Map<number, GraphNode[]>();
+    
+    nodes.forEach(node => {
+      if (!depthMap.has(node.depth)) {
+        depthMap.set(node.depth, []);
+      }
+      depthMap.get(node.depth)!.push(node);
+    });
+
+    const sortedDepths = Array.from(depthMap.keys()).sort((a, b) => a - b);
+    sortedDepths.forEach((depth, idx) => {
+      const nodesAtDepth = depthMap.get(depth)!;
+      const x = idx * horizontalSpacing;
+      
+      nodesAtDepth.forEach((node, i) => {
+        const totalHeight = nodesAtDepth.length * verticalSpacing;
+        const y = (height / 2) - (totalHeight / 2) + (i * verticalSpacing);
+        node.x = x;
+        node.y = y;
+      });
+    });
+
+    const allX = nodes.map(n => n.x!);
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    const offsetX = (width - (maxX - minX + nodeWidth)) / 2 - minX;
+    
+    nodes.forEach(node => {
+      node.x = node.x! + offsetX;
+    });
+  }, []);
+
+  const handleAddTable = useCallback(() => {
+    if (!selectedTable) {
+      alert('Please select a table to add');
+      return;
+    }
+    
+    const tableId = parseInt(selectedTable);
+    const tableInfo = listOfTables?.available_tables.find(t => t.table_id === tableId);
+   
+    if (!tableInfo) {
+      alert('Table not found');
+      return;
+    }
+
+    if (customNodes.find(n => n.id === tableId)) {
+      alert('Table already added to graph');
+      return;
+    }
+
+    const newNode: GraphNode = {
+      id: tableInfo.table_id,
+      name: tableInfo.table_name,
+      schema: tableInfo.schema_name,
+      dataSource: tableInfo.data_source_name,
+      type: 'custom',
+      depth: 0,
+      x: dimensions.width / 2,
+      y: dimensions.height / 2
+    };
+
+    setCustomNodes(prev => [...prev, newNode]);
+    setSelectedTable('');
+  }, [selectedTable, customNodes, dimensions, listOfTables]);
+
+  const handleStartLinking = useCallback((nodeId: number, event?: any) => {
+    if (event) event.stopPropagation();
+    
+    const graphData = processLineageData(lineageData);
+    const allNodes = [...graphData.nodes, ...customNodes];
+    const node = allNodes.find(n => n.id === nodeId);
+    
+    if (node && node.x !== undefined && node.y !== undefined) {
+      setLinkingMode({ active: true, sourceId: nodeId });
+      setTempLink({ 
+        sourceId: nodeId, 
+        x: node.x + GRAPH_CONFIG.nodeWidth, 
+        y: node.y + GRAPH_CONFIG.nodeHeight / 2 
+      });
+    }
+  }, [lineageData, customNodes, processLineageData]);
+
+  const handleEndLinking = useCallback((targetId: number, event?: any) => {
+    if (event) event.stopPropagation();
+    
+    if (!linkingMode.active || !linkingMode.sourceId || linkingMode.sourceId === targetId) {
+      setLinkingMode({ active: false, sourceId: null });
+      setTempLink(null);
+      return;
+    }
+
+    const linkExists = customLinks.some(
+      link => link.source === linkingMode.sourceId && link.target === targetId
+    );
+
+    if (linkExists) {
+      alert('Link already exists between these tables');
+      setLinkingMode({ active: false, sourceId: null });
+      setTempLink(null);
+      return;
+    }
+
+    setCustomLinks(prev => [...prev, {
+      source: linkingMode.sourceId!,
+      target: targetId,
+      transform: 'Custom transformation',
+      type: 'custom'
+    }]);
+    
+    setLinkingMode({ active: false, sourceId: null });
+    setTempLink(null);
+  }, [linkingMode, customLinks]);
+
+  const handleCancelLinking = useCallback(() => {
+    setLinkingMode({ active: false, sourceId: null });
+    setTempLink(null);
+  }, []);
+
+  const handleRemoveNode = useCallback((nodeId: number) => {
+    if (window.confirm('Remove this custom node and all its connections?')) {
+      setCustomNodes(prev => prev.filter(n => n.id !== nodeId));
+      setCustomLinks(prev => prev.filter(l => l.source !== nodeId && l.target !== nodeId));
+    }
+  }, []);
+
+  const handleRemoveLink = useCallback((sourceId: number, targetId: number) => {
+    if (window.confirm('Remove this connection?')) {
+      setCustomLinks(prev => prev.filter(l => !(l.source === sourceId && l.target === targetId)));
+    }
+  }, []);
+
+  const handleSaveData = useCallback(async () => {
+    if (customLinks.length === 0) {
+      alert('No custom links to save. Please create at least one connection.');
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const centerTableId = lineageData.center_table.table_id;
+      const payloads: SavePayload[] = [];
+
+      customLinks.forEach(link => {
+        const customNode = customNodes.find(n => n.id === link.source || n.id === link.target);
+        
+        if (!customNode) return;
+
+        let connectionType: 'upstream' | 'downstream';
+        let connectionTableId: number;
+
+        if (link.target === centerTableId) {
+          connectionType = 'upstream';
+          connectionTableId = centerTableId;
+        } else if (link.source === centerTableId) {
+          connectionType = 'downstream';
+          connectionTableId = centerTableId;
+        } else {
+          const graphData = processLineageData(lineageData);
+          const existingNode = graphData.nodes.find(n => n.id === link.source || n.id === link.target);
+          
+          if (existingNode) {
+            connectionTableId = existingNode.id;
+            connectionType = existingNode.id === link.source ? 'upstream' : 'downstream';
+          } else {
+            connectionTableId = centerTableId;
+            connectionType = 'downstream';
+          }
+        }
+
+        const payload: SavePayload = {
+          table_id: centerTableId,
+          new_table_id: customNode.id,
+          connection_table_id: connectionTableId,
+          connection_type: connectionType
+        };
+
+        payloads.push(payload);
+      });
+
+    //   for (const payload of payloads) {
+        const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${centerTableId}/update-lineage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloads[0]),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('API Response:', result);
+    //   }
+      
+      alert(`Successfully saved ${payloads.length} connection(s)!`);
+      fetchTableLineage(centerTableId.toString());
+      setCustomNodes([]);
+      setCustomLinks([]);
+      
+    } catch (error) {
+      console.error('Error saving data:', error);
+      alert('Error saving data. Check console for details.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [lineageData, customNodes, customLinks, processLineageData]);
+
+  const handleResetZoom = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return;
+    
+    const svg = d3.select(svgRef.current);
+    svg.transition()
+      .duration(750)
+      .call(zoomRef.current.transform as any, d3.zoomIdentity);
+    setZoomLevel(1);
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return;
+    
+    const svg = d3.select(svgRef.current);
+    svg.transition()
+      .duration(300)
+      .call(zoomRef.current.scaleBy as any, 1.3);
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return;
+    
+    const svg = d3.select(svgRef.current);
+    svg.transition()
+      .duration(300)
+      .call(zoomRef.current.scaleBy as any, 0.7);
+  }, []);
+
+  const handleFitToView = useCallback(() => {
+    if (!svgRef.current || !gRef.current) return;
+
+    const graphData = processLineageData(lineageData);
+    const allNodes = [...graphData.nodes, ...customNodes];
+    
+    if (allNodes.length === 0) return;
+
+    const bounds = gRef.current.node()?.getBBox();
+    if (!bounds) return;
+
+    const { width, height } = dimensions;
+    const { nodeWidth } = GRAPH_CONFIG;
+
+    const fullWidth = bounds.width + nodeWidth;
+    const fullHeight = bounds.height + GRAPH_CONFIG.nodeHeight;
+
+    const midX = bounds.x + bounds.width / 2;
+    const midY = bounds.y + bounds.height / 2;
+
+    const scale = 0.9 / Math.max(fullWidth / width, fullHeight / height);
+    const translate = [
+      width / 2 - scale * midX,
+      height / 2 - scale * midY
+    ];
+
+    const svg = d3.select(svgRef.current);
+    svg.transition()
+      .duration(750)
+      .call(
+        zoomRef.current!.transform as any,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+      );
+    
+    setZoomLevel(scale);
+  }, [dimensions, lineageData, customNodes, processLineageData]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: rect.height });
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+
+    const { width, height } = dimensions;
+    const { nodeWidth, nodeHeight } = GRAPH_CONFIG;
+    const g = svg.append('g');
+
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([GRAPH_CONFIG.zoom.min, GRAPH_CONFIG.zoom.max])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform.toString());
+        setZoomLevel(event.transform.k);
+      });
+
+    svg.call(zoom);
+    zoomRef.current = zoom;
+    gRef.current = g;
+    svg.on('click', () => linkingMode.active && handleCancelLinking());
+
+    const defs = svg.append('defs');
+    ['upstream', 'downstream', 'custom'].forEach(type => {
+      defs.append('marker')
+        .attr('id', `arrow-${type}`)
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 15)
+        .attr('refY', 0)
+        .attr('orient', 'auto')
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', GRAPH_CONFIG.colors.link[type as keyof typeof GRAPH_CONFIG.colors.link]);
+    });
+
+    const graphData = processLineageData(lineageData);
+    calculateLayout(graphData.nodes, width, height);
+
+    const allNodes = [...graphData.nodes, ...customNodes];
+    const allLinks = [...graphData.links, ...customLinks];
+    
+    const nodeById = new Map(allNodes.map(n => [n.id, n]));
+    const validLinks = allLinks.filter(link => 
+      nodeById.has(link.source) && nodeById.has(link.target)
+    );
+
+    const linkGroup = g.append('g').attr('class', 'links');
+    
+    const updateLinks = () => {
+      linkGroup.selectAll('*').remove();
+      
+      const linkElements = linkGroup.selectAll('g').data(validLinks).join('g');
+
+      linkElements.append('path')
+        .attr('d', d => {
+          const source = nodeById.get(d.source);
+          const target = nodeById.get(d.target);
+          if (!source || !target) return '';
+          
+          const sx = source.x! + nodeWidth;
+          const sy = source.y! + nodeHeight / 2;
+          const tx = target.x!;
+          const ty = target.y! + nodeHeight / 2;
+          const dx = tx - sx;
+          const offsetX = dx * 0.5;
+          
+          return `M${sx},${sy} C${sx + offsetX},${sy} ${tx - offsetX},${ty} ${tx},${ty}`;
+        })
+        .attr('stroke', d => GRAPH_CONFIG.colors.link[d.type])
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('opacity', 0.6)
+        .attr('marker-end', d => `url(#arrow-${d.type})`)
+        .style('cursor', 'pointer')
+        .on('mouseenter', function() {
+          d3.select(this).attr('stroke-width', 3).attr('opacity', 1);
+        })
+        .on('mouseleave', function() {
+          d3.select(this).attr('stroke-width', 2).attr('opacity', 0.6);
+        });
+
+      linkElements.filter(d => d.type === 'custom').each(function(d) {
+        const source = nodeById.get(d.source);
+        const target = nodeById.get(d.target);
+        if (!source || !target) return;
+        
+        const sx = source.x! + nodeWidth;
+        const sy = source.y! + nodeHeight / 2;
+        const tx = target.x!;
+        const ty = target.y! + nodeHeight / 2;
+        const midX = (sx + tx) / 2;
+        const midY = (sy + ty) / 2;
+
+        const g = d3.select(this);
+        
+        g.append('circle')
+          .attr('cx', midX).attr('cy', midY).attr('r', 10)
+          .attr('fill', '#ef4444').style('cursor', 'pointer')
+          .on('click', function(event) {
+            event.stopPropagation();
+            handleRemoveLink(d.source, d.target);
+          });
+
+        g.append('text')
+          .attr('x', midX).attr('y', midY + 4)
+          .attr('text-anchor', 'middle').attr('fill', 'white')
+          .attr('font-size', '12px').attr('font-weight', 'bold')
+          .style('pointer-events', 'none').text('×');
+      });
+      
+      if (tempLink) {
+        const source = nodeById.get(tempLink.sourceId);
+        if (source) {
+          linkGroup.append('path')
+            .attr('d', `M${source.x! + nodeWidth},${source.y! + nodeHeight / 2} L${tempLink.x},${tempLink.y}`)
+            .attr('stroke', '#8b5cf6').attr('stroke-width', 2)
+            .attr('stroke-dasharray', '5,5').attr('fill', 'none')
+            .attr('opacity', 0.6).style('pointer-events', 'none');
+        }
+      }
+    };
+
+    updateLinks();
+
+    const nodeGroup = g.append('g').attr('class', 'nodes');
+    const nodes = nodeGroup.selectAll('g')
+      .data(allNodes).join('g')
+      .attr('transform', d => `translate(${d.x},${d.y})`)
+      .style('cursor', 'grab')
+      .call(d3.drag<SVGGElement, GraphNode>()
+        .on('start', function() { d3.select(this).style('cursor', 'grabbing'); })
+        .on('drag', function(event, d) {
+          d.x = event.x;
+          d.y = event.y;
+          d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+          updateLinks();
+        })
+        .on('end', function() { d3.select(this).style('cursor', 'grab'); }) as any
+      );
+
+    nodes.append('rect')
+      .attr('width', nodeWidth).attr('height', nodeHeight).attr('rx', 8)
+      .attr('fill', d => GRAPH_CONFIG.colors[d.type])
+      .attr('stroke', d => d.type === 'center' ? '#dc2626' : linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
+      .attr('stroke-width', d => d.type === 'center' ? 3 : linkingMode.active && linkingMode.sourceId === d.id ? 4 : 2)
+      .style('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))')
+      .on('click', function(event, d) {
+        event.stopPropagation();
+        if (linkingMode.active && linkingMode.sourceId !== d.id) {
+          handleEndLinking(d.id, event);
+        }
+      })
+      .on('mouseenter', function() {
+        d3.select(this).style('filter', 'drop-shadow(0 6px 8px rgba(0, 0, 0, 0.15)) brightness(1.1)');
+      })
+      .on('mouseleave', function() {
+        d3.select(this).style('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))');
+      });
+
+    nodes.append('text')
+      .attr('x', nodeWidth / 2).attr('y', 28).attr('text-anchor', 'middle')
+      .attr('fill', 'white').attr('font-size', '14px').attr('font-weight', '600')
+      .style('pointer-events', 'none')
+      .text(d => d.name.length > 20 ? d.name.substring(0, 20) + '...' : d.name);
+
+    nodes.append('text')
+      .attr('x', nodeWidth / 2).attr('y', 48).attr('text-anchor', 'middle')
+      .attr('fill', 'rgba(255, 255, 255, 0.85)').attr('font-size', '11px')
+      .style('pointer-events', 'none')
+      .text(d => d.schema.length > 22 ? d.schema.substring(0, 22) + '...' : d.schema);
+
+    nodes.append('text')
+      .attr('x', nodeWidth / 2).attr('y', 64).attr('text-anchor', 'middle')
+      .attr('fill', 'rgba(255, 255, 255, 0.7)').attr('font-size', '9px')
+      .style('pointer-events', 'none')
+      .text(d => d.dataSource.length > 28 ? d.dataSource.substring(0, 28) + '...' : d.dataSource);
+
+    nodes.filter(d => d.type === 'custom')
+      .append('circle')
+      .attr('cx', nodeWidth - 10).attr('cy', 10).attr('r', 8)
+      .attr('fill', '#ef4444').style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        event.stopPropagation();
+        handleRemoveNode(d.id);
+      });
+
+    nodes.filter(d => d.type === 'custom')
+      .append('text')
+      .attr('x', nodeWidth - 10).attr('y', 14).attr('text-anchor', 'middle')
+      .attr('fill', 'white').attr('font-size', '12px').attr('font-weight', 'bold')
+      .style('pointer-events', 'none').text('×');
+
+    const portGroup = nodes.append('g')
+      .attr('class', 'connection-port')
+      .attr('transform', `translate(${nodeWidth}, ${nodeHeight / 2})`)
+      .style('cursor', 'pointer')
+      .on('click', function(event, d) {
+        event.stopPropagation();
+        if (linkingMode.active && linkingMode.sourceId !== d.id) {
+          handleEndLinking(d.id, event);
+        } else if (!linkingMode.active) {
+          handleStartLinking(d.id, event);
+        }
+      });
+
+    portGroup.append('circle')
+      .attr('r', 8)
+      .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#3b82f6')
+      .attr('stroke', 'white').attr('stroke-width', 2)
+      .style('filter', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))')
+      .on('mouseenter', function() { d3.select(this).transition().duration(200).attr('r', 10); })
+      .on('mouseleave', function() { d3.select(this).transition().duration(200).attr('r', 8); });
+
+    portGroup.append('text')
+      .attr('text-anchor', 'middle').attr('dy', '0.35em')
+      .attr('fill', 'white').attr('font-size', '12px').attr('font-weight', 'bold')
+      .style('pointer-events', 'none').text('+');
+
+    svg.on('mousemove', function(event) {
+      if (linkingMode.active && tempLink) {
+        const [x, y] = d3.pointer(event, g.node());
+        setTempLink(prev => prev ? { ...prev, x, y } : null);
+      }
+    });
+
+  }, [dimensions, lineageData, customNodes, customLinks, linkingMode, tempLink, processLineageData, calculateLayout, handleStartLinking, handleEndLinking, handleCancelLinking, handleRemoveNode, handleRemoveLink]);
+
+  return (
+    <div className="w-full h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="w-full h-full relative overflow-hidden" ref={containerRef}>
+        <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" />
+
+        {showControls ? <div className={`absolute top-1 right-1 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
+          <button
+            onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
+            className="absolute -left-9 top-1 w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg"
+          >
+            {isControlPanelOpen ? 'X' : '☰'}
+          </button>
+
+          {isControlPanelOpen ? (
+            <div className="p-2 space-y-2 max-h-[calc(100vh-6rem)] overflow-y-auto">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Add New Table:</label>
+                <select
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                  className="w-full p-2 border rounded-md focus:outline-none text-sm"
+                >
+                  <option value="">Select Table...</option>
+                  {listOfTables?.available_tables.map((table) => (
+                    <option value={table.table_id} key={table.table_id}>
+                      {table.table_name} ({table.schema_name})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleAddTable}
+                  disabled={!selectedTable}
+                  className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white text-sm font-medium rounded-md transition-colors"
+                >
+                  Add Table
+                </button>
+              </div>
+              
+              <button
+                onClick={handleSaveData}
+                disabled={isSaving || customLinks.length === 0}
+                className="w-full py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white text-sm font-medium rounded-md transition-colors"
+              >
+                {isSaving ? 'Saving...' : 'Save Connections'}
+              </button>
+              
+              {linkingMode.active && (
+                <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded-md text-sm text-blue-700">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Linking mode active</span>
+                    <button
+                      onClick={handleCancelLinking}
+                      className="ml-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-xs mt-1">Click target node or its + button</p>
+                </div>
+              )}
+
+            </div>
+          ) : (
+            null
+          )}
+        </div> : null}
+
+        <div className="absolute top-2 left-2 bg-white rounded-lg shadow-lg p-1 z-10 flex flex-col space-y-2">
+          <button
+            onClick={handleZoomIn}
+            className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center text-md font-bold"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center text-md font-semibold"
+            title="Zoom Out"
+          >
+            −
+          </button>
+          <button
+            onClick={handleResetZoom}
+            className="w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center text-sm font-semibold"
+            title="Reset Zoom"
+          >
+            1:1
+          </button>
+          <button
+            onClick={handleFitToView}
+            className="w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center text-sm font-semibold"
+            title="Fit to View"
+          >
+            FIT
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default LineageGraph;

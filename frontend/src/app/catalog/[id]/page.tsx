@@ -35,7 +35,7 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import LineageGraph from '@/components/LineageGraph/LineageGraph';
+import LineageGraphV2 from '@/components/LineageGraphV2/LineageGraphV2';
 
 const API_BASE_URL = 'http://172.188.2.173:8000/api/v1';
 
@@ -171,9 +171,6 @@ interface LineageTable {
   direction?: string;
 }
 
-// downstream_tables => downstream_links
-// upstream_tables => upstream_links
-
 interface LineageGraph {
   center_table: LineageTable;
   upstream_links: LineageTable[];
@@ -186,7 +183,7 @@ interface LineageGraph {
   };
 }
 
-async function fetchTableLineage(tableId: string): Promise<LineageGraph> {
+export async function fetchTableLineage(tableId: string): Promise<LineageGraph> {
   const response = await fetch(`${API_BASE_URL}/lineage/table/${tableId}/full-graph?max_depth=2`);
   if (!response.ok) throw new Error('Failed to fetch table lineage');
   return response.json();
@@ -991,7 +988,7 @@ export default function TableDetailsPage() {
                         {/* React Flow Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
-                            <LineageGraph lineageData={lineageData} />
+                            <LineageGraphV2 lineageData={lineageData as any} showControls />
                             {/* <ReactFlow
                               nodes={nodes}
                               edges={edges}

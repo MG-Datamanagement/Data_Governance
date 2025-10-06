@@ -11,7 +11,7 @@ import {
   X,
   BarChart3
 } from 'lucide-react';
-import LineageGraph from '@/components/LineageGraph/LineageGraph';
+import LineageGraphV2 from '@/components/LineageGraphV2/LineageGraphV2';
 
 interface Table {
   table_id: number;
@@ -186,7 +186,7 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
 
   return (
     <div className="w-full p-6">
-      <LineageGraph lineageData={lineageData} />
+      <LineageGraphV2 lineageData={lineageData as any} />
       {/* <div className="flex flex-col lg:flex-row items-center gap-8">
 
         <div className="flex-1">
