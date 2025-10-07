@@ -130,7 +130,7 @@ interface LineageGraphProps {
 const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
-  const { lineageData = SAMPLE_DATA, showControls = false } = props;
+  const { lineageData, showControls = false } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -307,6 +307,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     setCustomNodes(prev => [...prev, newNode]);
     setSelectedTable('');
     setIsControlPanelOpen(false);
+    setIsEdgeInfoPanelOpen(false);
   }, [selectedTable, customNodes, dimensions, listOfTables]);
 
   const handleStartLinking = useCallback((nodeId: number, event?: any) => {
@@ -642,6 +643,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           event.stopPropagation();
           setEdgeInfo({ source: nodeById.get(d.source)!, target: nodeById.get(d.target)!, link: d });
           setIsEdgeInfoPanelOpen(true);
+          setIsControlPanelOpen(false);
         });
 
       // Custom link labels (×) etc.
@@ -955,7 +957,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           {showControls &&
             <>
               <button
-                onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
+                onClick={() => {setIsControlPanelOpen(!isControlPanelOpen);setIsEdgeInfoPanelOpen(false);}}
                 className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
                 title="Add Table"
               >
