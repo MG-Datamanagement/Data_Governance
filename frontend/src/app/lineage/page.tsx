@@ -12,6 +12,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import LineageGraphV2 from '@/components/LineageGraphV2/LineageGraphV2';
+import { normalizeLineageData } from '@/utils/utils';
 
 interface Table {
   table_id: number;
@@ -98,7 +99,7 @@ interface LineageStatistics {
   }>;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms';
+const API_BASE_URL = 'http://172.188.2.173:8000';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
   <div className={`bg-white rounded-lg shadow-md border border-gray-200 ${className}`}>
@@ -186,7 +187,7 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
 
   return (
     <div className="w-full p-6">
-      <LineageGraphV2 lineageData={lineageData as any} />
+      <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} />
       {/* <div className="flex flex-col lg:flex-row items-center gap-8">
 
         <div className="flex-1">

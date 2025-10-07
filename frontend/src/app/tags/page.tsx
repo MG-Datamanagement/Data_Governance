@@ -35,7 +35,7 @@ export default function TagsPage() {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const response = await fetch('https://nmqhfvs3-8001.inc1.devtunnels.ms/api/v1/tags');
+        const response = await fetch('http://172.188.2.173:8000/api/v1/tags');
         if (!response.ok) {
           throw new Error('Failed to fetch tags');
         }

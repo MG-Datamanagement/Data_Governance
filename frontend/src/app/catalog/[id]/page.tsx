@@ -36,8 +36,9 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import LineageGraphV2 from '@/components/LineageGraphV2/LineageGraphV2';
+import { normalizeLineageData } from '@/utils/utils';
 
-const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:8000/api/v1';
 
 interface TableDetails {
   id: number;
@@ -988,7 +989,7 @@ export default function TableDetailsPage() {
                         {/* React Flow Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
-                            <LineageGraphV2 lineageData={lineageData as any} showControls />
+                            <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} showControls />
                             {/* <ReactFlow
                               nodes={nodes}
                               edges={edges}

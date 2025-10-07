@@ -16,7 +16,6 @@ import {
   RouteOffIcon
 } from 'lucide-react';
 import { link } from 'fs';
-import { SAMPLE_DATA } from './data';
 
 interface SourceTable {
   id: number;
@@ -111,6 +110,7 @@ const GRAPH_CONFIG = {
     upstream: '#fff',
     downstream: '#fff',
     custom: '#fff',
+    centerNodeBorder: '#16A34A',
     nodeBorder: '#75757533',
     nodeBorderOnHover: '#1570EF',
     label: '#181d27',
@@ -127,7 +127,7 @@ interface LineageGraphProps {
   showControls?: boolean;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms';
+const API_BASE_URL = 'http://172.188.2.173:8000';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
   const { lineageData, showControls = false } = props;
@@ -176,9 +176,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     const links: GraphLink[] = [];
 
     const centerTable = data.center_table;
+    const centerId = centerTable.table_id;
+    const centerName = centerTable.table_name;
+
     nodes.set(centerTable.table_id, {
-      id: centerTable.table_id,
-      name: centerTable.table_name,
+      id: centerId,
+      name: centerName,
       schema: centerTable.schema_name,
       dataSource: centerTable.data_source_name,
       type: 'center',
@@ -244,11 +247,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       const nodesAtDepth = depthMap.get(depth)!;
       const x = idx * horizontalSpacing;
 
+      // Center nodes vertically
       nodesAtDepth.forEach((node, i) => {
         const totalHeight = nodesAtDepth.length * verticalSpacing;
         const y = (height / 2) - (totalHeight / 2) + (i * verticalSpacing);
-        node.x = x;
-        node.y = y;
+        node.x = x; // Assign x position based on depth and spacing
+        node.y = y; // Assign y position to center nodes vertically
       });
     });
 
@@ -283,6 +287,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     const tableId = parseInt(selectedTable);
     const tableInfo = listOfTables?.available_tables.find(t => t.table_id === tableId);
 
+    // Determine if this table is upstream or downstream of center table
+    const centerTableName = lineageData.center_table.table_name;
+    // if is upstream of center table then depth -1 else if downstream then depth +1 else 0
+    const isUpstream = tableInfo?.downstream_tables?.includes(centerTableName);
+    const isDownstream = tableInfo?.upstream_tables?.includes(centerTableName);
+
     if (!tableInfo) {
       alert('Table not found');
       return;
@@ -293,13 +303,15 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       return;
     }
 
+    // commenting specific id line for testing
     const newNode: GraphNode = {
-      id: tableInfo.table_id,
+      // id: tableInfo.table_id,
+      id: tableInfo.table_id + 10000,
       name: tableInfo.table_name,
       schema: tableInfo.schema_name,
       dataSource: tableInfo.data_source_name,
       type: 'custom',
-      depth: 0,
+      depth: isUpstream ? -1 : (isDownstream ? 1 : 0),
       x: dimensions.width / 2,
       y: dimensions.height / 2
     };
@@ -600,9 +612,26 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     const allNodes = [...graphData.nodes, ...customNodes];
     const allLinks = [...graphData.links, ...customLinks];
     const nodeById = new Map(allNodes.map(n => [n.id, n]));
-    const validLinks = allLinks.filter(link =>
-      nodeById.has(link.source) && nodeById.has(link.target)
-    );
+
+    // currently testing this filter - commenting out for now
+    // const validLinks = allLinks.filter(link =>
+    //   nodeById.has(link.source) && nodeById.has(link.target)
+    // );
+    // above replaced with:
+    const validLinks = allLinks.filter(link => {
+    const sourceNode = nodeById.get(link.source);
+    const targetNode = nodeById.get(link.target);
+    
+    // Only show link if BOTH nodes exist AND at least one is from original data OR both are custom
+    if (!sourceNode || !targetNode) return false;
+    
+    // If link is custom, always show it
+    if (link.type === 'custom') return true;
+    
+    // For original links, only show if both nodes are from original lineage data (not custom)
+    return sourceNode.type !== 'custom' && targetNode.type !== 'custom';
+    });
+    //--
 
     // Draw links
     const linkGroup = g.append('g').attr('class', 'links');
@@ -618,14 +647,36 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           const target = nodeById.get(d.target);
           if (!source || !target) return '';
 
-          const sx = source.x! + nodeWidth;
-          const sy = source.y! + nodeHeight / 2;
-          const tx = target.x!;
-          const ty = target.y! + nodeHeight / 2;
+          // Determine connection points based on relative position
+          let sx, sy, tx, ty;
+          
+          // Check if target is to the left or right of source
+          const isTargetRight = target.x! > source.x!;
+          
+          if (isTargetRight) {
+            // Connect from right port of source to left port of target
+            sx = source.x! + nodeWidth;  // Right port of source
+            sy = source.y! + nodeHeight / 2;
+            tx = target.x!;  // Left port of target
+            ty = target.y! + nodeHeight / 2;
+          } else {
+            // Connect from left port of source to right port of target
+            sx = source.x!;  // Left port of source
+            sy = source.y! + nodeHeight / 2;
+            tx = target.x! + nodeWidth;  // Right port of target
+            ty = target.y! + nodeHeight / 2;
+          }
+          
           const dx = tx - sx;
-          const offsetX = dx * 0.5;
+          const dy = ty - sy;
+          const angle = Math.atan2(dy, dx);
+          const arrowOffset = 10; // Offset to avoid arrow overlapping node
+          const adjustedTx = tx - Math.cos(angle) * arrowOffset;
+          const adjustedTy = ty - Math.sin(angle) * arrowOffset;
+          
+          const offsetX = Math.abs(dx) * 0.5;
 
-          return `M${sx},${sy} C${sx + offsetX},${sy} ${tx - offsetX},${ty} ${tx},${ty}`;
+          return `M${sx},${sy} C${sx + (dx > 0 ? offsetX : -offsetX)},${sy} ${adjustedTx - (dx > 0 ? offsetX : -offsetX)},${adjustedTy} ${adjustedTx},${adjustedTy}`;
         })
         .attr('stroke', d => GRAPH_CONFIG.colors.link[d.type])
         .attr('stroke-width', 2)
@@ -693,8 +744,6 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
         xIconGroup.append('path').attr('d', 'M18 6 6 18');
         xIconGroup.append('path').attr('d', 'm6 6 12 12');
-
-
       });
 
       if (tempLink) {
@@ -731,7 +780,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     nodes.append('rect')
       .attr('width', nodeWidth).attr('height', nodeHeight).attr('rx', 8)
       .attr('fill', d => GRAPH_CONFIG.colors[d.type])
-      .attr('stroke', d => d.type === 'center' ? `${GRAPH_CONFIG.colors.nodeBorder}` :
+      .attr('stroke', d => d.type === 'center' ? `${GRAPH_CONFIG.colors.centerNodeBorder}` :
         (linkingMode.active && linkingMode.sourceId === d.id ? `#8b5cf6` : `${GRAPH_CONFIG.colors.nodeBorder}`))
       .attr('stroke-width', d => d.type === 'center' ? 1 :
         (linkingMode.active && linkingMode.sourceId === d.id ? 2 : 1))
@@ -742,11 +791,11 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           handleEndLinking(d.id, event);
         }
       })
-      .on('mouseenter', function () {
+      .on('mouseenter', function (event, d) {
         d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorderOnHover}`);
       })
-      .on('mouseleave', function () {
-        d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorder}`);
+      .on('mouseleave', function (event, d) {
+        d3.select(this).attr('stroke', d.type === 'center' ? `${GRAPH_CONFIG.colors.centerNodeBorder}` : `${GRAPH_CONFIG.colors.nodeBorder}`);
       });
 
     // Node labels
