@@ -98,7 +98,7 @@ interface LineageStatistics {
   }>;
 }
 
-const API_BASE_URL = 'http://172.188.2.173:3000';
+const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms';
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
   <div className={`bg-white rounded-lg shadow-md border border-gray-200 ${className}`}>

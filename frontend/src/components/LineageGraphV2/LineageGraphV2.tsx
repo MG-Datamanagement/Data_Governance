@@ -5,7 +5,18 @@ import * as d3 from 'd3';
 import { fetchTableLineage } from '@/app/catalog/[id]/page';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import {
+  ZoomInIcon,
+  ZoomOutIcon,
+  XIcon,
+  LucideListPlus,
+  LoaderIcon,
+  LucideFullscreen,
+  LucideUploadCloud,
+  RouteOffIcon
+} from 'lucide-react';
+import { link } from 'fs';
+import { SAMPLE_DATA } from './data';
 
 interface SourceTable {
   id: number;
@@ -116,10 +127,10 @@ interface LineageGraphProps {
   showControls?: boolean;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-9000.inc1.devtunnels.ms';
+const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
-  const { lineageData, showControls = false } = props;
+  const { lineageData = SAMPLE_DATA, showControls = false } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,6 +144,8 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     sourceId: null
   });
   const [isControlPanelOpen, setIsControlPanelOpen] = useState<boolean>(false);
+  const [isEdgeInfoPanelOpen, setIsEdgeInfoPanelOpen] = useState<boolean>(false);
+  const [edgeInfo, setEdgeInfo] = useState<{ source: GraphNode, target: GraphNode, link: GraphLink } | undefined>(undefined);
   const [tempLink, setTempLink] = useState<{ sourceId: number; x: number; y: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -253,7 +266,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     if (!name) return '';
 
     const formatted = name
-      .replace(/[-_]/g, ' ')                     // Replace hyphens/underscores with spaces
+      .replace(/[-_.]/g, ' ')                     // Replace hyphens/underscores with spaces
       .replace(/\b\w/g, c => c.toUpperCase());  // Capitalize each word
 
     return formatted.length > maxLength
@@ -293,6 +306,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
     setCustomNodes(prev => [...prev, newNode]);
     setSelectedTable('');
+    setIsControlPanelOpen(false);
   }, [selectedTable, customNodes, dimensions, listOfTables]);
 
   const handleStartLinking = useCallback((nodeId: number, event?: any) => {
@@ -623,6 +637,11 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         })
         .on('mouseleave', function () {
           d3.select(this).attr('stroke-width', 2).attr('opacity', 0.6);
+        })
+        .on('click', function (event, d) {
+          event.stopPropagation();
+          setEdgeInfo({ source: nodeById.get(d.source)!, target: nodeById.get(d.target)!, link: d });
+          setIsEdgeInfoPanelOpen(true);
         });
 
       // Custom link labels (×) etc.
@@ -644,7 +663,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         gThis.append('circle')
           .attr('cx', midX).attr('cy', midY).attr('r', 10)
           .attr('fill', '#ef4444').style('cursor', 'pointer')
-          .on('click', function(event) {
+          .on('click', function (event) {
             event.stopPropagation();
             handleRemoveLink(d.source, d.target);
           });
@@ -657,7 +676,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         //   .style('pointer-events', 'none')
         //   .text('×');
 
-        const iconSize = 10; 
+        const iconSize = 10;
         const scale = iconSize / 24;
 
         // Append Lucide 'x' icon
@@ -673,7 +692,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         xIconGroup.append('path').attr('d', 'M18 6 6 18');
         xIconGroup.append('path').attr('d', 'm6 6 12 12');
 
-          
+
       });
 
       if (tempLink) {
@@ -721,12 +740,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           handleEndLinking(d.id, event);
         }
       })
-    .on('mouseenter', function () {
-      d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorderOnHover}`);
-    })
-    .on('mouseleave', function () {
-      d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorder}`);
-    });
+      .on('mouseenter', function () {
+        d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorderOnHover}`);
+      })
+      .on('mouseleave', function () {
+        d3.select(this).attr('stroke', `${GRAPH_CONFIG.colors.nodeBorder}`);
+      });
 
     // Node labels
     nodes.append('text')
@@ -760,7 +779,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         g.append('path').attr('d', 'M6 6 18 18');
       });
 
-    
+
     // // Connection port (circle)
     // const portGroup = nodes.append('g')
     //   .attr('class', 'connection-port')
@@ -795,7 +814,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
       .attr('stroke', '#F0F0F2').attr('stroke-width', 1)
       .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))')
-    
+
     portGroup.append('circle')
       .attr('r', 8)
       .attr('class', 'connection-port')
@@ -835,67 +854,76 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       <div className="w-full h-full relative overflow-hidden" ref={containerRef}>
         <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" />
 
-        {showControls ? <div className={`absolute top-1 left-11 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
-          <button
-            onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
-            className="absolute -left-9 top-1 w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg"
-          >
-            {isControlPanelOpen ? 'X' : '☰'}
-          </button>
+        {showControls ?
+          <div className={`absolute top-2 left-2 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
+            {isControlPanelOpen ? (
+              <div className="space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto">
+                <div className='px-2 py-1 flex items-center justify-between border-b border-slate-300'>
+                  <label className="text-sm font-semibold text-gray-700">Add New Table</label>
+                  <button onClick={() => setIsControlPanelOpen(!isControlPanelOpen)} title='Close' className="p-1 hover:bg-gray-200 rounded">
+                    <XIcon size={20} />
+                  </button>
+                </div>
+                <div className="space-y-1 px-2 py-1">
+                  <select
+                    value={selectedTable}
+                    onChange={(e) => setSelectedTable(e.target.value)}
+                    className="w-full p-2 border rounded-md focus:outline-none text-sm"
+                  >
+                    <option value="">Select Table...</option>
+                    {listOfTables?.available_tables.map((table) => (
+                      <option value={table.table_id} key={table.table_id}>
+                        {table.table_name} ({table.schema_name})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAddTable}
+                    disabled={!selectedTable}
+                    className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white text-sm font-medium rounded-md transition-colors"
+                  >
+                    Add Table
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          :
+          null
+        }
 
-          {isControlPanelOpen ? (
-            <div className="p-2 space-y-2 max-h-[calc(100vh-6rem)] overflow-y-auto">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700">Add New Table:</label>
-                <select
-                  value={selectedTable}
-                  onChange={(e) => setSelectedTable(e.target.value)}
-                  className="w-full p-2 border rounded-md focus:outline-none text-sm"
-                >
-                  <option value="">Select Table...</option>
-                  {listOfTables?.available_tables.map((table) => (
-                    <option value={table.table_id} key={table.table_id}>
-                      {table.table_name} ({table.schema_name})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleAddTable}
-                  disabled={!selectedTable}
-                  className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white text-sm font-medium rounded-md transition-colors"
-                >
-                  Add Table
+        <div className={`absolute top-2 left-2 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isEdgeInfoPanelOpen ? 'w-60' : 'w-0'}`}>
+          {isEdgeInfoPanelOpen ? (
+            <div className="space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto">
+              <div className='px-2 py-1 flex items-center justify-between border-b border-slate-300'>
+                <label className="text-sm font-bold text-gray-700">Edge Information</label>
+                <button onClick={() => setIsEdgeInfoPanelOpen(!isEdgeInfoPanelOpen)} title='Close' className="p-1 hover:bg-gray-200 rounded">
+                  <XIcon size={20} />
                 </button>
               </div>
-
-              <button
-                onClick={handleSaveData}
-                disabled={isSaving || customLinks.length === 0}
-                className="w-full py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white text-sm font-medium rounded-md transition-colors"
-              >
-                {isSaving ? 'Saving...' : 'Save Connections'}
-              </button>
-
-              {linkingMode.active && (
-                <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded-md text-sm text-blue-700">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Linking mode active</span>
-                    <button
-                      onClick={handleCancelLinking}
-                      className="ml-2 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"
-                    >
-                      Cancel
-                    </button>
+              <div className='space-y-2 p-2'>
+                <div className='bg-[#F8F9FC] px-2 py-1 rounded space-y-1'>
+                  <div className='space-x-1 flex items-center'>
+                    <label className="text-sm font-bold text-gray-700">Source :</label>
+                    <p className="text-sm font-normal" title={formatNodeLabel(edgeInfo?.source?.name!)}>{formatNodeLabel(edgeInfo?.source?.name!)}</p>
                   </div>
-                  <p className="text-xs mt-1">Click target node or its + button</p>
+                  <div className='space-x-1 flex items-center'>
+                    <label className="text-sm font-bold text-gray-700">Target :</label>
+                    <p className="text-sm font-normal" title={formatNodeLabel(edgeInfo?.target?.name!)}>{formatNodeLabel(edgeInfo?.target?.name!)}</p>
+                  </div>
                 </div>
-              )}
-
+                <div className='bg-[#F8F9FC] px-2 py-1 rounded'>
+                  <div className='space-y-1'>
+                    <label className="text-sm font-bold text-gray-700">Transformation Logic :</label>
+                    <p className="text-sm font-normal" title={edgeInfo?.link?.transform!}>{formatNodeLabel(edgeInfo?.link?.transform!, 50)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
-        </div> : null}
+        </div>
 
-        <div className="absolute top-2 right-2 border border-[#eaecf5] bg-white rounded-lg shadow-lg z-10 flex flex-col space-y-2">
+        <div className="absolute top-2 right-2 border border-[#eaecf5] bg-white rounded-lg shadow-lg z-10 flex flex-col space-y-1">
           <button
             onClick={handleZoomIn}
             className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
@@ -922,8 +950,37 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
             className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center text-sm font-medium"
             title="Fit to View"
           >
-            FIT
+            <LucideFullscreen size={20} />
           </button>
+          {showControls &&
+            <>
+              <button
+                onClick={() => setIsControlPanelOpen(!isControlPanelOpen)}
+                className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
+                title="Add Table"
+              >
+                <LucideListPlus size={20} />
+              </button>
+              <button
+                onClick={handleSaveData}
+                disabled={isSaving || customLinks.length === 0}
+                title='Save Connection/Changes'
+                className="p-3 hover:bg-sky-50 flex items-center justify-center disabled:bg-gray-200 transition-colors"
+              >
+                {isSaving ? <LoaderIcon size={20} className="animate-spin" /> : <LucideUploadCloud size={20} />}
+              </button>
+              {linkingMode?.active && 
+                <button
+                  onClick={handleCancelLinking}
+                  title='Cancel Linking'
+                  disabled={!linkingMode.active}
+                  className="p-3 flex items-center justify-center transition-colors disabled:bg-gray-200 hover:bg-red-500"
+                >
+                  <RouteOffIcon size={16} />
+                </button>
+              }
+            </>
+          }
         </div>
       </div>
     </div>

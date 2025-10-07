@@ -35,7 +35,7 @@ import { GovernanceMetrics, ComplianceOverview, DataStewardshipMetrics } from '@
 import { QualityTrendChart, DomainQualityChart, DataSourcesChart, RecentAlerts } from '@/components/governance/AnalyticsCharts';
 import Link from 'next/link';
 
-const API_BASE_URL = 'http://172.188.2.173:8000/api/v1';
+const API_BASE_URL = 'https://nmqhfvs3-8001.inc1.devtunnels.ms/api/v1';
 
 async function fetchStats() {
   const [tablesResponse, domainsResponse, tagsResponse] = await Promise.all([
