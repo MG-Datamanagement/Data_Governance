@@ -272,22 +272,6 @@ async def get_search_suggestions(
                 score=0.7
             ))
         
-        # Owner suggestions
-        owners = db.query(User).filter(
-            and_(
-                User.is_active == True,
-                User.name.ilike(f"%{q}%")
-            )
-        ).limit(3).all()
-        
-        for owner in owners:
-            suggestions.append(SearchSuggestion(
-                text=owner.name,
-                id=owner.id,
-                type="owner",
-                category="Owners",
-                score=0.6
-            ))
         
         # Sort by score
         suggestions.sort(key=lambda x: x.score, reverse=True)
