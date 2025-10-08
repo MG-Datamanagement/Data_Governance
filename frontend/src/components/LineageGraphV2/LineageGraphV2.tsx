@@ -305,8 +305,8 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
     // commenting specific id line for testing
     const newNode: GraphNode = {
-      // id: tableInfo.table_id,
-      id: tableInfo.table_id + 10000,
+      id: tableInfo.table_id,
+      // id: tableInfo.table_id + 10000,
       name: tableInfo.table_name,
       schema: tableInfo.schema_name,
       dataSource: tableInfo.data_source_name,
@@ -437,7 +437,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         payloads.push(payload);
       });
 
-      // Send first (or loop) payload(s)
+      // Send first (or loop) payload(s) 
       const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${centerTableId}/update-lineage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
