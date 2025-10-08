@@ -637,6 +637,9 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         setZoomLevel(event.transform.k);
       });
 
+    // Preserve current zoom/pan state
+    const currentTransform = d3.zoomTransform(svg.node()!);
+    svg.call(zoom.transform as any, currentTransform);
     svg.call(zoom);
     zoomRef.current = zoom;
     gRef.current = g;
@@ -648,11 +651,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       arrowDefs.append('marker')
         .attr('id', `arrow-${type}`)
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 10)  // Position at tip of arrow
+        .attr('refX', 10)  // Arrow tip at path end
         .attr('refY', 0)
-        .attr('orient', 'auto')  // This makes arrow follow curve tangent
-        .attr('markerWidth', 8)   // Increased from 6
-        .attr('markerHeight', 8)  // Increased from 6
+        .attr('orient', 'auto')  // Auto-rotate to follow path tangent
+        .attr('markerWidth', 10)
+        .attr('markerHeight', 10)
+        .attr('markerUnits', 'userSpaceOnUse')  // Use absolute units, not strokeWidth
         .append('path')
         .attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', GRAPH_CONFIG.colors.link[type as keyof typeof GRAPH_CONFIG.colors.link]);
@@ -669,19 +673,21 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       const linkElements = linkGroup.selectAll('g').data(validLinks).join('g');
 
       // Before drawing links, calculate offsets for multiple connections
-      const calculateLinkOffset = (links: GraphLink[], currentLink: GraphLink, index: number) => {
-        // Find all links with same source and target
-        const sameConnectionLinks = links.filter(l =>
-          (l.source === currentLink.source && l.target === currentLink.target) ||
-          (l.source === currentLink.target && l.target === currentLink.source)
+      const calculateLinkOffset = (links: GraphLink[], currentLink: GraphLink) => {
+        // Get links with same source->target direction
+        const sameDirectionLinks = links.filter(l =>
+          l.source === currentLink.source && l.target === currentLink.target
         );
 
-        if (sameConnectionLinks.length === 1) return 0;
+        if (sameDirectionLinks.length === 1) return 0;
 
-        // Spread links vertically
-        const totalLinks = sameConnectionLinks.length;
-        const currentIndex = sameConnectionLinks.indexOf(currentLink);
-        const spacing = 15; // pixels between parallel links
+        const totalLinks = sameDirectionLinks.length;
+        const currentIndex = sameDirectionLinks.findIndex(l => 
+          l.source === currentLink.source && 
+          l.target === currentLink.target &&
+          l.type === currentLink.type
+        );
+        const spacing = 20; // Increased spacing for better separation
 
         return (currentIndex - (totalLinks - 1) / 2) * spacing;
       };
@@ -698,14 +704,16 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
           let sx, sy, tx, ty;
           if (isTargetRight) {
+            // Left port to right port connection
             sx = source.x! + nodeWidth;
             sy = source.y! + nodeHeight / 2 + offset;
             tx = target.x!;
             ty = target.y! + nodeHeight / 2 + offset;
           } else {
-            sx = source.x!;
+            // Right port to left port connection (reverse direction)
+            sx = source.x! + nodeWidth;
             sy = source.y! + nodeHeight / 2 + offset;
-            tx = target.x! + nodeWidth;
+            tx = target.x!;
             ty = target.y! + nodeHeight / 2 + offset;
           }
 
@@ -713,27 +721,33 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           const dy = ty - sy;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          // INCREASED gaps - start further from port, end well before node
-          const startGap = 12;  // Start 12px from source port
-          const endGap = 20;    // End 20px before target port (leaves room for arrow)
+          // Proper gaps for port connection
+          const portRadius = 8; // Port circle radius
+          const startGap = portRadius; // Start from edge of source port
+          const endGap = portRadius;   // End at edge of target port (arrow extends from here)
 
           const angle = Math.atan2(dy, dx);
           const actualSx = sx + Math.cos(angle) * startGap;
           const actualSy = sy + Math.sin(angle) * startGap;
+
+          // For target, we want the path to end at the port edge
+          // The arrow marker will extend from this point
           const actualTx = tx - Math.cos(angle) * endGap;
           const actualTy = ty - Math.sin(angle) * endGap;
 
           const adjustedDx = actualTx - actualSx;
           const adjustedDy = actualTy - actualSy;
+          const adjustedDistance = Math.sqrt(adjustedDx * adjustedDx + adjustedDy * adjustedDy);
 
-          // Better control points for smooth curves
-          const controlPointDistance = Math.min(Math.abs(adjustedDx) * 0.4, distance * 0.35);
+          // Control points for smooth bezier curve
+          const controlPointDistance = Math.min(Math.abs(adjustedDx) * 0.5, adjustedDistance * 0.4);
 
           const cx1 = actualSx + (adjustedDx > 0 ? controlPointDistance : -controlPointDistance);
           const cy1 = actualSy;
           const cx2 = actualTx - (adjustedDx > 0 ? controlPointDistance : -controlPointDistance);
           const cy2 = actualTy;
 
+          // Ensure path ends exactly at actualTx, actualTy so arrow aligns
           return `M${actualSx},${actualSy} C${cx1},${cy1} ${cx2},${cy2} ${actualTx},${actualTy}`;
         })
         .attr('stroke', d => GRAPH_CONFIG.colors.link[d.type])
