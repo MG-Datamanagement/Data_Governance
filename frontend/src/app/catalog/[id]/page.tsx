@@ -989,7 +989,7 @@ export default function TableDetailsPage() {
                         {/* React Flow Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
-                            <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} showControls />
+                            <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleFetchUpdatedGraph={(tableId) => fetchTableLineage(tableId?.toString())} />
                             {/* <ReactFlow
                               nodes={nodes}
                               edges={edges}

@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
-import { fetchTableLineage } from '@/app/catalog/[id]/page';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -16,6 +15,8 @@ import {
   RouteOffIcon
 } from 'lucide-react';
 import { link } from 'fs';
+import { toast } from 'react-hot-toast';
+import ConfirmModal from '../common/ConfirmModal';
 
 interface SourceTable {
   id: number;
@@ -122,15 +123,23 @@ const GRAPH_CONFIG = {
   }
 };
 
+interface ConfirmConfig {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  onConfirm: () => void;
+}
+
 interface LineageGraphProps {
   lineageData: LineageData;
-  showControls?: boolean;
+  addTablesFeat: boolean;
+  handleFetchUpdatedGraph: (tableId: number) => void;
 }
 
 const API_BASE_URL = 'http://172.188.2.173:8000';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
-  const { lineageData, showControls = false } = props;
+  const { lineageData, addTablesFeat = false, handleFetchUpdatedGraph } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -149,17 +158,29 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   const [tempLink, setTempLink] = useState<{ sourceId: number; x: number; y: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined>>();
 
   const params = useParams();
-  const tableId = params.id as string;
+  const tableId = params.id as string || (lineageData.center_table as any)?.table_id.toString() || (lineageData.center_table as any)?.id.toString();
 
-  const { isLoading } = useQuery({
+  useQuery({
     queryKey: ['listOfTables', tableId],
     queryFn: () => handleFetchListTables(),
-    enabled: !!(showControls && lineageData.center_table.table_id)
+    enabled: !!(addTablesFeat && lineageData.center_table.table_id)
   });
+
+  const openConfirm = (config: ConfirmConfig) => {
+    setConfirmConfig(config);
+    setShowConfirmModal(true);
+  };
+
+  const closeConfirm = () => {
+    setShowConfirmModal(false);
+    setConfirmConfig(null);
+  };
 
   const handleFetchListTables = async () => {
     try {
@@ -231,6 +252,22 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     return { nodes: Array.from(nodes.values()), links };
   }, []);
 
+  const graphData = useMemo(() => processLineageData(lineageData), [lineageData, processLineageData]);
+  const allNodes = useMemo(() => [...graphData.nodes, ...customNodes], [graphData.nodes, customNodes]);
+  const allLinks = useMemo(() => [...graphData.links, ...customLinks], [graphData.links, customLinks]);
+  const nodeById = useMemo(() => new Map(allNodes.map(n => [n.id, n])), [allNodes]);
+  const validLinks = useMemo(() => {
+    return allLinks.filter(link => {
+      const sourceNode = nodeById.get(link.source);
+      const targetNode = nodeById.get(link.target);
+
+      if (!sourceNode || !targetNode) return false;
+      if (link.type === 'custom') return true;
+
+      return sourceNode.type !== 'custom' && targetNode.type !== 'custom';
+    });
+  }, [allLinks, nodeById]);
+
   const calculateLayout = useCallback((nodes: GraphNode[], width: number, height: number) => {
     const { nodeWidth, horizontalSpacing, verticalSpacing } = GRAPH_CONFIG;
     const depthMap = new Map<number, GraphNode[]>();
@@ -280,7 +317,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleAddTable = useCallback(() => {
     if (!selectedTable) {
-      alert('Please select a table to add');
+      toast.error('Please select a table to add')
       return;
     }
 
@@ -294,12 +331,12 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     const isDownstream = tableInfo?.upstream_tables?.includes(centerTableName);
 
     if (!tableInfo) {
-      alert('Table not found');
+      toast.error('Table not found');
       return;
     }
 
     if (customNodes.find(n => n.id === tableId)) {
-      alert('Table already added to graph');
+      toast.error('Table already added to graph');
       return;
     }
 
@@ -353,7 +390,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
     );
 
     if (linkExists) {
-      alert('Link already exists between these tables');
+      toast.error('Link already exists between these tables');
       setLinkingMode({ active: false, sourceId: null });
       setTempLink(null);
       return;
@@ -376,21 +413,35 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
   }, []);
 
   const handleRemoveNode = useCallback((nodeId: number) => {
-    if (window.confirm('Remove this custom node and all its connections?')) {
-      setCustomNodes(prev => prev.filter(n => n.id !== nodeId));
-      setCustomLinks(prev => prev.filter(l => l.source !== nodeId && l.target !== nodeId));
-    }
+    openConfirm({
+      title: 'Remove Table',
+      message: 'Remove this custom node and all its connections?',
+      confirmText: 'Yes, Remove',
+      onConfirm: async () => {
+        setCustomNodes(prev => prev.filter(n => n.id !== nodeId));
+        setCustomLinks(prev => prev.filter(l => l.source !== nodeId && l.target !== nodeId));
+        closeConfirm();
+        toast.success('Node and its connections removed');
+      },
+    });
   }, []);
 
   const handleRemoveLink = useCallback((sourceId: number, targetId: number) => {
-    if (window.confirm('Remove this connection?')) {
-      setCustomLinks(prev => prev.filter(l => !(l.source === sourceId && l.target === targetId)));
-    }
+    openConfirm({
+      title: 'Remove Link',
+      message: 'Remove this connection?',
+      confirmText: 'Yes, Remove',
+      onConfirm: async () => {
+        setCustomLinks(prev => prev.filter(l => !(l.source === sourceId && l.target === targetId)));
+        closeConfirm();
+        toast.success('Link removed!');
+      },
+    });
   }, []);
 
   const handleSaveData = useCallback(async () => {
     if (customLinks.length === 0) {
-      alert('No custom links to save. Please create at least one connection.');
+      toast.error('Please create at least one connection.');
       return;
     }
 
@@ -445,20 +496,22 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
+        toast.error(`API error: ${response?.detail! || response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('API Response:', result);
 
-      alert(`Successfully saved ${payloads.length} connection(s)!`);
-      fetchTableLineage(centerTableId.toString());
       setCustomNodes([]);
       setCustomLinks([]);
-
+      setLinkingMode({ active: false, sourceId: null });
+      setTempLink(null);
+      toast.success(`Successfully saved connection!`);
+      if(handleFetchUpdatedGraph) {
+        await handleFetchUpdatedGraph(centerTableId);
+      }
     } catch (error) {
+      toast.error(`Error saving data`);
       console.error('Error saving data:', error);
-      alert('Error saving data. Check console for details.');
     } finally {
       setIsSaving(false);
     }
@@ -595,43 +648,18 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       arrowDefs.append('marker')
         .attr('id', `arrow-${type}`)
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 10)
+        .attr('refX', 10)  // Position at tip of arrow
         .attr('refY', 0)
-        .attr('orient', 'auto')
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
+        .attr('orient', 'auto')  // This makes arrow follow curve tangent
+        .attr('markerWidth', 8)   // Increased from 6
+        .attr('markerHeight', 8)  // Increased from 6
         .append('path')
         .attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', GRAPH_CONFIG.colors.link[type as keyof typeof GRAPH_CONFIG.colors.link]);
     });
 
     // Render graph data
-    const graphData = processLineageData(lineageData);
     calculateLayout(graphData.nodes, width, height);
-
-    const allNodes = [...graphData.nodes, ...customNodes];
-    const allLinks = [...graphData.links, ...customLinks];
-    const nodeById = new Map(allNodes.map(n => [n.id, n]));
-
-    // currently testing this filter - commenting out for now
-    // const validLinks = allLinks.filter(link =>
-    //   nodeById.has(link.source) && nodeById.has(link.target)
-    // );
-    // above replaced with:
-    const validLinks = allLinks.filter(link => {
-    const sourceNode = nodeById.get(link.source);
-    const targetNode = nodeById.get(link.target);
-    
-    // Only show link if BOTH nodes exist AND at least one is from original data OR both are custom
-    if (!sourceNode || !targetNode) return false;
-    
-    // If link is custom, always show it
-    if (link.type === 'custom') return true;
-    
-    // For original links, only show if both nodes are from original lineage data (not custom)
-    return sourceNode.type !== 'custom' && targetNode.type !== 'custom';
-    });
-    //--
 
     // Draw links
     const linkGroup = g.append('g').attr('class', 'links');
@@ -640,43 +668,73 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
       const linkElements = linkGroup.selectAll('g').data(validLinks).join('g');
 
+      // Before drawing links, calculate offsets for multiple connections
+      const calculateLinkOffset = (links: GraphLink[], currentLink: GraphLink, index: number) => {
+        // Find all links with same source and target
+        const sameConnectionLinks = links.filter(l =>
+          (l.source === currentLink.source && l.target === currentLink.target) ||
+          (l.source === currentLink.target && l.target === currentLink.source)
+        );
+
+        if (sameConnectionLinks.length === 1) return 0;
+
+        // Spread links vertically
+        const totalLinks = sameConnectionLinks.length;
+        const currentIndex = sameConnectionLinks.indexOf(currentLink);
+        const spacing = 15; // pixels between parallel links
+
+        return (currentIndex - (totalLinks - 1) / 2) * spacing;
+      };
+
       // Link paths
       linkElements.append('path')
-        .attr('d', d => {
+        .attr('d', (d, i) => {
           const source = nodeById.get(d.source);
           const target = nodeById.get(d.target);
           if (!source || !target) return '';
 
-          // Determine connection points based on relative position
-          let sx, sy, tx, ty;
-          
-          // Check if target is to the left or right of source
           const isTargetRight = target.x! > source.x!;
-          
+          const offset = calculateLinkOffset(validLinks, d, i);
+
+          let sx, sy, tx, ty;
           if (isTargetRight) {
-            // Connect from right port of source to left port of target
-            sx = source.x! + nodeWidth;  // Right port of source
-            sy = source.y! + nodeHeight / 2;
-            tx = target.x!;  // Left port of target
-            ty = target.y! + nodeHeight / 2;
+            sx = source.x! + nodeWidth;
+            sy = source.y! + nodeHeight / 2 + offset;
+            tx = target.x!;
+            ty = target.y! + nodeHeight / 2 + offset;
           } else {
-            // Connect from left port of source to right port of target
-            sx = source.x!;  // Left port of source
-            sy = source.y! + nodeHeight / 2;
-            tx = target.x! + nodeWidth;  // Right port of target
-            ty = target.y! + nodeHeight / 2;
+            sx = source.x!;
+            sy = source.y! + nodeHeight / 2 + offset;
+            tx = target.x! + nodeWidth;
+            ty = target.y! + nodeHeight / 2 + offset;
           }
-          
+
           const dx = tx - sx;
           const dy = ty - sy;
-          const angle = Math.atan2(dy, dx);
-          const arrowOffset = 10; // Offset to avoid arrow overlapping node
-          const adjustedTx = tx - Math.cos(angle) * arrowOffset;
-          const adjustedTy = ty - Math.sin(angle) * arrowOffset;
-          
-          const offsetX = Math.abs(dx) * 0.5;
+          const distance = Math.sqrt(dx * dx + dy * dy);
 
-          return `M${sx},${sy} C${sx + (dx > 0 ? offsetX : -offsetX)},${sy} ${adjustedTx - (dx > 0 ? offsetX : -offsetX)},${adjustedTy} ${adjustedTx},${adjustedTy}`;
+          // INCREASED gaps - start further from port, end well before node
+          const startGap = 12;  // Start 12px from source port
+          const endGap = 20;    // End 20px before target port (leaves room for arrow)
+
+          const angle = Math.atan2(dy, dx);
+          const actualSx = sx + Math.cos(angle) * startGap;
+          const actualSy = sy + Math.sin(angle) * startGap;
+          const actualTx = tx - Math.cos(angle) * endGap;
+          const actualTy = ty - Math.sin(angle) * endGap;
+
+          const adjustedDx = actualTx - actualSx;
+          const adjustedDy = actualTy - actualSy;
+
+          // Better control points for smooth curves
+          const controlPointDistance = Math.min(Math.abs(adjustedDx) * 0.4, distance * 0.35);
+
+          const cx1 = actualSx + (adjustedDx > 0 ? controlPointDistance : -controlPointDistance);
+          const cy1 = actualSy;
+          const cx2 = actualTx - (adjustedDx > 0 ? controlPointDistance : -controlPointDistance);
+          const cy2 = actualTy;
+
+          return `M${actualSx},${actualSy} C${cx1},${cy1} ${cx2},${cy2} ${actualTx},${actualTy}`;
         })
         .attr('stroke', d => GRAPH_CONFIG.colors.link[d.type])
         .attr('stroke-width', 2)
@@ -830,21 +888,6 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
         g.append('path').attr('d', 'M6 6 18 18');
       });
 
-
-    // // Connection port (circle)
-    // const portGroup = nodes.append('g')
-    //   .attr('class', 'connection-port')
-    //   .attr('transform', `translate(${nodeWidth}, ${nodeHeight / 2})`)
-    //   .style('cursor', 'pointer')
-    //   .on('click', function (event, d) {
-    //     event.stopPropagation();
-    //     if (linkingMode.active && linkingMode.sourceId !== d.id) {
-    //       handleEndLinking(d.id, event);
-    //     } else if (!linkingMode.active) {
-    //       handleStartLinking(d.id, event);
-    //     }
-    //   });
-
     // Connection port (circle with +)
     const portGroup = nodes.append('g')
       .attr('class', 'connection-port')
@@ -866,15 +909,40 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       .attr('stroke', '#F0F0F2').attr('stroke-width', 1)
       .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))')
 
-    portGroup.append('circle')
+    // Left connection port for incoming links
+    const leftPortGroup = nodes.append('g')
+      .attr('class', 'left-connection-port')
+      .attr('transform', `translate(0, ${nodeHeight / 2})`)
+      .style('cursor', 'pointer')
+      .on('click', function (event, d) {
+        event.stopPropagation();
+        if (linkingMode.active && linkingMode.sourceId !== d.id) {
+          handleEndLinking(d.id, event);
+        } else if (!linkingMode.active) {
+          handleStartLinking(d.id, event);
+        }
+      });
+
+    // Left port circle
+    leftPortGroup.append('circle')
       .attr('r', 8)
-      .attr('class', 'connection-port')
-      .attr('transform', `translate(${-nodeWidth}, ${nodeHeight / 100})`)
       .attr('fill', d => linkingMode.active && linkingMode.sourceId === d.id ? '#8b5cf6' : '#fff')
-      .attr('stroke', '#F0F0F2').attr('stroke-width', 1)
-      .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))')
-    // .on('mouseenter', function () { d3.select(this).transition().duration(200).attr('r', 10); })
-    // .on('mouseleave', function () { d3.select(this).transition().duration(200).attr('r', 8); });
+      .attr('stroke', '#F0F0F2')
+      .attr('stroke-width', 1)
+      .style('filter', 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))');
+
+    // Left port icon (minus or arrow-left)
+    // const leftIconSize = 10;
+    // const leftIconGroup = leftPortGroup.append('g')
+    //   .attr('transform', `translate(-5, -5) scale(${leftIconSize / 24})`)
+    //   .attr('stroke', '#757575')
+    //   .attr('stroke-width', 2)
+    //   .attr('fill', 'none')
+    //   .attr('stroke-linecap', 'round')
+    //   .attr('stroke-linejoin', 'round')
+    //   .style('pointer-events', 'none');
+
+    // leftIconGroup.append('path').attr('d', 'M5 12h14');  // Minus icon for incoming
 
     // Port '+' icon using Lucide paths
     const iconSize = 10;
@@ -898,14 +966,16 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       }
     });
 
-  }, [dimensions, lineageData, customNodes, customLinks, linkingMode, tempLink, processLineageData, calculateLayout, handleStartLinking, handleEndLinking, handleCancelLinking, handleRemoveNode, handleRemoveLink]);
+  }, [dimensions, lineageData, customNodes, customLinks, linkingMode, tempLink,
+    graphData, allNodes, allLinks, nodeById, validLinks,
+    handleStartLinking, handleEndLinking, handleCancelLinking, handleRemoveNode, handleRemoveLink])
 
   return (
     <div className="w-full h-screen bg-gradient-to-br from-slate-0 to-slate-50">
       <div className="w-full h-full relative overflow-hidden" ref={containerRef}>
         <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" />
 
-        {showControls ?
+        {addTablesFeat ?
           <div className={`absolute top-2 left-2 bg-white rounded-lg shadow-lg transition-all duration-300 z-10 ${isControlPanelOpen ? 'w-72' : 'w-0'}`}>
             {isControlPanelOpen ? (
               <div className="space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto">
@@ -1003,10 +1073,10 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           >
             <LucideFullscreen size={20} />
           </button>
-          {showControls &&
+          {addTablesFeat &&
             <>
               <button
-                onClick={() => {setIsControlPanelOpen(!isControlPanelOpen);setIsEdgeInfoPanelOpen(false);}}
+                onClick={() => { setIsControlPanelOpen(!isControlPanelOpen); setIsEdgeInfoPanelOpen(false); }}
                 className="p-3 hover:bg-sky-50 transition-colors flex items-center justify-center"
                 title="Add Table"
               >
@@ -1020,7 +1090,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
               >
                 {isSaving ? <LoaderIcon size={20} className="animate-spin" /> : <LucideUploadCloud size={20} />}
               </button>
-              {linkingMode?.active && 
+              {linkingMode?.active &&
                 <button
                   onClick={handleCancelLinking}
                   title='Cancel Linking'
@@ -1034,6 +1104,16 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           }
         </div>
       </div>
+      {(showConfirmModal && confirmConfig) && (
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmText={confirmConfig.confirmText}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={closeConfirm}
+        />
+      )}
     </div>
   );
 };

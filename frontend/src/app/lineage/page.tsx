@@ -153,7 +153,12 @@ const Button: React.FC<{
   </button>
 );
 
-const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineageData }) => {
+interface LineageVisualizationProps {
+  lineageData: LineageGraph;
+  fetchLineageGraph: (tableId: number) => void;
+}
+
+const LineageVisualization: React.FC<LineageVisualizationProps> = ({ lineageData, fetchLineageGraph }) => {
   const renderTableCard = (table: Table, isCenter: boolean = false) => (
     <Card key={table.table_id} className={`${isCenter ? 'border-blue-500 shadow-lg' : 'border-gray-200'} min-w-[200px] m-2`}>
       <CardHeader className="pb-2">
@@ -187,7 +192,7 @@ const LineageVisualization: React.FC<{ lineageData: LineageGraph }> = ({ lineage
 
   return (
     <div className="w-full p-6">
-      <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} />
+      <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleFetchUpdatedGraph={(tableId) => fetchLineageGraph(tableId)} />
       {/* <div className="flex flex-col lg:flex-row items-center gap-8">
 
         <div className="flex-1">
@@ -343,6 +348,7 @@ export default function LineagePage() {
   const [maxDepth, setMaxDepth] = useState(2);
   const [loading, setLoading] = useState(false);
   const [availableTables, setAvailableTables] = useState<Array<{id: number, name: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
 
   // Fetch available tables on component mount
   useEffect(() => {
@@ -355,6 +361,7 @@ export default function LineagePage() {
             id: t.id,
             name: `${t.schema_name}.${t.name}`
           })));
+          setShowSuggestions(true);
         }
       } catch (error) {
         console.error('Failed to fetch tables:', error);
@@ -371,6 +378,8 @@ export default function LineagePage() {
       const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${tableId}/full-graph?max_depth=${maxDepth}`);
       const data = await response.json();
       setLineageData(data);
+      setSearchTerm("");
+      setShowSuggestions(false);
     } catch (error) {
       console.error('Failed to fetch lineage:', error);
     } finally {
@@ -454,11 +463,11 @@ export default function LineagePage() {
                       type="text"
                       placeholder="Search tables..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {setSearchTerm(e.target.value); setShowSuggestions(true);}}
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {searchTerm && (
+                  {(searchTerm && showSuggestions) && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                       {filteredTables.map((table) => (
                         <button
@@ -467,6 +476,7 @@ export default function LineagePage() {
                           onClick={() => {
                             setSelectedTable(table.id);
                             setSearchTerm(table.name);
+                            setShowSuggestions(false);
                           }}
                         >
                           {table.name}
@@ -502,13 +512,14 @@ export default function LineagePage() {
           {lineageData && (
             <Card>
               <CardHeader>
-                <div className="text-lg font-semibold">Data Flow Visualization</div>
-                <div className="text-gray-600">
+                <div className="text-lg font-semibold">{`${lineageData?.center_table?.schema_name}.${(lineageData?.center_table as any)?.table_name || (lineageData?.center_table as any)?.name}`}</div>
+                {/* <div className="text-lg font-semibold">Data Flow Visualization</div> */}
+                {/* <div className="text-gray-600">
                   Lineage graph showing upstream dependencies and downstream consumers
-                </div>
+                </div> */}
               </CardHeader>
               <div className="border-t">
-                <LineageVisualization lineageData={lineageData} />
+                <LineageVisualization lineageData={lineageData} fetchLineageGraph={(tableId) =>fetchLineageGraph(tableId)} />
               </div>
             </Card>
           )}
