@@ -133,13 +133,13 @@ interface ConfirmConfig {
 interface LineageGraphProps {
   lineageData: LineageData;
   addTablesFeat: boolean;
-  handleFetchUpdatedGraph: (tableId: number) => void;
+  handleRefetchUpdatedGraph: (tableId: number) => void;
 }
 
 const API_BASE_URL = 'http://172.188.2.173:8000';
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
-  const { lineageData, addTablesFeat = false, handleFetchUpdatedGraph } = props;
+  const { lineageData, addTablesFeat = false, handleRefetchUpdatedGraph } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -361,9 +361,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleStartLinking = useCallback((nodeId: number, event?: any) => {
     if (event) event.stopPropagation();
-
-    const graphData = processLineageData(lineageData);
-    const allNodes = [...graphData.nodes, ...customNodes];
+    if (linkingMode.active) return; // Prevent starting a new link if already in linking mode
     const node = allNodes.find(n => n.id === nodeId);
 
     if (node && node.x !== undefined && node.y !== undefined) {
@@ -466,7 +464,6 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           connectionType = 'downstream';
           connectionTableId = centerTableId;
         } else {
-          const graphData = processLineageData(lineageData);
           const existingNode = graphData.nodes.find(n => n.id === link.source || n.id === link.target);
 
           if (existingNode) {
@@ -489,26 +486,27 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
       });
 
       // Send first (or loop) payload(s) 
+    for (const payload of payloads) {
       const response = await fetch(`${API_BASE_URL}/api/v1/lineage/table/${centerTableId}/update-lineage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloads[0]),
+        body: JSON.stringify(payload),
       });
-
+      
       if (!response.ok) {
         toast.error(`API error: ${response?.detail! || response.statusText}`);
+        return
       }
 
       const result = await response.json();
+    }
 
       setCustomNodes([]);
       setCustomLinks([]);
       setLinkingMode({ active: false, sourceId: null });
       setTempLink(null);
       toast.success(`Successfully saved connection!`);
-      if(handleFetchUpdatedGraph) {
-        await handleFetchUpdatedGraph(centerTableId);
-      }
+      handleRefetchUpdatedGraph(centerTableId);
     } catch (error) {
       toast.error(`Error saving data`);
       console.error('Error saving data:', error);
@@ -547,9 +545,6 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
 
   const handleFitToView = useCallback(() => {
     if (!svgRef.current || !gRef.current) return;
-
-    const graphData = processLineageData(lineageData);
-    const allNodes = [...graphData.nodes, ...customNodes];
 
     if (allNodes.length === 0) return;
 
@@ -700,7 +695,7 @@ const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => 
           if (!source || !target) return '';
 
           const isTargetRight = target.x! > source.x!;
-          const offset = calculateLinkOffset(validLinks, d, i);
+          const offset = calculateLinkOffset(validLinks, d);
 
           let sx, sy, tx, ty;
           if (isTargetRight) {

@@ -192,7 +192,7 @@ const LineageVisualization: React.FC<LineageVisualizationProps> = ({ lineageData
 
   return (
     <div className="w-full p-6">
-      <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleFetchUpdatedGraph={(tableId) => fetchLineageGraph(tableId)} />
+      <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleRefetchUpdatedGraph={(tableId) => fetchLineageGraph(tableId)} />
       {/* <div className="flex flex-col lg:flex-row items-center gap-8">
 
         <div className="flex-1">

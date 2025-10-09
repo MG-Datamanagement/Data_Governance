@@ -259,7 +259,7 @@ export default function TableDetailsPage() {
     enabled: !!tableId,
   });
 
-  const { data: lineageData, isLoading: lineageLoading } = useQuery({
+  const { data: lineageData, isLoading: lineageLoading, refetch } = useQuery({
     queryKey: ['table-lineage', tableId],
     queryFn: () => fetchTableLineage(tableId),
     enabled: !!tableId && activeTab === 'lineage',
@@ -989,7 +989,7 @@ export default function TableDetailsPage() {
                         {/* React Flow Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
-                            <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleFetchUpdatedGraph={(tableId) => fetchTableLineage(tableId?.toString())} />
+                            <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleRefetchUpdatedGraph={(tableId) => refetch()} />
                             {/* <ReactFlow
                               nodes={nodes}
                               edges={edges}
