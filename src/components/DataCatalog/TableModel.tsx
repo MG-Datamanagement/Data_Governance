@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, AlertTriangle, Loader2, ChevronDown } from "lucide-react";
+import { TableDetails } from "@/app/catalog/[id]/page";
 
 export enum SensitivityLevelEnum {
   PUBLIC = "public",
@@ -12,7 +13,7 @@ export interface TableFormData {
   name: string;
   schema_name: string;
   description: string;
-  table_type: "table" | "view";
+  table_type: string;
   sensitivity_level: string;
   is_active: boolean;
   is_certified: boolean;
@@ -30,7 +31,7 @@ interface TableModalProps {
   sourceList: any[];
   domainList: any[];
   userList: any[];
-  table?: Partial<TableFormData>;
+  table?: TableDetails;
 }
 
 const TableModal: React.FC<TableModalProps> = ({
@@ -56,6 +57,7 @@ const TableModal: React.FC<TableModalProps> = ({
     domain_id: "",
     owner_id: "",
   });
+  console.log(table, "tba;le ==>>")
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,6 +66,9 @@ const TableModal: React.FC<TableModalProps> = ({
       setFormData((prev) => ({
         ...prev,
         ...table,
+        data_source_id: table.data_source.id,
+        domain_id: table.domain.id,
+        owner_id: table.owner.id,
       }));
     } else {
       setFormData({
@@ -107,7 +112,14 @@ const TableModal: React.FC<TableModalProps> = ({
       e.preventDefault();
       if (validate()) {
         onSubmit({
-          ...formData,
+          name: formData.name,
+          schema_name: formData.schema_name,
+          description: formData.description,
+          table_type: "table",
+          sensitivity_level: formData.sensitivity_level,
+          is_active: formData.is_active,
+          is_certified: formData.is_certified,
+          certification_notes: formData.certification_notes,
           data_source_id: Number(formData.data_source_id),
           domain_id: Number(formData.domain_id),
           owner_id: Number(formData.owner_id),
@@ -294,7 +306,7 @@ const TableModal: React.FC<TableModalProps> = ({
                   disabled={isLoading}
                 >
                   <option value="">Select source</option>
-                  {sourceList.map((s) => (
+                  {(sourceList || []).map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                     </option>
@@ -366,7 +378,7 @@ const TableModal: React.FC<TableModalProps> = ({
                   disabled={isLoading}
                 >
                   <option value="">Select owner</option>
-                  {userList.map((u) => (
+                  {(userList || []).map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
                     </option>

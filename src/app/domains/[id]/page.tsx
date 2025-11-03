@@ -7,8 +7,15 @@ import {
   Database,
   User,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Pencil,
+  Trash2
 } from 'lucide-react';
+import NewDomainModal, { DomainFormData } from '@/components/Domains/NewDomainModal';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { ConfirmModal } from '@/components/common/ConfirmModalNew';
+import { useRouter } from 'next/navigation';
 
 interface Domain {
   id: number;
@@ -46,37 +53,92 @@ interface TablesResponse {
   total: number;
 }
 
+const API_BASE_URL = "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1"
+
+async function updateDomain(domainId: string, domainData: DomainFormData): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/domains/${domainId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(domainData),
+  });
+  if (!response.ok) throw new Error('Failed to update domain');
+}
+
+async function deleteDomain(domainId: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/domains/${domainId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error('Failed to delete domain');
+  return data
+}
+
 export default function DomainDetailPage({ params }: { params: { id: string } }) {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchDomain = async () => {
-      try {
-        const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains/${params.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch domain');
-        }
-        const domainData: Domain = await response.json();
-        setDomain(domainData);
-        
-        // Fetch tables for this domain
-        const tablesResponse = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tables?domain_ids=${params.id}`);
-        if (tablesResponse.ok) {
-          const tablesData: TablesResponse = await tablesResponse.json();
-          setTables(tablesData.tables);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load domain');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDomain();
   }, [params.id]);
+
+  const fetchDomain = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/domains/${params.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch domain');
+      }
+      const domainData: Domain = await response.json();
+      setDomain(domainData);
+      
+      // Fetch tables for this domain
+      const tablesResponse = await fetch(`${API_BASE_URL}/tables?domain_ids=${params.id}`);
+      if (tablesResponse.ok) {
+        const tablesData: TablesResponse = await tablesResponse.json();
+        setTables(tablesData.tables);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load domain');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  const updateDomainMutation = useMutation({
+    mutationFn: ({ domainId, domainData }: { domainId: string; domainData: DomainFormData }) =>
+      updateDomain(domainId, domainData),
+    onSuccess: () => {
+      fetchDomain();
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('Failed to update domain details:', error);
+    }
+  });
+
+  const deleteDomainMutation = useMutation({
+    mutationFn: (domainId : string ) =>
+      deleteDomain(domainId),
+    onSuccess: (data) => {
+      toast.success(data?.message || "Domain deleted successfully")
+      setIsDeleteModalOpen(false);
+      router.push('/domains')
+    },
+    onError: (error) => {
+      console.error('Failed to delete domain:', error);
+    }
+  });
 
   if (loading) {
     return (
@@ -166,8 +228,29 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
             </div>
           </div>
           
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => {
+                setIsModalOpen(true);
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title='Edit'
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                setIsDeleteModalOpen(true)
+              }}
+              className="p-2 text-red-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title='Delete'
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+
           <div 
-            className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+            className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
             style={{ backgroundColor: domain.color }}
             title={`Domain color: ${domain.color}`}
           ></div>
@@ -298,6 +381,24 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
           </div>
         </div>
       </div>
+
+      <NewDomainModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={(domainData: DomainFormData) => updateDomainMutation.mutate({domainId: domain?.id?.toString(), domainData})}
+        isLoading={updateDomainMutation.isPending}
+        domain={domain}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+        }}
+        onConfirm={() => deleteDomainMutation.mutate(domain?.id?.toString())}
+        isLoading={deleteDomainMutation.isPending}
+        entityName={`${domain.name} Domain`}
+      />
     </div>
   );
 }

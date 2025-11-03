@@ -20,6 +20,7 @@ export interface LineageData {
     table_name: string;
     schema_name: string;
     data_source_name: string;
+    data_source_base64_url: string;
   };
   upstream_links: LineageLink[];
   downstream_links: LineageLink[];

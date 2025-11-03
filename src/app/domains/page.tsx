@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import {
-  Folder,
-  Database,
-  User
-} from 'lucide-react';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Folder, Database, User, Plus } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import NewDomainModal, {
+  DomainFormData,
+} from "@/components/Domains/NewDomainModal";
+import toast from "react-hot-toast";
 
-interface Domain {
+export interface Domain {
   id: number;
   urn?: string;
   name: string;
@@ -29,30 +30,63 @@ interface DomainsResponse {
   has_next: boolean;
 }
 
+async function createDomain(domainData: DomainFormData): Promise<Domain> {
+  const response = await fetch(
+    `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(domainData),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error("Failed to create Domain");
+  return data;
+}
+
 export default function DomainsPage() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchDomains = async () => {
-      try {
-        const response = await fetch('https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains');
-        if (!response.ok) {
-          throw new Error('Failed to fetch domains');
-        }
-        const data: DomainsResponse = await response.json();
-         console.log("Domain API response:", data);
-        setDomains(data.domains);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load domains');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDomains();
   }, []);
+
+  const fetchDomains = async () => {
+    try {
+      const response = await fetch(
+        "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains"
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch domains");
+      }
+      const data: DomainsResponse = await response.json();
+      console.log("Domain API response:", data);
+      setDomains(data.domains);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load domains");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDomainMutation = useMutation({
+    mutationFn: (domainData: DomainFormData) => createDomain(domainData),
+    onSuccess: (data) => {
+      setIsModalOpen(false);
+      fetchDomains();
+      toast.success("Successfully Domain Created!");
+      console.log(data, '++>>>')
+    },
+    onError: (error) => {
+      toast.error("Failed to create domain");
+      console.error("Failed to create domain:", error);
+    },
+  });
 
   if (loading) {
     return (
@@ -75,7 +109,9 @@ export default function DomainsPage() {
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="flex">
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error loading domains</h3>
+              <h3 className="text-sm font-medium text-red-800">
+                Error loading domains
+              </h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
               </div>
@@ -88,24 +124,42 @@ export default function DomainsPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Data Domains</h1>
-        <p className="text-lg text-gray-600 mt-2">
-          Organize your data assets by business domain and ownership
-        </p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Data Domains</h1>
+          <p className="text-lg text-gray-600 mt-2">
+            Organize your data assets by business domain and ownership
+          </p>
+        </div>
+        <div>
+          <button
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Domain
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">All Domains ({domains.length})</h2>
+          <h2 className="text-lg font-medium text-gray-900">
+            All Domains ({domains.length})
+          </h2>
         </div>
-        
+
         <div className="divide-y divide-gray-200">
           {domains.map((domain) => (
-            <div key={domain.id} className="p-6 hover:bg-gray-50 transition-colors">
+            <div
+              key={domain.id}
+              className="p-6 hover:bg-gray-50 transition-colors"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: `${domain.color}20` }}
                   >
@@ -122,18 +176,20 @@ export default function DomainsPage() {
                       {domain.name}
                     </Link>
                     <p className="text-gray-600 mt-1">{domain.description}</p>
-                    
+
                     {domain.urn && (
                       <div className="mt-2 mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-500">URN:</span>
+                          <span className="text-xs font-medium text-gray-500">
+                            URN:
+                          </span>
                           <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700 break-all">
                             {domain.urn}
                           </code>
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center space-x-6 mt-3 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Database className="w-4 h-4" />
@@ -146,14 +202,17 @@ export default function DomainsPage() {
                         </div>
                       )}
                       <div>
-                        <span>Created: {new Date(domain.created_at).toLocaleDateString()}</span>
+                        <span>
+                          Created:{" "}
+                          {new Date(domain.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col items-end space-y-2">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                     style={{ backgroundColor: domain.color }}
                     title={`Domain color: ${domain.color}`}
@@ -163,15 +222,26 @@ export default function DomainsPage() {
             </div>
           ))}
         </div>
-        
+
         {domains.length === 0 && (
           <div className="p-12 text-center">
             <Folder className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No domains found</h3>
-            <p className="text-gray-600">Get started by creating your first data domain.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No domains found
+            </h3>
+            <p className="text-gray-600">
+              Get started by creating your first data domain.
+            </p>
           </div>
         )}
       </div>
+
+      <NewDomainModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={(data: DomainFormData) => createDomainMutation.mutate(data)}
+        isLoading={createDomainMutation.isPending}
+      />
     </div>
   );
 }

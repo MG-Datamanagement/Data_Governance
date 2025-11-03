@@ -8,8 +8,16 @@ import {
   ArrowLeft,
   Calendar,
   Hash,
-  BarChart3
+  BarChart3,
+  Pencil,
+  Trash2
 } from 'lucide-react';
+import { ConfirmModal } from '@/components/common/ConfirmModalNew';
+import NewTagModal, { TagFormData } from '@/components/Tags/NewTagModal';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { TagsResponse } from '../page';
 
 interface Tag {
   id: number;
@@ -53,41 +61,115 @@ interface TablesResponse {
   total: number;
 }
 
+
+const API_BASE_URL = "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1"
+
+async function updateTag(tagId: string, tagData: TagFormData): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(tagData),
+  });
+  if (!response.ok) throw new Error('Failed to update Tag');
+}
+
+async function deleteTag(tagId: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error('Failed to delete Tag');
+  return data
+}
+
 export default function TagDetailPage({ params }: { params: { id: string } }) {
   const [tag, setTag] = useState<Tag | null>(null);
   const [taggedTables, setTaggedTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchTag = async () => {
-      try {
-        const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tags/${params.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch tag');
-        }
-        const tagData: Tag = await response.json();
-        setTag(tagData);
-        
-        // Fetch tables that use this tag
-        const tablesResponse = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tables?page=1&per_page=100`);
-        if (tablesResponse.ok) {
-          const tablesData: TablesResponse = await tablesResponse.json();
-          // Filter tables that have this tag
-          const filtered = tablesData.tables.filter(table => 
-            table.tags && table.tags.some((t: any) => t.id === parseInt(params.id))
-          );
-          setTaggedTables(filtered);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load tag');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTag();
   }, [params.id]);
+
+   const { data: tags, isLoading } = useQuery({
+    queryKey: ['tags'],
+    queryFn: () => fetchTags(),
+  });
+
+  const fetchTag = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags/${params.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tag');
+      }
+      const tagData: Tag = await response.json();
+      setTag(tagData);
+      
+      // Fetch tables that use this tag
+      const tablesResponse = await fetch(`${API_BASE_URL}/tables?page=1&per_page=100`);
+      if (tablesResponse.ok) {
+        const tablesData: TablesResponse = await tablesResponse.json();
+        // Filter tables that have this tag
+        const filtered = tablesData.tables.filter(table => 
+          table.tags && table.tags.some((t: any) => t.id === parseInt(params.id))
+        );
+        setTaggedTables(filtered);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tag');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  const fetchTags = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tags`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tags');
+      }
+      const data: TagsResponse = await response.json();
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tags');
+    }
+  };
+  
+  const updateTagMutation = useMutation({
+    mutationFn: ({ tagId, tagData }: { tagId: string; tagData: TagFormData }) =>
+      updateTag(tagId, tagData),
+    onSuccess: () => {
+      fetchTag();
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('Failed to update tag details:', error);
+    }
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (tagId : string ) =>
+      deleteTag(tagId),
+    onSuccess: (data) => {
+      toast.success(data?.message || "Tag deleted successfully")
+      setIsDeleteModalOpen(false);
+      router.push('/tags')
+    },
+    onError: (error) => {
+      console.error('Failed to delete Tag:', error);
+    }
+  });
 
   if (loading) {
     return (
@@ -180,6 +262,27 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
                 <span>Status: {tag.is_active ? 'Active' : 'Inactive'}</span>
               </div>
             </div>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => {
+                setIsModalOpen(true);
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title='Edit'
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => {
+                setIsDeleteModalOpen(true)
+              }}
+              className="p-2 text-red-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title='Delete'
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
           </div>
           
           <div 
@@ -323,6 +426,25 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
+
+      <NewTagModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={(tagData: TagFormData) => updateTagMutation.mutate({tagId: tag?.id?.toString(), tagData})}
+        isLoading={updateTagMutation.isPending}
+        tagsList={tags}
+        tag={tag}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+        }}
+        onConfirm={() => deleteTagMutation.mutate(tag?.id?.toString())}
+        isLoading={deleteTagMutation.isPending}
+        entityName={`${tag.name} Tag`}
+      />
     </div>
   );
 }

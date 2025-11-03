@@ -419,7 +419,7 @@ export default function CatalogPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={(data: TableFormData) => createTableMutation.mutate(data)}
         isLoading={createTableMutation.isPending}
-        sourceList={datasources?.data_sources}
+        sourceList={datasources?.data_sources as any[]}
         domainList={domainsData?.domains as any[]}
         userList={users?.users}
       />

@@ -42,10 +42,12 @@ import { normalizeLineageData } from '@/utils/utils';
 import { ConfirmModal } from '@/components/common/ConfirmModalNew';
 import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
+import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
+import { DomainsResponse } from '../page';
 
 const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
 
-interface TableDetails {
+export interface TableDetails {
   id: number;
   urn?: string;
   name: string;
@@ -144,13 +146,13 @@ async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promi
   if (!response.ok) throw new Error('Failed to toggle table favorite');
 }
 
-async function updateTableDescription(tableId: string, description: string): Promise<void> {
+async function updateTable(tableId: string, tableData: TableFormData): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ description }),
+    body: JSON.stringify(tableData),
   });
   if (!response.ok) throw new Error('Failed to update table description');
 }
@@ -188,6 +190,34 @@ async function updateColumnDescription(tableId: string, columnId: number, descri
     body: JSON.stringify({ description }),
   });
   if (!response.ok) throw new Error('Failed to update column description');
+}
+
+async function fetchUsers(): Promise<any> {
+  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/users`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch users');
+  return response.json();
+}
+
+async function fetchDatasources(): Promise<any> {
+  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/data-sources`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch data sources')
+  return response.json();
+}
+
+async function fetchDomains(): Promise<DomainsResponse> {
+  const response = await fetch(`${API_BASE_URL}/domains`);
+  if (!response.ok) throw new Error('Failed to fetch domains');
+  return response.json();
 }
 
 interface LineageTable {
@@ -273,7 +303,7 @@ export default function TableDetailsPage() {
   
   const [activeTab, setActiveTab] = useState<'schema' | 'lineage' | 'quality' | 'usage'>('schema');
   const [showTagModal, setShowTagModal] = useState(false);
-  const [editingDescription, setEditingDescription] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState('');
   const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
   const [columnDescriptions, setColumnDescriptions] = useState<{[key: number]: string}>({});
@@ -299,6 +329,20 @@ export default function TableDetailsPage() {
     enabled: !!tableId && activeTab === 'lineage',
   });
 
+  const { data: domainsData } = useQuery({
+    queryKey: ['domains'],
+    queryFn: () => fetchDomains(),
+  });
+
+  const {data: users} = useQuery({
+    queryKey: ['users'],
+    queryFn: () => fetchUsers(),
+  })
+
+  const {data: datasources} = useQuery({
+    queryKey: ['datasources'],
+    queryFn: () => fetchDatasources(),
+  })
   // For now, let's use default React Flow nodes to ensure edges work
   const nodeTypes = {
     // We'll use default nodes for better compatibility
@@ -497,12 +541,12 @@ export default function TableDetailsPage() {
     }
   });
 
-  const updateTableDescriptionMutation = useMutation({
-    mutationFn: ({ tableId, description }: { tableId: string; description: string }) =>
-      updateTableDescription(tableId, description),
+  const updateTableMutation = useMutation({
+    mutationFn: ({ tableId, tableData }: { tableId: string; tableData: TableFormData }) =>
+      updateTable(tableId, tableData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
-      setEditingDescription(false);
+      setEditing(false);
     },
     onError: (error) => {
       console.error('Failed to update table description:', error);
@@ -661,7 +705,7 @@ export default function TableDetailsPage() {
 
               {/* Description */}
               <div className="mb-4">
-                {editingDescription ? (
+                {/* {editing ? (
                   <div className="space-y-3">
                     <textarea
                       value={description}
@@ -673,16 +717,16 @@ export default function TableDetailsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          updateTableDescriptionMutation.mutate({ tableId, description });
+                          updateTableMutation.mutate({ tableId, description });
                         }}
-                        disabled={updateTableDescriptionMutation.isPending}
+                        disabled={updateTableMutation.isPending}
                         className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                       >
-                        {updateTableDescriptionMutation.isPending ? 'Saving...' : 'Save'}
+                        {updateTableMutation.isPending ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => {
-                          setEditingDescription(false);
+                          setEditing(false);
                           setDescription(table.description || '');
                         }}
                         className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors"
@@ -691,13 +735,13 @@ export default function TableDetailsPage() {
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : ( */}
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-gray-700">
                       {table.description || 'No description available. Click the edit button to add one.'}
                     </p>
                   </div>
-                )}
+                {/* )} */}
               </div>
 
               {/* Tags */}
@@ -745,7 +789,7 @@ export default function TableDetailsPage() {
               </button>
               <button
                 onClick={() => {
-                  setEditingDescription(true);
+                  setEditing(true);
                   setDescription(table.description || '');
                 }}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1330,6 +1374,17 @@ export default function TableDetailsPage() {
         onConfirm={() => deleteTableMutation.mutate(tableId)}
         isLoading={deleteTableMutation.isPending}
         entityName={`${table.name} Table`}
+      />
+
+      <TableModal
+        isOpen={editing}
+        onClose={() => setEditing(false)}
+        onSubmit={(tableData: TableFormData) => updateTableMutation.mutate({tableId: table?.id?.toString(), tableData})}
+        isLoading={updateTableMutation.isPending}
+        sourceList={datasources?.data_sources}
+        domainList={domainsData?.domains as any[]}
+        userList={users?.users}
+        table={table}
       />
     </div>
   );

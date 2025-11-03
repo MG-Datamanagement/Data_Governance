@@ -5,11 +5,14 @@ import Link from 'next/link';
 import {
   Tag,
   Hash,
-  BarChart3
+  BarChart3,
+  Plus
 } from 'lucide-react';
 import URNDisplay from '../../components/common/URNDisplay';
+import NewTagModal, { TagFormData } from '@/components/Tags/NewTagModal';
+import { useMutation } from '@tanstack/react-query';
 
-interface Tag {
+export interface Tag {
   id: number;
   urn?: string;
   name: string;
@@ -23,33 +26,66 @@ interface Tag {
   usage_count: number;
 }
 
-interface TagsResponse {
+export interface TagsResponse {
   items: Tag[];
 }
+
+const API_BASE_URL = "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1"
+
+async function createTag(tagData: TagFormData): Promise<Tag> {
+  const response = await fetch(
+    `${API_BASE_URL}/tags`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(tagData),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error("Failed to create Tag");
+  return data;
+}
+
 
 export default function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const response = await fetch('https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tags');
-        if (!response.ok) {
-          throw new Error('Failed to fetch tags');
-        }
-        const data: TagsResponse = await response.json();
-        setTags(data.items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load tags');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTags();
   }, []);
+
+  const fetchTags = async () => {
+    try {
+      const response = await fetch('https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tags');
+      if (!response.ok) {
+        throw new Error('Failed to fetch tags');
+      }
+      const data: TagsResponse = await response.json();
+      setTags(data.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tags');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  const createTagMutation = useMutation({
+    mutationFn: (tagData: TagFormData) =>
+      createTag(tagData),
+    onSuccess: () => {
+      fetchTags();
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create tag:', error);
+    }
+  });
 
   if (loading) {
     return (
@@ -91,11 +127,24 @@ export default function TagsPage() {
 
   return (
     <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Tags</h1>
-        <p className="text-lg text-gray-600 mt-2">
-          Classify and organize your data assets with descriptive tags
-        </p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Tags</h1>
+          <p className="text-lg text-gray-600 mt-2">
+            Classify and organize your data assets with descriptive tags
+          </p>
+        </div>
+        <div>
+          <button
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Tag
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
@@ -254,6 +303,14 @@ export default function TagsPage() {
           )}
         </div>
       </div>
+
+      <NewTagModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={(tagData: TagFormData) => createTagMutation.mutate(tagData)}
+        isLoading={createTagMutation.isPending}
+        tagsList={tags}
+      />
     </div>
   );
 }
