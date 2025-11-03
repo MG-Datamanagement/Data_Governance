@@ -23,6 +23,7 @@ interface Table {
   confidence_score?: number;
   depth?: number;
   direction?: string;
+  data_source_base64_url: string;
 }
 
 interface LineageGraph {
