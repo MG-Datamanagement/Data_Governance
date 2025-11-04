@@ -23,7 +23,8 @@ import {
   Plus,
   Search,
   Trash2,
-  Loader2
+  Loader2,
+  Minus
 } from 'lucide-react';
 import Link from 'next/link';
 import URNDisplay from '../../../components/common/URNDisplay';
@@ -44,8 +45,6 @@ import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
 import { DomainsResponse } from '../page';
-
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
 
 export interface TableDetails {
   id: number;
@@ -113,6 +112,9 @@ interface Tag {
   is_system_tag: boolean;
 }
 
+const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBiYW5rLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2MjI2Njc3OCwidHlwZSI6ImFjY2VzcyJ9.cUxiZvjStGkBxwD9_IXcSU6btR0kNldoGbh2HftdqkE"
+
 async function fetchTableDetails(tableId: string): Promise<TableDetails> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);
   if (!response.ok) throw new Error('Failed to fetch table details');
@@ -136,14 +138,30 @@ async function addTagsToTable(tableId: string, tagIds: number[]): Promise<void> 
   if (!response.ok) throw new Error('Failed to add tags to table');
 }
 
-async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/tables/${tableId}/favorite`, {
-    method: isFavorited ? 'DELETE' : 'POST',
+async function removeTagToTable(tableId: string, tagId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/tables/${tableId}/tags/${tagId}`, {
+    method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
   });
+  if (!response.ok) throw new Error('Failed to remove tags to table');
+  return response.json();
+}
+
+async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promise<void> {
+  console.log(isFavorited, "is fav >>>>")
+  const response = await fetch(`${API_BASE_URL}/tables/${tableId}/favorite`, {
+    method: isFavorited ? 'DELETE' : 'POST',
+    headers: {
+      "Content-Type": 'application/json',
+      "Authorization": `Bearer ${ACCESS_TOKEN}`,
+      "Access-Control-Allow-Origin": "*"
+    },
+    redirect: "follow"
+  });
   if (!response.ok) throw new Error('Failed to toggle table favorite');
+  return response.json();
 }
 
 async function updateTable(tableId: string, tableData: TableFormData): Promise<void> {
@@ -193,7 +211,7 @@ async function updateColumnDescription(tableId: string, columnId: number, descri
 }
 
 async function fetchUsers(): Promise<any> {
-  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/users`, {
+  const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -204,7 +222,7 @@ async function fetchUsers(): Promise<any> {
 }
 
 async function fetchDatasources(): Promise<any> {
-  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/data-sources`, {
+  const response = await fetch(`${API_BASE_URL}/data-sources`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -309,10 +327,12 @@ export default function TableDetailsPage() {
   const [columnDescriptions, setColumnDescriptions] = useState<{[key: number]: string}>({});
   const [searchTags, setSearchTags] = useState('');
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [removeTag, setRemoveTag] = useState<Tag | undefined>();
   const [isFavorited, setIsFavorited] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [tableStats, setTableStats] = useState<TableStats | undefined>();
   const [isTableStatsLoading, setIsTableStatsLoading] = useState<boolean>(false);
+  const [isRemoveTagModalOpen, setIsRemoveTagModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -510,7 +530,7 @@ export default function TableDetailsPage() {
     }
   }, [table]);
 
-  const { data: availableTags } = useQuery({
+  const { data: availableTags, isLoading: isTagsLoading } = useQuery({
     queryKey: ['available-tags'],
     queryFn: fetchAvailableTags,
     enabled: showTagModal,
@@ -527,6 +547,21 @@ export default function TableDetailsPage() {
     },
     onError: (error) => {
       console.error('Failed to add tags:', error);
+    }
+  });
+
+  const removeTagMutation = useMutation({
+    mutationFn: ({ tableId, tagId }: { tableId: string; tagId: number }) =>
+      removeTagToTable(tableId, tagId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['table', tableId] });
+      setIsRemoveTagModalOpen(false);
+      setRemoveTag(undefined);
+      setSearchTags('');
+      toast.success(data?.message || "Tag removed from table successfully")
+    },
+    onError: (error) => {
+      console.error('Failed to remove tag:', error);
     }
   });
 
@@ -705,43 +740,11 @@ export default function TableDetailsPage() {
 
               {/* Description */}
               <div className="mb-4">
-                {/* {editing ? (
-                  <div className="space-y-3">
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Add a description for this table..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={3}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          updateTableMutation.mutate({ tableId, description });
-                        }}
-                        disabled={updateTableMutation.isPending}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                      >
-                        {updateTableMutation.isPending ? 'Saving...' : 'Save'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditing(false);
-                          setDescription(table.description || '');
-                        }}
-                        className="px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : ( */}
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-gray-700">
-                      {table.description || 'No description available. Click the edit button to add one.'}
-                    </p>
-                  </div>
-                {/* )} */}
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-gray-700">
+                    {table.description || 'No description available. Click the edit button to add one.'}
+                  </p>
+                </div>
               </div>
 
               {/* Tags */}
@@ -750,7 +753,7 @@ export default function TableDetailsPage() {
                 {table.tags?.map(tag => (
                   <span
                     key={tag.id}
-                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium gap-2"
                     style={{
                       backgroundColor: tag.color + '20',
                       color: tag.color,
@@ -758,6 +761,16 @@ export default function TableDetailsPage() {
                     }}
                   >
                     {tag.name}
+                    <button
+                      onClick={() => {
+                        setRemoveTag(tag as Tag)
+                        setIsRemoveTagModalOpen(true)
+                      }}
+                      title="Remove Tag"
+                      className="inline-flex items-center text-red-300 border-none hover:text-red-400 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </span>
                 ))}
                 <button
@@ -1270,7 +1283,7 @@ export default function TableDetailsPage() {
         </div>
       </div>
 
-      {/* Tag Modal */}
+      {/* Add Tag Modal */}
       {showTagModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -1366,7 +1379,7 @@ export default function TableDetailsPage() {
         </div>
       )}
 
-      <ConfirmModal
+      {isDeleteModalOpen && <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
@@ -1374,9 +1387,9 @@ export default function TableDetailsPage() {
         onConfirm={() => deleteTableMutation.mutate(tableId)}
         isLoading={deleteTableMutation.isPending}
         entityName={`${table.name} Table`}
-      />
+      />}
 
-      <TableModal
+      {editing && <TableModal
         isOpen={editing}
         onClose={() => setEditing(false)}
         onSubmit={(tableData: TableFormData) => updateTableMutation.mutate({tableId: table?.id?.toString(), tableData})}
@@ -1385,7 +1398,17 @@ export default function TableDetailsPage() {
         domainList={domainsData?.domains as any[]}
         userList={users?.users}
         table={table}
-      />
+      />}
+
+      {isRemoveTagModalOpen && <ConfirmModal
+        isOpen={isRemoveTagModalOpen}
+        onClose={() => {
+          setIsRemoveTagModalOpen(false);
+        }}
+        onConfirm={() => removeTagMutation.mutate({tableId, tagId:removeTag?.id})}
+        isLoading={removeTagMutation.isPending}
+        entityName={`${removeTag?.name} Tag`}
+      />}
     </div>
   );
 }

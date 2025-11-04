@@ -57,7 +57,6 @@ const TableModal: React.FC<TableModalProps> = ({
     domain_id: "",
     owner_id: "",
   });
-  console.log(table, "tba;le ==>>")
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -133,7 +132,7 @@ const TableModal: React.FC<TableModalProps> = ({
 
   function capitalize(word: string): string {
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -147,7 +146,7 @@ const TableModal: React.FC<TableModalProps> = ({
             <p className="text-sm text-slate-500 mt-1">
               {table
                 ? "Update the table’s details"
-                : "Add a new table to the catalog"}
+                : "Add a new Table"}
             </p>
           </div>
           <button
@@ -178,9 +177,9 @@ const TableModal: React.FC<TableModalProps> = ({
                 }
                 className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.name ? "border-red-300 bg-red-50" : "border-slate-300"
-                }`}
+                } disabled:bg-gray-100 disabled:border-slate-300 disabled:cursor-not-allowed`}
                 placeholder="Table name"
-                disabled={isLoading}
+                disabled={isLoading || (table?.id ? true : false)}
               />
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -203,9 +202,9 @@ const TableModal: React.FC<TableModalProps> = ({
                   errors.schema_name
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300"
-                }`}
+                } disabled:bg-gray-100 disabled:border-slate-300 disabled:cursor-not-allowed`}
                 placeholder="Schema name"
-                disabled={isLoading}
+                disabled={isLoading || (table?.id ? true : false)}
               />
               {errors.schema_name && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -302,8 +301,8 @@ const TableModal: React.FC<TableModalProps> = ({
                     errors.data_source_id
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300"
-                  }`}
-                  disabled={isLoading}
+                  } disabled:bg-gray-100 disabled:border-slate-300 disabled:cursor-not-allowed`}
+                  disabled={isLoading || (table?.id ? true : false)}
                 >
                   <option value="">Select source</option>
                   {(sourceList || []).map((s) => (

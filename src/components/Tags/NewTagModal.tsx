@@ -95,8 +95,8 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               {tag
-                ? "Update the tag’s details"
-                : "Add a new tag to the catalog"}
+                ? "Update the Tag’s details"
+                : "Add a new Tag"}
             </p>
           </div>
           <button

@@ -96,7 +96,7 @@ const NewDomainModal: React.FC<NewDomainModalProps> = ({
             <p className="text-sm text-slate-500 mt-1">
               {domain
                 ? "Update the domain’s details"
-                : "Add a new domain to the catalog"}
+                : "Add a new domain"}
             </p>
           </div>
           <button

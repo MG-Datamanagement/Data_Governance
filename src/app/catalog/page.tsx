@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Search,
@@ -10,14 +10,16 @@ import {
   Eye,
   Star,
   Clock,
-  Plus
+  Plus,
+  Loader2,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import URNDisplay from '../../components/common/URNDisplay';
 import toast from 'react-hot-toast';
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
-
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+import { useRouter } from 'next/navigation';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Table {
   id: number;
@@ -64,6 +66,69 @@ export interface DomainsResponse {
   total: number;
 }
 
+export interface SearchTablesResponse {
+  results: TableSummary[];
+  total: number;
+  page: number;
+  size: number;
+  has_next: boolean;
+  query: string | null;
+  query_fields: string[];
+  filters_applied: {
+    domain_ids: number[] | null;
+    data_source_ids: number[] | null;
+    owner_ids: number[] | null;
+    sensitivity_levels: string[] | null;
+    is_certified: boolean | null;
+  };
+  search_time_ms: number;
+}
+
+export interface TableSummary {
+  id: number;
+  name: string;
+  schema_name: string;
+  description: string | null;
+  table_type: string;
+  sensitivity_level: string;
+  is_active: boolean;
+  is_certified: boolean;
+  certification_notes: string | null;
+  urn: string | null;
+  data_source_id: number;
+  data_source_name: string;
+  data_source_type: string;
+  domain_id: number;
+  domain_name: string;
+  owner_id: number;
+  owner_name: string;
+  created_at: string;
+  updated_at: string;
+  last_schema_check_at: string | null;
+  row_count: number;
+  size_bytes: number;
+  query_count_last_30d: number;
+  unique_users_last_30d: number;
+  column_count: number;
+  tags: Tag[];
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string | null;
+  parent_tag_id: number | null;
+  urn: string | null;
+  is_system_tag: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  usage_count: number;
+}
+
+const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+
 async function fetchTables(page: number = 1, search: string = '', domain: string = ''): Promise<TablesResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -79,7 +144,7 @@ async function fetchTables(page: number = 1, search: string = '', domain: string
 }
 
 async function createTable(tableData: TableFormData): Promise<Table[]> {
-  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tables`, {
+  const response = await fetch(`${API_BASE_URL}/tables`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -92,7 +157,7 @@ async function createTable(tableData: TableFormData): Promise<Table[]> {
 }
 
 async function fetchUsers(): Promise<any> {
-  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/users`, {
+  const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -103,7 +168,7 @@ async function fetchUsers(): Promise<any> {
 }
 
 async function fetchDatasources(): Promise<any> {
-  const response = await fetch(`https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/data-sources`, {
+  const response = await fetch(`${API_BASE_URL}/data-sources`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -116,6 +181,17 @@ async function fetchDatasources(): Promise<any> {
 async function fetchDomains(): Promise<DomainsResponse> {
   const response = await fetch(`${API_BASE_URL}/domains`);
   if (!response.ok) throw new Error('Failed to fetch domains');
+  return response.json();
+}
+
+async function searchTables(query: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/search?q=${query}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to search tables');
   return response.json();
 }
 
@@ -148,11 +224,14 @@ export default function CatalogPage() {
   const [selectedDomain, setSelectedDomain] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [queryResults, setQueryResults] = useState<SearchTablesResponse | undefined>();
 
+  const router = useRouter();
+  const debouncedSearch = useDebounce(search, 600);
 
   const { data: tablesData, isLoading: tablesLoading, refetch: refetchTables } = useQuery({
-    queryKey: ['tables', page, search, selectedDomain],
-    queryFn: () => fetchTables(page, search, selectedDomain),
+    queryKey: ['tables', page, selectedDomain],
+    queryFn: () => fetchTables(page, selectedDomain),
   });
 
   const { data: domainsData } = useQuery({
@@ -184,23 +263,64 @@ export default function CatalogPage() {
       },
     });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1); // Reset to first page when searching
+  const searchTablesMutation = useMutation({
+    mutationFn: (query : string ) =>
+      searchTables(query),
+    onSuccess: (data) => {
+      console.log(data)
+      setIsModalOpen(false)
+      setQueryResults(data)
+    },
+    onError: (error) => {
+      console.error('Failed to create table:', error);
+    },
+  });
+
+    useEffect(() => {
+    if (debouncedSearch.trim() === "") {
+      setQueryResults(undefined);
+      return;
+    }
+
+    // Auto-trigger search
+    searchTablesMutation.mutate(debouncedSearch);
+  }, [debouncedSearch]);
+
+  const handleChange = (query: string) => {
+    if(query === ""){
+      setSearch(query)
+      setQueryResults(undefined)
+    } else {
+      setSearch(query)
+    }
+  }
+
+  const handleSelect = (tableId: number) => {
+    router.push(`/catalog/${tableId}`);
+    setQueryResults(undefined);
   };
+
+  const handleClearSearch = () => {
+    setSearch(""); 
+    setQueryResults(undefined)
+  }
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors space-y-4">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Data Catalog</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Data Catalog
+          </h1>
           <p className="text-base text-gray-600 dark:text-gray-300 mt-2">
             Browse and discover data tables across your data sources
           </p>
         </div>
         <div>
           <button
-            onClick={() => {setIsModalOpen(true)}}
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow flex items-center gap-2"
           >
             <Plus size={16} />
@@ -211,9 +331,12 @@ export default function CatalogPage() {
 
       {/* Search and Filters */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
-        <form onSubmit={handleSearch} className="flex gap-4 items-end">
+        <div className="flex gap-4 items-end">
           <div className="flex-1">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="search"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Search Tables
             </label>
             <div className="relative">
@@ -222,15 +345,49 @@ export default function CatalogPage() {
                 id="search"
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  handleChange(e.target.value);
+                }}
                 placeholder="Search by table name, description, or column..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {searchTablesMutation.isPending && (
+                <Loader2 className="absolute right-3 top-3 h-5 w-5 text-gray-400 animate-spin" />
+              )}
+              {queryResults?.results && (
+                <button type="button" onClick={handleClearSearch} className="absolute right-3 top-3">
+                  <X className="h-5 w-5 text-gray-400" />
+                </button>
+              )}
+
+              {(queryResults?.results || []).length > 0 && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-200/60 dark:border-slate-600 rounded-xl shadow-lg z-50 max-h-64 overflow-auto">
+                  {(queryResults?.results || []).map((s) => (
+                    <div
+                      key={`${s.table_type}-${s.id}`}
+                      onClick={() => handleSelect(s.id)}
+                      className="flex justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
+                    >
+                      <span className="text-slate-900 dark:text-white">
+                        {s.name}
+                      </span>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-600 shadow-[0_0_8px_rgba(34,197,94,0.7)]}`}
+                      >
+                        {s.table_type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          
+
           <div className="min-w-48">
-            <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="domain"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Domain
             </label>
             <select
@@ -255,25 +412,25 @@ export default function CatalogPage() {
             <Filter className="h-4 w-4" />
             Filter
           </button>
-        </form>
+        </div>
       </div>
 
       {/* Results */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-medium text-gray-900">
-            {tablesData ? `${tablesData.total} Tables` : 'Loading...'}
+            {tablesData ? `${tablesData.total} Tables` : "Loading..."}
           </h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded ${viewMode === "list" ? "bg-gray-100" : "hover:bg-gray-50"}`}
             >
               <Database className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded ${viewMode === "grid" ? "bg-gray-100" : "hover:bg-gray-50"}`}
             >
               <div className="h-5 w-5 grid grid-cols-2 gap-0.5">
                 <div className="bg-gray-400 rounded-sm"></div>
@@ -292,7 +449,9 @@ export default function CatalogPage() {
         ) : !tablesData?.tables?.length ? (
           <div className="p-12 text-center">
             <Database className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No tables found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No tables found
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
               Try adjusting your search criteria or filters.
             </p>
@@ -300,38 +459,43 @@ export default function CatalogPage() {
         ) : (
           <div className="divide-y divide-gray-200">
             {tablesData.tables.map((table: Table) => (
-              <div key={table.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div
+                key={table.id}
+                className="p-6 hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <Link 
+                      <Link
                         href={`/catalog/${table.id}` as any}
                         className="text-lg font-medium text-blue-600 hover:text-blue-800 transition-colors"
                       >
-                        {table.schema_name ? `${table.schema_name}.${table.name}` : table.name}
+                        {table.schema_name
+                          ? `${table.schema_name}.${table.name}`
+                          : table.name}
                       </Link>
-                      
+
                       {table.is_certified && (
                         <span title="Certified">
                           <Star className="h-5 w-5 text-yellow-400 fill-current" />
                         </span>
                       )}
-                      
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSensitivityColor(table.sensitivity_level)}`}>
+
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSensitivityColor(table.sensitivity_level)}`}
+                      >
                         {table.sensitivity_level}
                       </span>
-                      
-                      <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                      >
+
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {table.domain_name}
                       </span>
                     </div>
-                    
+
                     <p className="text-sm text-gray-600 mb-2">
-                      {table.description || 'No description available'}
+                      {table.description || "No description available"}
                     </p>
-                    
+
                     {table.urn && (
                       <URNDisplay
                         urn={table.urn}
@@ -340,38 +504,46 @@ export default function CatalogPage() {
                         className="mb-3"
                       />
                     )}
-                    
+
                     <div className="flex items-center gap-6 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Database className="h-4 w-4" />
-                        {table.row_count ? formatNumber(table.row_count) + ' rows' : 'No stats'}
+                        {table.row_count
+                          ? formatNumber(table.row_count) + " rows"
+                          : "No stats"}
                       </div>
-                      
+
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Size: {table.size_bytes ? formatBytes(table.size_bytes) : 'Unknown'}
+                        Size:{" "}
+                        {table.size_bytes
+                          ? formatBytes(table.size_bytes)
+                          : "Unknown"}
                       </div>
-                      
+
                       <div className="flex items-center gap-1">
                         <Eye className="h-4 w-4" />
-                        {table.query_count_last_30d ? formatNumber(table.query_count_last_30d) + ' queries' : 'No usage data'}
+                        {table.query_count_last_30d
+                          ? formatNumber(table.query_count_last_30d) +
+                            " queries"
+                          : "No usage data"}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 ml-4">
-                    <Link 
+                    <Link
                       href={`/catalog/${table.id}` as any}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       <Eye className="h-4 w-4" />
                       View Details
                     </Link>
-                    
+
                     <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                       <Tag className="h-5 w-5" />
                     </button>
-                    
+
                     <button className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
                       <Star className="h-5 w-5" />
                     </button>
@@ -386,9 +558,11 @@ export default function CatalogPage() {
         {tablesData && (page > 1 || tablesData.has_next) && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, tablesData.total)} of {tablesData.total} results
+              Showing {(page - 1) * 20 + 1} to{" "}
+              {Math.min(page * 20, tablesData.total)} of {tablesData.total}{" "}
+              results
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(page - 1)}
@@ -397,11 +571,11 @@ export default function CatalogPage() {
               >
                 Previous
               </button>
-              
+
               <span className="px-3 py-2 text-sm font-medium text-gray-700">
                 Page {page}
               </span>
-              
+
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={!tablesData.has_next}

@@ -7,7 +7,8 @@ import {
   Calendar,
   User,
   Tag,
-  Folder
+  Folder,
+  Table
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -160,7 +161,7 @@ export default function FavoritesPage() {
             href="/catalog"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <TableCellsIcon className="h-5 w-5 mr-2" />
+            <Table className="h-5 w-5 mr-2" />
             Browse Data Catalog
           </Link>
         </div>

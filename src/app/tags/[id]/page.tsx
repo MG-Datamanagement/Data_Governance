@@ -88,20 +88,21 @@ async function deleteTag(tagId: string): Promise<any> {
 }
 
 export default function TagDetailPage({ params }: { params: { id: string } }) {
-  const [tag, setTag] = useState<Tag | null>(null);
+  // const [tag, setTag] = useState<Tag | null>(null);
   const [taggedTables, setTaggedTables] = useState<Table[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const router = useRouter();
 
-  useEffect(() => {
-    fetchTag();
-  }, [params.id]);
+  const { data: tag, isLoading, refetch: refetchTag } = useQuery({
+    queryKey: ['tag', params?.id],
+    queryFn: () => fetchTag(),
+  });
 
-   const { data: tags, isLoading } = useQuery({
+   const { data: tags } = useQuery({
     queryKey: ['tags'],
     queryFn: () => fetchTags(),
   });
@@ -113,7 +114,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
         throw new Error('Failed to fetch tag');
       }
       const tagData: Tag = await response.json();
-      setTag(tagData);
+      // setTag(tagData);
       
       // Fetch tables that use this tag
       const tablesResponse = await fetch(`${API_BASE_URL}/tables?page=1&per_page=100`);
@@ -125,13 +126,11 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
         );
         setTaggedTables(filtered);
       }
+      return tagData
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tag');
-    } finally {
-      setLoading(false);
     }
   };
-
   
   const fetchTags = async () => {
     try {
@@ -150,8 +149,8 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
     mutationFn: ({ tagId, tagData }: { tagId: string; tagData: TagFormData }) =>
       updateTag(tagId, tagData),
     onSuccess: () => {
-      fetchTag();
       setIsModalOpen(false);
+      refetchTag();
     },
     onError: (error) => {
       console.error('Failed to update tag details:', error);
@@ -171,7 +170,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
     }
   });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -432,7 +431,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
         onClose={() => setIsModalOpen(false)}
         onSubmit={(tagData: TagFormData) => updateTagMutation.mutate({tagId: tag?.id?.toString(), tagData})}
         isLoading={updateTagMutation.isPending}
-        tagsList={tags}
+        tagsList={(tags?.items || [])}
         tag={tag}
       />
 

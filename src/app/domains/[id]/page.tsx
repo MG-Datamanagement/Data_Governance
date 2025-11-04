@@ -12,7 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 import NewDomainModal, { DomainFormData } from '@/components/Domains/NewDomainModal';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { ConfirmModal } from '@/components/common/ConfirmModalNew';
 import { useRouter } from 'next/navigation';
@@ -79,18 +79,12 @@ async function deleteDomain(domainId: string): Promise<any> {
 }
 
 export default function DomainDetailPage({ params }: { params: { id: string } }) {
-  const [domain, setDomain] = useState<Domain | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const router = useRouter();
-
-  useEffect(() => {
-    fetchDomain();
-  }, [params.id]);
 
   const fetchDomain = async () => {
     try {
@@ -99,7 +93,6 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
         throw new Error('Failed to fetch domain');
       }
       const domainData: Domain = await response.json();
-      setDomain(domainData);
       
       // Fetch tables for this domain
       const tablesResponse = await fetch(`${API_BASE_URL}/tables?domain_ids=${params.id}`);
@@ -107,19 +100,24 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
         const tablesData: TablesResponse = await tablesResponse.json();
         setTables(tablesData.tables);
       }
+
+      return domainData
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load domain');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const { data: domain, isLoading: isDomainLoading, refetch: refetchDomain } = useQuery({
+    queryKey: ['domain'],
+    queryFn: fetchDomain,
+  });
 
   
   const updateDomainMutation = useMutation({
     mutationFn: ({ domainId, domainData }: { domainId: string; domainData: DomainFormData }) =>
       updateDomain(domainId, domainData),
     onSuccess: () => {
-      fetchDomain();
+      refetchDomain();
       setIsModalOpen(false);
     },
     onError: (error) => {
@@ -140,7 +138,7 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
     }
   });
 
-  if (loading) {
+  if (isDomainLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">

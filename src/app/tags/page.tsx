@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import URNDisplay from '../../components/common/URNDisplay';
 import NewTagModal, { TagFormData } from '@/components/Tags/NewTagModal';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 export interface Tag {
   id: number;
@@ -50,36 +50,33 @@ async function createTag(tagData: TagFormData): Promise<Tag> {
 
 
 export default function TagsPage() {
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
-
   const fetchTags = async () => {
     try {
-      const response = await fetch('https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/tags');
+      const response = await fetch(`${API_BASE_URL}/tags`);
       if (!response.ok) {
         throw new Error('Failed to fetch tags');
       }
       const data: TagsResponse = await response.json();
-      setTags(data.items);
+      return data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tags');
-    } finally {
-      setLoading(false);
     }
   };
+
+  const { data: tags, isLoading: isTagsLoading, refetch: refetchTags } = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTags,
+  });
 
   
   const createTagMutation = useMutation({
     mutationFn: (tagData: TagFormData) =>
       createTag(tagData),
     onSuccess: () => {
-      fetchTags();
+      refetchTags();
       setIsModalOpen(false);
     },
     onError: (error) => {
@@ -87,7 +84,7 @@ export default function TagsPage() {
     }
   });
 
-  if (loading) {
+  if (isTagsLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -120,10 +117,10 @@ export default function TagsPage() {
   }
 
   // Group tags by usage (high, medium, low usage)
-  const systemTags = tags.filter(tag => tag.is_system_tag);
-  const userTags = tags.filter(tag => !tag.is_system_tag);
-  const highUsageTags = tags.filter(tag => tag.usage_count > 0);
-  const unusedTags = tags.filter(tag => tag.usage_count === 0);
+  const systemTags = (tags?.items || []).filter(tag => tag.is_system_tag);
+  const userTags = (tags?.items || []).filter(tag => !tag.is_system_tag);
+  const highUsageTags = (tags?.items || []).filter(tag => tag.usage_count > 0);
+  const unusedTags = (tags?.items || []).filter(tag => tag.usage_count === 0);
 
   return (
     <div className="p-6">
@@ -160,7 +157,7 @@ export default function TagsPage() {
                     Total Tags
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {tags.length}
+                    {(tags?.items || []).length}
                   </dd>
                 </dl>
               </div>
@@ -236,7 +233,7 @@ export default function TagsPage() {
         
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tags.map((tag) => (
+            {(tags?.items || []).map((tag) => (
               <div 
                 key={tag.id} 
                 className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all"
@@ -294,7 +291,7 @@ export default function TagsPage() {
             ))}
           </div>
           
-          {tags.length === 0 && (
+          {(tags?.items || []).length === 0 && (
             <div className="text-center py-12">
               <Tag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No tags found</h3>
@@ -309,7 +306,7 @@ export default function TagsPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={(tagData: TagFormData) => createTagMutation.mutate(tagData)}
         isLoading={createTagMutation.isPending}
-        tagsList={tags}
+        tagsList={(tags?.items || [])}
       />
     </div>
   );

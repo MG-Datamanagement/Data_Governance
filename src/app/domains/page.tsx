@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Folder, Database, User, Plus } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import NewDomainModal, {
   DomainFormData,
 } from "@/components/Domains/NewDomainModal";
@@ -30,9 +30,11 @@ interface DomainsResponse {
   has_next: boolean;
 }
 
+const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+
 async function createDomain(domainData: DomainFormData): Promise<Domain> {
   const response = await fetch(
-    `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains`,
+    `${API_BASE_URL}/domains`,
     {
       method: "POST",
       headers: {
@@ -47,40 +49,35 @@ async function createDomain(domainData: DomainFormData): Promise<Domain> {
 }
 
 export default function DomainsPage() {
-  const [domains, setDomains] = useState<Domain[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetchDomains();
-  }, []);
 
   const fetchDomains = async () => {
     try {
       const response = await fetch(
-        "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/domains"
+        `${API_BASE_URL}/domains`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch domains");
       }
       const data: DomainsResponse = await response.json();
-      console.log("Domain API response:", data);
-      setDomains(data.domains);
+      return data
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load domains");
-    } finally {
-      setLoading(false);
     }
   };
+
+  const { data: domains, isLoading: isDomainsLoading, refetch: refetchDomains } = useQuery({
+    queryKey: ['domains'],
+    queryFn: fetchDomains,
+  });
 
   const createDomainMutation = useMutation({
     mutationFn: (domainData: DomainFormData) => createDomain(domainData),
     onSuccess: (data) => {
       setIsModalOpen(false);
-      fetchDomains();
+      refetchDomains();
       toast.success("Successfully Domain Created!");
-      console.log(data, '++>>>')
     },
     onError: (error) => {
       toast.error("Failed to create domain");
@@ -88,7 +85,7 @@ export default function DomainsPage() {
     },
   });
 
-  if (loading) {
+  if (isDomainsLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -147,12 +144,12 @@ export default function DomainsPage() {
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900">
-            All Domains ({domains.length})
+            All Domains ({(domains?.domains || [])?.length})
           </h2>
         </div>
 
         <div className="divide-y divide-gray-200">
-          {domains.map((domain) => (
+          {(domains?.domains || [])?.map((domain: Domain) => (
             <div
               key={domain.id}
               className="p-6 hover:bg-gray-50 transition-colors"
@@ -223,7 +220,7 @@ export default function DomainsPage() {
           ))}
         </div>
 
-        {domains.length === 0 && (
+        {(domains?.domains || [])?.length === 0 && (
           <div className="p-12 text-center">
             <Folder className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
