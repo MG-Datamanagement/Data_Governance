@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
+import { fetchFavorites } from '../favorites/page';
 
 interface Table {
   id: number;
@@ -48,7 +49,7 @@ interface Table {
   tags: any[];
 }
 
-interface TablesResponse {
+export interface TablesResponse {
   tables: Table[];
   total: number;
   page: number;
@@ -249,6 +250,11 @@ export default function CatalogPage() {
     queryFn: () => fetchDatasources(),
   })
 
+  const { data: favorites, isLoading: isFavoritesLoading, refetch: refetchFavorites } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: fetchFavorites
+  });
+
   const createTableMutation = useMutation({
       mutationFn: (tableData : TableFormData ) =>
         createTable(tableData),
@@ -267,7 +273,6 @@ export default function CatalogPage() {
     mutationFn: (query : string ) =>
       searchTables(query),
     onSuccess: (data) => {
-      console.log(data)
       setIsModalOpen(false)
       setQueryResults(data)
     },
@@ -304,6 +309,13 @@ export default function CatalogPage() {
     setSearch(""); 
     setQueryResults(undefined)
   }
+
+  const createFavoritesLookup = () => {
+    const favList = favorites?.tables || [];
+    return new Set(favList.flatMap(f => [f.id, f.urn]));
+  }
+
+  const favSet = createFavoritesLookup();
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors space-y-4">
@@ -458,7 +470,9 @@ export default function CatalogPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {tablesData.tables.map((table: Table) => (
+            {tablesData.tables.map((table: Table) => {
+              const isFav = favSet.has(table.id) || favSet.has(table.urn);
+              return(
               <div
                 key={table.id}
                 className="p-6 hover:bg-gray-50 transition-colors"
@@ -475,7 +489,7 @@ export default function CatalogPage() {
                           : table.name}
                       </Link>
 
-                      {table.is_certified && (
+                      {isFav && (
                         <span title="Certified">
                           <Star className="h-5 w-5 text-yellow-400 fill-current" />
                         </span>
@@ -550,7 +564,7 @@ export default function CatalogPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
 

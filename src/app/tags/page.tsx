@@ -11,6 +11,7 @@ import {
 import URNDisplay from '../../components/common/URNDisplay';
 import NewTagModal, { TagFormData } from '@/components/Tags/NewTagModal';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface Tag {
   id: number;
@@ -78,8 +79,10 @@ export default function TagsPage() {
     onSuccess: () => {
       refetchTags();
       setIsModalOpen(false);
+      toast.success("Tag created successfully!");
     },
     onError: (error) => {
+      toast.error("Failed to create tag");
       console.error('Failed to create tag:', error);
     }
   });

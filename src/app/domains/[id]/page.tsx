@@ -116,11 +116,13 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
   const updateDomainMutation = useMutation({
     mutationFn: ({ domainId, domainData }: { domainId: string; domainData: DomainFormData }) =>
       updateDomain(domainId, domainData),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       refetchDomain();
       setIsModalOpen(false);
+      toast.success(data?.message || "Domain details updated successfully")
     },
     onError: (error) => {
+      toast.error("Failed to update domain details")
       console.error('Failed to update domain details:', error);
     }
   });
@@ -134,6 +136,7 @@ export default function DomainDetailPage({ params }: { params: { id: string } })
       router.push('/domains')
     },
     onError: (error) => {
+      toast.error("Failed to delete domain")
       console.error('Failed to delete domain:', error);
     }
   });

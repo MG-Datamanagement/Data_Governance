@@ -11,6 +11,8 @@ import {
   Table
 } from 'lucide-react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import { TablesResponse } from '../catalog/page';
 
 const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
 
@@ -78,9 +80,10 @@ const mockFavorites = [
   }
 ];
 
-async function fetchFavorites() {
-  // Since backend favorites are just stubs, return mock data
-  return mockFavorites;
+export async function fetchFavorites():Promise<TablesResponse> {
+  const response = await fetch(`${API_BASE_URL}/tables/favorites`);
+  if (!response.ok) throw new Error('Failed to fetch favorites list');
+  return response.json();
 }
 
 function formatDate(dateString: string) {
@@ -96,7 +99,7 @@ function formatNumber(num: number) {
 }
 
 export default function FavoritesPage() {
-  const { data: favorites = [], isLoading } = useQuery({
+  const { data: favorites, isLoading, refetch } = useQuery({
     queryKey: ['favorites'],
     queryFn: fetchFavorites,
   });
@@ -106,12 +109,14 @@ export default function FavoritesPage() {
       const response = await fetch(`${API_BASE_URL}/tables/${tableId}/favorite`, {
         method: 'DELETE',
       });
+      const data = await response.json();
       
       if (response.ok) {
-        // Refresh the list - in a real app, you'd update the cache
-        window.location.reload();
+        refetch();
+        toast.success(data?.message || "Table removed from favorites successfully")
       }
     } catch (error) {
+      toast.error("Failed to remove from favorites")
       console.error('Failed to remove from favorites:', error);
     }
   };
@@ -145,11 +150,11 @@ export default function FavoritesPage() {
           </p>
         </div>
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          {favorites.length} {favorites.length === 1 ? 'table' : 'tables'}
+          {(favorites?.tables || []).length} {(favorites?.tables || []).length === 1 ? 'table' : 'tables'}
         </div>
       </div>
 
-      {favorites.length === 0 ? (
+      {(favorites?.tables || []).length === 0 ? (
         // Empty state
         <div className="text-center py-12">
           <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -168,7 +173,7 @@ export default function FavoritesPage() {
       ) : (
         // Favorites grid
         <div className="space-y-4">
-          {favorites.map((table) => (
+          {(favorites?.tables || []).map((table) => (
             <div
               key={table.id}
               className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
@@ -203,20 +208,20 @@ export default function FavoritesPage() {
                   <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400 mb-4">
                     <div className="flex items-center space-x-1">
                       <Database className="h-4 w-4" />
-                      <span>{table.data_source.name}</span>
+                      <span>{table.data_source_name}</span>
                     </div>
                     
-                    {table.domain && (
+                    {table.domain_name && (
                       <div className="flex items-center space-x-1">
                         <Folder className="h-4 w-4" />
-                        <span>{table.domain.name}</span>
+                        <span>{table.domain_name}</span>
                       </div>
                     )}
                     
-                    {table.owner && (
+                    {table.owner_name && (
                       <div className="flex items-center space-x-1">
                         <User className="h-4 w-4" />
-                        <span>{table.owner.name}</span>
+                        <span>{table.owner_name}</span>
                       </div>
                     )}
                     
@@ -229,34 +234,32 @@ export default function FavoritesPage() {
                   {/* Stats and Tags Row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
-                      {table.stats && (
                         <>
-                          <div className="text-sm">
+                          {/* {table.row_count && (<div className="text-sm">
                             <span className="text-gray-500">Rows:</span>
                             <span className="font-medium text-gray-900 ml-1">
-                              {formatNumber(table.stats.row_count)}
+                              {formatNumber(table.row_count)}
                             </span>
-                          </div>
+                          </div>)} */}
                           
-                          <div className="text-sm">
+                          {/* {table.quality_score && (<div className="text-sm">
                             <span className="text-gray-500">Quality:</span>
                             <span className={`font-medium ml-1 ${
-                              table.stats.quality_score >= 90 ? 'text-green-600' :
-                              table.stats.quality_score >= 70 ? 'text-yellow-600' :
+                              table.quality_score >= 90 ? 'text-green-600' :
+                              table.quality_score >= 70 ? 'text-yellow-600' :
                               'text-red-600'
                             }`}>
-                              {table.stats.quality_score}%
+                              {table.quality_score}%
                             </span>
-                          </div>
+                          </div>)} */}
                           
-                          <div className="text-sm">
+                          {/* {table.query_count_last_30d && <div className="text-sm">
                             <span className="text-gray-500">Usage:</span>
                             <span className="font-medium text-gray-900 ml-1">
-                              {formatNumber(table.stats.query_count_last_30d)} queries
+                              {formatNumber(table.query_count_last_30d)} queries
                             </span>
-                          </div>
+                          </div>} */}
                         </>
-                      )}
                     </div>
 
                     {/* Tags */}
@@ -290,7 +293,7 @@ export default function FavoritesPage() {
       )}
 
       {/* Quick Actions */}
-      {favorites.length > 0 && (
+      {(favorites?.tables || []).length > 0 && (
         <div className="bg-blue-50 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="flex flex-wrap gap-3">

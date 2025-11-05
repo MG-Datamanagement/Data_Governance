@@ -148,11 +148,13 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
   const updateTagMutation = useMutation({
     mutationFn: ({ tagId, tagData }: { tagId: string; tagData: TagFormData }) =>
       updateTag(tagId, tagData),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setIsModalOpen(false);
       refetchTag();
+      toast.success(data?.message || "Successfully updated tag details")
     },
     onError: (error) => {
+      toast.error("Failed to update tag details")
       console.error('Failed to update tag details:', error);
     }
   });
@@ -166,6 +168,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
       router.push('/tags')
     },
     onError: (error) => {
+      toast.error("Failed to delete Tag")
       console.error('Failed to delete Tag:', error);
     }
   });

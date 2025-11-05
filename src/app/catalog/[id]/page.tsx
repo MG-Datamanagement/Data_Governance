@@ -45,6 +45,7 @@ import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
 import { DomainsResponse } from '../page';
+import { fetchFavorites } from '@/app/favorites/page';
 
 export interface TableDetails {
   id: number;
@@ -150,17 +151,14 @@ async function removeTagToTable(tableId: string, tagId: number): Promise<void> {
 }
 
 async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promise<void> {
-  console.log(isFavorited, "is fav >>>>")
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/favorite`, {
     method: isFavorited ? 'DELETE' : 'POST',
     headers: {
       "Content-Type": 'application/json',
-      "Authorization": `Bearer ${ACCESS_TOKEN}`,
-      "Access-Control-Allow-Origin": "*"
     },
-    redirect: "follow"
   });
-  if (!response.ok) throw new Error('Failed to toggle table favorite');
+
+  if (!response.ok) throw new Error("Failed to toggle table favorite");
   return response.json();
 }
 
@@ -318,6 +316,12 @@ function getDataTypeIcon(dataType: string) {
 export default function TableDetailsPage() {
   const params = useParams();
   const tableId = params.id as string;
+
+  const isFavoriteTable = useMemo(() => {
+    return (favorites?.tables || []).some(
+      (f) => f.urn === table?.urn || f.id === table?.id
+    );
+  }, [tableId]);
   
   const [activeTab, setActiveTab] = useState<'schema' | 'lineage' | 'quality' | 'usage'>('schema');
   const [showTagModal, setShowTagModal] = useState(false);
@@ -328,7 +332,7 @@ export default function TableDetailsPage() {
   const [searchTags, setSearchTags] = useState('');
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [removeTag, setRemoveTag] = useState<Tag | undefined>();
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(isFavoriteTable);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [tableStats, setTableStats] = useState<TableStats | undefined>();
   const [isTableStatsLoading, setIsTableStatsLoading] = useState<boolean>(false);
@@ -536,6 +540,11 @@ export default function TableDetailsPage() {
     enabled: showTagModal,
   });
 
+  const { data: favorites, isLoading: isFavoritesLoading, refetch: refetchFavorites } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: fetchFavorites
+  });
+
   const addTagsMutation = useMutation({
     mutationFn: ({ tableId, tagIds }: { tableId: string; tagIds: number[] }) =>
       addTagsToTable(tableId, tagIds),
@@ -553,7 +562,7 @@ export default function TableDetailsPage() {
   const removeTagMutation = useMutation({
     mutationFn: ({ tableId, tagId }: { tableId: string; tagId: number }) =>
       removeTagToTable(tableId, tagId),
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
       setIsRemoveTagModalOpen(false);
       setRemoveTag(undefined);
@@ -561,6 +570,7 @@ export default function TableDetailsPage() {
       toast.success(data?.message || "Tag removed from table successfully")
     },
     onError: (error) => {
+      toast.error("Failed to remove tag")
       console.error('Failed to remove tag:', error);
     }
   });
@@ -568,10 +578,13 @@ export default function TableDetailsPage() {
   const favoriteMutation = useMutation({
     mutationFn: ({ tableId, isFavorited }: { tableId: string; isFavorited: boolean }) =>
       toggleTableFavorite(tableId, isFavorited),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setIsFavorited(!isFavorited);
+      toast.success(data?.message || (!isFavorited ? "Table added to favorites successfully" : "Table removed from favorites successfully"))
+      refetchFavorites()
     },
     onError: (error) => {
+      toast.error("Failed to process the favorite/unfavorite")
       console.error('Failed to toggle favorite:', error);
     }
   });
@@ -579,12 +592,14 @@ export default function TableDetailsPage() {
   const updateTableMutation = useMutation({
     mutationFn: ({ tableId, tableData }: { tableId: string; tableData: TableFormData }) =>
       updateTable(tableId, tableData),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
       setEditing(false);
+      toast.success(data?.message || "Table details updated successfully")
     },
     onError: (error) => {
-      console.error('Failed to update table description:', error);
+      toast.error("Failed to update table details")
+      console.error('Failed to update table details:', error);
     }
   });
 
@@ -598,6 +613,7 @@ export default function TableDetailsPage() {
       router.push('/catalog')
     },
     onError: (error) => {
+      toast.error("Failed to delete table")
       console.error('Failed to delete table:', error);
     }
   });
