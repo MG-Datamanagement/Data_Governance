@@ -30,7 +30,7 @@ interface DomainsResponse {
   has_next: boolean;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
 
 async function createDomain(domainData: DomainFormData): Promise<Domain> {
   const response = await fetch(

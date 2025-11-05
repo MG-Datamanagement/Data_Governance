@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1";
+const API_BASE_URL = "http://172.188.2.173:3000/api/v1";
 const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBiYW5rLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2MjI2ODg2OSwidHlwZSI6ImFjY2VzcyJ9.o1j3gQgNFV00Za0dglrIl8G47EZTXDlI_KlF4wxvb4M";
 
 

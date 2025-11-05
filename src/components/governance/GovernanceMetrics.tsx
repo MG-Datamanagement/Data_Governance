@@ -211,82 +211,102 @@ export function ComplianceOverview() {
 }
 
 export function DataStewardshipMetrics() {
+
   const stewardshipData = [
     {
-      domain: 'Finance',
-      steward: 'Sarah Johnson',
-      tables: 45,
-      quality: 96,
-      issues: 2,
-      status: 'excellent'
+      id: 2,
+      domain: "Finance",
+      steward: "Sarah lee",
+      email: "sarah.lee@bank.com",
+      // tables: 45,
+      // quality: 96,
+      // issues: 2,
+      // status: "excellent",
+      is_active: true,
+      is_verified: true,
     },
     {
-      domain: 'Customer Data',
-      steward: 'Mike Chen',
-      tables: 32,
-      quality: 89,
-      issues: 5,
-      status: 'good'
+      id: 9,
+      domain: "Customer Data",
+      steward: "Chris Kim",
+      // tables: 32,
+      // quality: 89,
+      // issues: 5,
+      // status: "good",
+      email: "chris.kim@bank.com",
+      is_active: true,
+      is_verified: true,
     },
     {
-      domain: 'Operations',
-      steward: 'Lisa Rodriguez',
-      tables: 28,
-      quality: 78,
-      issues: 8,
-      status: 'warning'
+      id: 4,
+      domain: "Operations",
+      steward: "Lisa Wong",
+      // tables: 28,
+      // quality: 78,
+      // issues: 8,
+      // status: "warning",
+      email: "lisa.wong@bank.com",
+      is_active: true,
+      is_verified: true,
     },
-    {
-      domain: 'Marketing',
-      steward: 'David Kim',
-      tables: 19,
-      quality: 94,
-      issues: 1,
-      status: 'excellent'
-    }
   ];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Data Stewardship</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Data Stewardship
+        </h3>
         <div className="flex items-center text-sm text-blue-600 dark:text-blue-400">
           <Users className="h-4 w-4 mr-1" />
-          4 Active Stewards
+          {(stewardshipData || []).filter((item) => item.is_active).length}{" "}
+          Active Stewards
         </div>
       </div>
-      
+
       <div className="space-y-4">
         {stewardshipData.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div
+            key={index}
+            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-600"
+          >
+            {/* Left section: Avatar + Details */}
             <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                item.status === 'excellent' ? 'bg-green-600' :
-                item.status === 'good' ? 'bg-blue-600' :
-                'bg-orange-600'
-              }`}>
-                {item.steward.split(' ').map(n => n[0]).join('')}
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                {item.steward
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </div>
               <div>
-                <div className="font-medium text-gray-900 dark:text-white">{item.domain}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">{item.steward}</div>
+                {/* <div className="font-medium text-gray-900 dark:text-white">
+                  {item.domain}
+                </div> */}
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {item.steward}
+                </div>
+                <div className="text-sm text-gray-400 dark:text-gray-500">
+                  {item.email}
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-6 text-sm">
-              <div className="text-center">
-                <div className="font-semibold text-gray-900 dark:text-white">{item.tables}</div>
-                <div className="text-gray-500 dark:text-gray-400">Tables</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-gray-900 dark:text-white">{item.quality}%</div>
-                <div className="text-gray-500 dark:text-gray-400">Quality</div>
-              </div>
-              <div className="text-center">
-                <div className={`font-semibold ${item.issues > 5 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                  {item.issues}
-                </div>
-                <div className="text-gray-500 dark:text-gray-400">Issues</div>
-              </div>
+
+            {/* Right section: Status badges */}
+            <div className="flex items-center space-x-2">
+              {item.is_active && (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 rounded-full">
+                  Active
+                </span>
+              )}
+              {item.is_verified ? (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100 rounded-full">
+                  Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 rounded-full">
+                  Unverified
+                </span>
+              )}
             </div>
           </div>
         ))}

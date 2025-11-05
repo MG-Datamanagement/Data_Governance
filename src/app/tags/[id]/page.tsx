@@ -54,6 +54,9 @@ interface Table {
     name: string;
     color: string;
   }>;
+  data_source_type: string;
+  domain_name: string;
+  data_source_name: string;
 }
 
 interface TablesResponse {
@@ -62,7 +65,7 @@ interface TablesResponse {
 }
 
 
-const API_BASE_URL = "https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1"
+const API_BASE_URL = "http://172.188.2.173:3000/api/v1"
 
 async function updateTag(tagId: string, tagData: TagFormData): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
@@ -88,9 +91,6 @@ async function deleteTag(tagId: string): Promise<any> {
 }
 
 export default function TagDetailPage({ params }: { params: { id: string } }) {
-  // const [tag, setTag] = useState<Tag | null>(null);
-  const [taggedTables, setTaggedTables] = useState<Table[]>([]);
-  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -107,6 +107,11 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
     queryFn: () => fetchTags(),
   });
 
+  const { data: taggedTables, isLoading: isTaggedTablesLoading } = useQuery({
+    queryKey: ['taggedtables', params?.id],
+    queryFn: () => fetchTaggedTables(),
+  });
+
   const fetchTag = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/tags/${params.id}`);
@@ -114,24 +119,27 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
         throw new Error('Failed to fetch tag');
       }
       const tagData: Tag = await response.json();
-      // setTag(tagData);
-      
-      // Fetch tables that use this tag
-      const tablesResponse = await fetch(`${API_BASE_URL}/tables?page=1&per_page=100`);
-      if (tablesResponse.ok) {
-        const tablesData: TablesResponse = await tablesResponse.json();
-        // Filter tables that have this tag
-        const filtered = tablesData.tables.filter(table => 
-          table.tags && table.tags.some((t: any) => t.id === parseInt(params.id))
-        );
-        setTaggedTables(filtered);
-      }
+
       return tagData
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tag');
     }
   };
-  
+
+  const fetchTaggedTables = async () => {
+    try {
+      // Fetch tables that use this tag
+      const tablesResponse = await fetch(`${API_BASE_URL}/tables?tag_ids=${params?.id}`);
+
+      if (tablesResponse.ok) {
+        const tablesData: TablesResponse = await tablesResponse.json();
+        return tablesData
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tag');
+    }
+  };
+
   const fetchTags = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/tags`);
@@ -303,7 +311,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
             </div>
             
             <div className="divide-y divide-gray-200">
-              {taggedTables.map((table) => (
+              {(taggedTables?.tables || []).map((table) => (
                 <div key={table.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -316,15 +324,15 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
                       <p className="text-gray-600 mt-1">{table.description}</p>
                       
                       <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
-                        <span>Source: {table.data_source.name}</span>
-                        <span>Type: {table.data_source.type}</span>
+                        <span>Source: {(table?.data_source_name || "")}</span>
+                        <span>Type: {table.data_source_type || ""}</span>
                         {table.domain && (
                           <span className="flex items-center space-x-1">
                             <div 
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: table.domain.color }}
                             ></div>
-                            <span>Domain: {table.domain.name}</span>
+                            <span>Domain: {table?.domain_name || ""}</span>
                           </span>
                         )}
                       </div>
@@ -334,7 +342,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
               ))}
             </div>
             
-            {taggedTables.length === 0 && (
+            {(taggedTables?.tables || []).length === 0 && (
               <div className="p-12 text-center">
                 <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No tables found</h3>
@@ -421,7 +429,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Tables Tagged</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{taggedTables.length}</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{(taggedTables?.tables || []).length}</dd>
                 </div>
               </dl>
             </div>

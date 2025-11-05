@@ -37,6 +37,7 @@ interface Table {
   owner_name: string;
   table_type: string;
   sensitivity_level: string;
+  is_active: boolean;
   is_certified: boolean;
   certification_notes?: string;
   created_at: string;
@@ -128,7 +129,7 @@ export interface Tag {
   usage_count: number;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
 
 async function fetchTables(page: number = 1, search: string = '', domain: string = ''): Promise<TablesResponse> {
   const params = new URLSearchParams({
@@ -480,14 +481,27 @@ export default function CatalogPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <Link
-                        href={`/catalog/${table.id}` as any}
-                        className="text-lg font-medium text-blue-600 hover:text-blue-800 transition-colors"
-                      >
-                        {table.schema_name
-                          ? `${table.schema_name}.${table.name}`
-                          : table.name}
-                      </Link>
+                      {table.is_active ? (
+                        <Link
+                          href={`/catalog/${table.id}` as any}
+                          className="text-lg font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          {table.schema_name ? `${table.schema_name}.${table.name}` : table.name}
+                        </Link>
+                      ) : (
+                        <span
+                          className="text-lg font-medium text-gray-400 cursor-not-allowed"
+                          title="This table is inactive"
+                        >
+                          {table.schema_name ? `${table.schema_name}.${table.name}` : table.name}
+                        </span>
+                      )}
+
+                      {!table.is_active && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-300 text-gray-800 border border-gray-300">
+                          Inactive
+                        </span>
+                      )}
 
                       {isFav && (
                         <span title="Certified">
@@ -516,6 +530,7 @@ export default function CatalogPage() {
                         variant="compact"
                         showLabel={false}
                         className="mb-3"
+                        disabled={table.is_active ? false : true}
                       />
                     )}
 
@@ -546,19 +561,30 @@ export default function CatalogPage() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
-                    <Link
-                      href={`/catalog/${table.id}` as any}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Details
-                    </Link>
+                    {table.is_active ? (
+                      <Link
+                        href={`/catalog/${table.id}` as any}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Details
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
+                        title="This table is inactive"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Details
+                      </button>
+                    )}
 
-                    <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <button disabled={table.is_active ? false : true} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                       <Tag className="h-5 w-5" />
                     </button>
 
-                    <button className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+                    <button disabled={table.is_active ? false : true} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
                       <Star className="h-5 w-5" />
                     </button>
                   </div>

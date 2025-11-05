@@ -14,13 +14,15 @@ interface URNDisplayProps {
   variant?: 'compact' | 'expanded' | 'card';
   showLabel?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function URNDisplay({ 
   urn, 
   variant = 'expanded', 
   showLabel = true,
-  className = ''
+  className = '',
+  disabled = false
 }: URNDisplayProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(variant !== 'compact');
@@ -94,6 +96,7 @@ export default function URNDisplay({
               <div className="ml-3 flex-shrink-0">
                 <button
                   onClick={copyToClipboard}
+                  disabled={disabled}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-all duration-150 shadow-sm hover:shadow"
                   title="Copy URN to clipboard"
                 >
@@ -121,6 +124,7 @@ export default function URNDisplay({
     <div className={`inline-flex items-center gap-2 ${className}`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
+        disabled={disabled}
         className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         {isExpanded ? (
@@ -162,6 +166,7 @@ export default function URNDisplay({
         </h4>
         <button
           onClick={copyToClipboard}
+          disabled={disabled}
           className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
         >
           {copied ? <Check className="h-3 w-3" /> : <Clipboard className="h-3 w-3" />}

@@ -70,6 +70,7 @@ export interface TableDetails {
   };
   table_type: string;
   sensitivity_level: string;
+  is_active: boolean;
   is_certified: boolean;
   certification_notes?: string;
   created_at: string;
@@ -113,8 +114,7 @@ interface Tag {
   is_system_tag: boolean;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
-const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJqb2huLmRvZUBiYW5rLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc2MjI2Njc3OCwidHlwZSI6ImFjY2VzcyJ9.cUxiZvjStGkBxwD9_IXcSU6btR0kNldoGbh2HftdqkE"
+const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
 
 async function fetchTableDetails(tableId: string): Promise<TableDetails> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);
@@ -208,7 +208,7 @@ async function updateColumnDescription(tableId: string, columnId: number, descri
   if (!response.ok) throw new Error('Failed to update column description');
 }
 
-async function fetchUsers(): Promise<any> {
+export async function fetchUsers(): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'GET',
     headers: {
@@ -219,7 +219,7 @@ async function fetchUsers(): Promise<any> {
   return response.json();
 }
 
-async function fetchDatasources(): Promise<any> {
+export async function fetchDatasources(): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/data-sources`, {
     method: 'GET',
     headers: {
@@ -1248,15 +1248,15 @@ export default function TableDetailsPage() {
                   <Eye className="h-4 w-4" />
                   Preview Data
                 </button>
-                <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                <button onClick={() => {}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <FileText className="h-4 w-4" />
                   Export Schema
                 </button>
-                <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                <button onClick={() => {setActiveTab("usage")}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <BarChart3 className="h-4 w-4" />
                   View Analytics
                 </button>
-                <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                <button onClick={() => {setActiveTab("lineage")}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <Share className="h-4 w-4" />
                   View Lineage
                 </button>

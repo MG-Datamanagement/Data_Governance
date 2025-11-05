@@ -33,11 +33,17 @@ const domainQualityData = [
 ];
 
 const dataSourcesData = [
-  { name: 'PostgreSQL', value: 35, color: '#3B82F6' },
-  { name: 'MySQL', value: 25, color: '#10B981' },
-  { name: 'Oracle', value: 20, color: '#F59E0B' },
-  { name: 'Snowflake', value: 15, color: '#8B5CF6' },
-  { name: 'BigQuery', value: 5, color: '#EF4444' }
+  { name: 'PostgreSQL', value: 20, color: '#3B82F6' },
+  { name: 'MySQL', value: 15, color: '#10B981' },
+  { name: 'Oracle', value: 10, color: '#F59E0B' },
+  { name: 'Snowflake', value: 10, color: '#8B5CF6' },
+  { name: 'RDS', value: 10, color: '#6366F1' },
+  { name: 'Databricks', value: 8, color: '#EC4899' },
+  { name: 'MongoDB', value: 7, color: '#22C55E' },
+  { name: 'Redshift', value: 7, color: '#EF4444' },
+  { name: 'S3', value: 5, color: '#F97316' },
+  { name: 'Dynamics 365', value: 4, color: '#0EA5E9' },
+  { name: 'Salesforce', value: 4, color: '#60A5FA' },
 ];
 
 const recentAlerts = [
@@ -212,7 +218,7 @@ export function DataSourcesChart() {
                 cy="50%"
                 labelLine={false}
                 label={renderCustomizedLabel}
-                outerRadius={80}
+                outerRadius={95}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -222,7 +228,7 @@ export function DataSourcesChart() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#1F2937', 
+                  backgroundColor: '#fff', 
                   border: '1px solid #374151', 
                   borderRadius: '8px',
                   color: '#F9FAFB'

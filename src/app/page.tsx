@@ -34,8 +34,9 @@ import {
 import { GovernanceMetrics, ComplianceOverview, DataStewardshipMetrics } from '@/components/governance/GovernanceMetrics';
 import { QualityTrendChart, DomainQualityChart, DataSourcesChart, RecentAlerts } from '@/components/governance/AnalyticsCharts';
 import Link from 'next/link';
+import { fetchDatasources, fetchUsers } from './catalog/[id]/page';
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
 
 async function fetchStats() {
   const [tablesResponse, domainsResponse, tagsResponse] = await Promise.all([
@@ -96,6 +97,16 @@ export default function HomePage() {
     queryKey: ['stats'],
     queryFn: fetchStats,
   });
+
+  const { data: datasources, isLoading: isDataSourceLoading } = useQuery({
+    queryKey: ['datasources'],
+    queryFn: fetchDatasources,
+  });
+
+  const {data: users} = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+  })
 
   useEffect(() => {
     // Generate trends only on client side to prevent hydration mismatch
@@ -164,21 +175,21 @@ export default function HomePage() {
                     <div className="flex items-center mb-3">
                       <ShieldCheck className="h-8 w-8 text-slate-600 dark:text-slate-400" />
                     </div>
-                    <div className="text-2xl font-bold mb-1">98.5%</div>
+                    <div className="text-2xl font-bold mb-1">{statsData?.domainsCount}</div>
                     <div className="text-slate-600 dark:text-slate-400 text-sm">Compliance Score</div>
                   </div>
                   <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-200/20 dark:border-slate-700/20">
                     <div className="flex items-center mb-3">
                       <HardDrive className="h-8 w-8 text-slate-600 dark:text-slate-400" />
                     </div>
-                    <div className="text-2xl font-bold mb-1">12</div>
+                    <div className="text-2xl font-bold mb-1">{datasources?.total || 0}</div>
                     <div className="text-slate-600 dark:text-slate-400 text-sm">Data Sources</div>
                   </div>
                   <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-200/20 dark:border-slate-700/20">
                     <div className="flex items-center mb-3">
                       <Users className="h-8 w-8 text-slate-600 dark:text-slate-400" />
                     </div>
-                    <div className="text-2xl font-bold mb-1">47</div>
+                    <div className="text-2xl font-bold mb-1">{users?.total || 0}</div>
                     <div className="text-slate-600 dark:text-slate-400 text-sm">Active Users</div>
                   </div>
                 </div>
