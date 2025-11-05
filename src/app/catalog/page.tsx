@@ -186,8 +186,8 @@ async function fetchDomains(): Promise<DomainsResponse> {
   return response.json();
 }
 
-async function searchTables(query: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/search?q=${query}`, {
+async function searchTables(query: string, domainId: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/search?q=${query}&domain_ids=${domainId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -271,8 +271,8 @@ export default function CatalogPage() {
     });
 
   const searchTablesMutation = useMutation({
-    mutationFn: (query : string ) =>
-      searchTables(query),
+    mutationFn: ({query, domainId}:{query: string, domainId: string}) =>
+      searchTables(query, domainId),
     onSuccess: (data) => {
       setIsModalOpen(false)
       setQueryResults(data)
@@ -289,7 +289,7 @@ export default function CatalogPage() {
     }
 
     // Auto-trigger search
-    searchTablesMutation.mutate(debouncedSearch);
+    searchTablesMutation.mutate({query: debouncedSearch, domainId:selectedDomain});
   }, [debouncedSearch]);
 
   const handleChange = (query: string) => {
