@@ -429,7 +429,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Tables Tagged</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{(taggedTables?.tables || []).length}</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{(taggedTables?.total)}</dd>
                 </div>
               </dl>
             </div>

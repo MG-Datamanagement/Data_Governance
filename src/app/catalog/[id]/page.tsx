@@ -46,6 +46,8 @@ import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsC
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
 import { DomainsResponse } from '../page';
 import { fetchFavorites } from '@/app/favorites/page';
+import { extractSchemaData } from '@/utils/schemaMapper';
+import { convertToCSV, downloadFile, TableData } from '@/utils/exportUitls';
 
 export interface TableDetails {
   id: number;
@@ -233,6 +235,12 @@ export async function fetchDatasources(): Promise<any> {
 async function fetchDomains(): Promise<DomainsResponse> {
   const response = await fetch(`${API_BASE_URL}/domains`);
   if (!response.ok) throw new Error('Failed to fetch domains');
+  return response.json();
+}
+
+async function fetchTableQualityRules(tableId: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/quality/tables/${tableId}/rules`);
+  if (!response.ok) throw new Error('Failed to fetch table quality rules');
   return response.json();
 }
 
@@ -545,6 +553,11 @@ export default function TableDetailsPage() {
     queryFn: fetchFavorites
   });
 
+  const { data: tableQualityRules, isLoading: isTableQualityRulesLoading, refetch: refetchTableQualityRules } = useQuery({
+    queryKey: ['tablequalityrules'],
+    queryFn: () => fetchTableQualityRules(tableId)
+  });
+
   const addTagsMutation = useMutation({
     mutationFn: ({ tableId, tagIds }: { tableId: string; tagIds: number[] }) =>
       addTagsToTable(tableId, tagIds),
@@ -646,6 +659,23 @@ export default function TableDetailsPage() {
   const filteredTags = availableTags?.items?.filter(tag =>
     tag.name.toLowerCase().includes(searchTags.toLowerCase())
   ) || [];
+
+  const handleExport = (format: 'csv' | 'json') => {
+    const schemaData = extractSchemaData(table as any);
+
+    if (!schemaData.length) {
+      alert('No columns found to export.');
+      return;
+    }
+
+    if (format === 'csv') {
+      const csv = convertToCSV(schemaData);
+      downloadFile(csv, `${table?.name}_schema.csv`, 'text/csv');
+    } else {
+      const json = JSON.stringify(schemaData, null, 2);
+      downloadFile(json, `${table?.name}_schema.json`, 'application/json');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -909,8 +939,10 @@ export default function TableDetailsPage() {
                         key={tab.key}
                         onClick={() => {
                           setActiveTab(tab.key as any);
-                          setIsTableStatsLoading(true);
-                          getTableStatsMutation.mutate(tableId)
+                          if(tab.key === "usage"){
+                            setIsTableStatsLoading(true);
+                            getTableStatsMutation.mutate(tableId)
+                          }
                         }}
                         className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                           activeTab === tab.key
@@ -928,14 +960,14 @@ export default function TableDetailsPage() {
 
               <div className="p-6">
                 {activeTab === 'schema' && (
-                  <div>
+                  <div className='w-full'>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">
                         Table Schema ({table.columns?.length || 0} columns)
                       </h3>
                     </div>
                     
-                    <div className="overflow-hidden border border-gray-200 rounded-lg">
+                    <div className="overflow-auto border border-gray-200 rounded-lg">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
@@ -1135,33 +1167,10 @@ export default function TableDetailsPage() {
                         </div>
 
 
-                        {/* React Flow Lineage Graph */}
+                        {/* D3 Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
                             <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleRefetchUpdatedGraph={(tableId) => refetch()} />
-                            {/* <ReactFlow
-                              nodes={nodes}
-                              edges={edges}
-                              onNodesChange={onNodesChange}
-                              onEdgesChange={onEdgesChange}
-                              onNodeClick={onNodeClick}
-                              fitView
-                              fitViewOptions={{
-                                padding: 0.2,
-                                includeHiddenNodes: false,
-                              }}
-                              attributionPosition="bottom-left"
-                              className="bg-gray-50"
-                              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-                            >
-                              <Background color="#e5e7eb" gap={20} />
-                              <Controls
-                                position="bottom-right"
-                                showZoom={true}
-                                showFitView={true}
-                                showInteractive={false}
-                              />
-                            </ReactFlow> */}
                           </div>
                         </div>
 
@@ -1205,11 +1214,21 @@ export default function TableDetailsPage() {
 
                 {activeTab === 'quality' && (
                   <div className="text-center py-12">
-                    <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">Data Quality</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Quality metrics and checks will be displayed here
-                    </p>
+                    {isTableQualityRulesLoading ? (
+                      <div className="w-full flex justify-center">
+                        <Loader2 className="animate-spin text-[#3B82F6] w-10 h-10" />
+                      </div>
+                    ) : tableQualityRules ? (
+                        <></>
+                    ) : (
+                      <div className="text-center">
+                        <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">Data Quality</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Quality metrics and checks will be displayed here
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1248,13 +1267,21 @@ export default function TableDetailsPage() {
                   <Eye className="h-4 w-4" />
                   Preview Data
                 </button>
-                <button onClick={() => {}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                <button onClick={() => handleExport('csv')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <FileText className="h-4 w-4" />
                   Export Schema
                 </button>
-                <button onClick={() => {setActiveTab("usage")}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  <BarChart3 className="h-4 w-4" />
-                  View Analytics
+                <button 
+                  onClick={() => {
+                    if(activeTab !== "usage"){
+                      setActiveTab("usage")
+                      setIsTableStatsLoading(true);
+                      getTableStatsMutation.mutate(tableId)
+                    }
+                  }} 
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                    <BarChart3 className="h-4 w-4" />
+                    View Analytics
                 </button>
                 <button onClick={() => {setActiveTab("lineage")}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <Share className="h-4 w-4" />
