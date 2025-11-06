@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Search,
@@ -21,6 +21,7 @@ import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { fetchFavorites } from '../favorites/page';
+import { FiltersModal, FilterState } from '@/components/DataCatalog/FiltersModal';
 
 interface Table {
   id: number;
@@ -85,6 +86,17 @@ export interface SearchTablesResponse {
   };
   search_time_ms: number;
 }
+
+export interface SearchFilters {
+  q?: string;
+  domain_ids?: number[];
+  data_source_ids?: number[];
+  owner_ids?: number[];
+  sensitivity_levels?: string[];
+  is_certified?: boolean;
+  page?: number;
+  size?: number;
+};
 
 export interface TableSummary {
   id: number;
@@ -186,8 +198,39 @@ async function fetchDomains(): Promise<DomainsResponse> {
   return response.json();
 }
 
-async function searchTables(query: string, domainId: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/search?q=${query}&domain_ids=${domainId}`, {
+async function searchTables(query: string, filterParams: FilterState): Promise<any> {
+  const params = new URLSearchParams();
+  
+  // Add query only if present
+  if (query.trim()) {
+    params.append('q', query);
+  }
+  
+  // Add filters only if they have values
+  if (filterParams.domain_ids.length > 0) {
+    filterParams.domain_ids.forEach(id => params.append('domain_ids', id.toString()));
+  }
+  
+  if (filterParams.data_source_ids.length > 0) {
+    filterParams.data_source_ids.forEach(id => params.append('data_source_ids', id.toString()));
+  }
+  
+  if (filterParams.owner_ids.length > 0) {
+    filterParams.owner_ids.forEach(id => params.append('owner_ids', id.toString()));
+  }
+  
+  if (filterParams.sensitivity_levels.length > 0) {
+    filterParams.sensitivity_levels.forEach(level => params.append('sensitivity_levels', level));
+  }
+  
+  if (filterParams.is_certified !== null) {
+    params.append('is_certified', filterParams.is_certified.toString());
+  }
+  
+  params.append('page', '1');
+  params.append('size', '20');
+  
+  const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -223,10 +266,18 @@ function getSensitivityColor(level: string): string {
 export default function CatalogPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [selectedDomain, setSelectedDomain] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [selectedDomain, setSelectedDomain] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [queryResults, setQueryResults] = useState<SearchTablesResponse | undefined>();
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    domain_ids: [],
+    data_source_ids: [],
+    owner_ids: [],
+    sensitivity_levels: [],
+    is_certified: null,
+  });
 
   const router = useRouter();
   const debouncedSearch = useDebounce(search, 600);
@@ -271,25 +322,34 @@ export default function CatalogPage() {
     });
 
   const searchTablesMutation = useMutation({
-    mutationFn: ({query, domainId}:{query: string, domainId: string}) =>
-      searchTables(query, domainId),
+    mutationFn: ({query, filters}:{query: string, filters: FilterState}) =>
+      searchTables(query, filters),
     onSuccess: (data) => {
-      setIsModalOpen(false)
       setQueryResults(data)
     },
     onError: (error) => {
-      console.error('Failed to create table:', error);
+      console.error('Failed to search tables:', error);
     },
   });
 
-    useEffect(() => {
-    if (debouncedSearch.trim() === "") {
+  const hasFilters = useMemo(() => {
+   const hasFilters = filters.domain_ids.length > 0 ||
+      filters.data_source_ids.length > 0 ||
+      filters.owner_ids.length > 0 ||
+      filters.sensitivity_levels.length > 0 ||
+      filters.is_certified !== null;
+
+      return hasFilters
+  },[filters, search, tablesData])
+
+  useEffect(() => {
+
+    if (debouncedSearch.trim() === "" && !hasFilters) {
       setQueryResults(undefined);
       return;
     }
 
-    // Auto-trigger search
-    searchTablesMutation.mutate({query: debouncedSearch, domainId:selectedDomain});
+    searchTablesMutation.mutate({query: debouncedSearch, filters});
   }, [debouncedSearch]);
 
   const handleChange = (query: string) => {
@@ -311,6 +371,23 @@ export default function CatalogPage() {
     setQueryResults(undefined)
   }
 
+  const handleApplyFilters = (newFilters: FilterState) => {
+    setFilters(newFilters);
+    setPage(1);
+
+    searchTablesMutation.mutate({query: search, filters: newFilters});
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.domain_ids.length > 0) count++;
+    if (filters.data_source_ids.length > 0) count++;
+    if (filters.owner_ids.length > 0) count++;
+    if (filters.sensitivity_levels.length > 0) count++;
+    if (filters.is_certified !== null) count++;
+    return count;
+  };
+
   const createFavoritesLookup = () => {
     const favList = favorites?.tables || [];
     return new Set(favList.flatMap(f => [f.id, f.urn]));
@@ -320,7 +397,7 @@ export default function CatalogPage() {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors space-y-4">
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-end px-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Data Catalog
@@ -367,13 +444,13 @@ export default function CatalogPage() {
               {searchTablesMutation.isPending && (
                 <Loader2 className="absolute right-3 top-3 h-5 w-5 text-gray-400 animate-spin" />
               )}
-              {queryResults?.results && (
-                <button type="button" onClick={handleClearSearch} className="absolute right-3 top-3">
+              {(queryResults?.results && search) && (
+                <button type="button"title='Clear Search' onClick={handleClearSearch} className="absolute right-3 top-3">
                   <X className="h-5 w-5 text-gray-400" />
                 </button>
               )}
 
-              {(queryResults?.results || []).length > 0 && (
+              {(queryResults?.results || []).length > 0 && search && (
                 <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-200/60 dark:border-slate-600 rounded-xl shadow-lg z-50 max-h-64 overflow-auto">
                   {(queryResults?.results || []).map((s) => (
                     <div
@@ -396,34 +473,18 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          <div className="min-w-48">
-            <label
-              htmlFor="domain"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Domain
-            </label>
-            <select
-              id="domain"
-              value={selectedDomain}
-              onChange={(e) => setSelectedDomain(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All Domains</option>
-              {domainsData?.domains?.map((domain: any) => (
-                <option key={domain.id} value={domain.id.toString()}>
-                  {domain.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
-            type="submit"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            type="button"
+            onClick={() => setIsFilterModalOpen(true)}
+            className="relative flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Filter className="h-4 w-4" />
-            Filter
+            Filters
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {getActiveFilterCount()}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -432,7 +493,11 @@ export default function CatalogPage() {
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-medium text-gray-900">
-            {tablesData ? `${tablesData.total} Tables` : "Loading..."}
+            {queryResults 
+              ? `${queryResults.total} Search/Filter Results` 
+              : tablesData 
+                ? `${tablesData.total} Tables` 
+                : "Fetching Tables..."}
           </h2>
           <div className="flex items-center gap-2">
             <button
@@ -455,24 +520,26 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        {tablesLoading ? (
+        {(tablesLoading && !queryResults) ? (
           <div className="p-12 text-center">
-            <div className="text-gray-500">Loading tables...</div>
+            <div className="text-gray-500 flex justify-center items-center w-full">
+              <Loader2 className='animate-spin w-10 h-10' />
+            </div>
           </div>
-        ) : !tablesData?.tables?.length ? (
+        ) : (queryResults && queryResults.results.length === 0) ? (
           <div className="p-12 text-center">
             <Database className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">
-              No tables found
+              No results found
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search criteria or filters.
+              Try adjusting your search or filters.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {tablesData.tables.map((table: Table) => {
-              const isFav = favSet.has(table.id) || favSet.has(table.urn);
+            <div className="divide-y divide-gray-200">
+              {((queryResults && !search) ? queryResults.results : tablesData?.tables || []).map((table: Table | TableSummary) => {
+              const isFav = favSet.has(table.id) || favSet.has(table?.urn);
               return(
               <div
                 key={table.id}
@@ -595,7 +662,7 @@ export default function CatalogPage() {
         )}
 
         {/* Pagination */}
-        {tablesData && (page > 1 || tablesData.has_next) && (
+        {!queryResults && tablesData && (page > 1 || tablesData.has_next) && (
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-500">
               Showing {(page - 1) * 20 + 1} to{" "}
@@ -636,6 +703,16 @@ export default function CatalogPage() {
         sourceList={datasources?.data_sources as any[]}
         domainList={domainsData?.domains as any[]}
         userList={users?.users}
+      />
+
+      <FiltersModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={handleApplyFilters}
+        initialFilters={filters}
+        domains={domainsData?.domains || []}
+        dataSources={datasources?.data_sources || []}
+        owners={users?.users || []}
       />
     </div>
   );
