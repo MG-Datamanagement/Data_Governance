@@ -40,7 +40,7 @@ const fetchSuggestions = async (q: string) => {
   setLoading(true);
   try {
     const res = await axios.get(
-      `http://172.188.2.173:3000/api/v1/search/suggestions?q=${encodeURIComponent(q)}`
+      `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/search/suggestions?q=${encodeURIComponent(q)}`
     );
 
     setSuggestions(res.data.suggestions || []);

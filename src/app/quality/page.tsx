@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
+const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
 
 // Mock quality data since backend doesn't have quality endpoints yet
 const mockQualityData = {

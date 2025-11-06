@@ -48,6 +48,7 @@ import { DomainsResponse } from '../page';
 import { fetchFavorites } from '@/app/favorites/page';
 import { extractSchemaData } from '@/utils/schemaMapper';
 import { convertToCSV, downloadFile, TableData } from '@/utils/exportUitls';
+import { RuleList, TableRules } from '@/components/DataCatalog/RuleList';
 
 export interface TableDetails {
   id: number;
@@ -116,7 +117,7 @@ interface Tag {
   is_system_tag: boolean;
 }
 
-const API_BASE_URL = 'http://172.188.2.173:3000/api/v1';
+const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
 
 async function fetchTableDetails(tableId: string): Promise<TableDetails> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);
@@ -238,8 +239,8 @@ async function fetchDomains(): Promise<DomainsResponse> {
   return response.json();
 }
 
-async function fetchTableQualityRules(tableId: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/quality/tables/${tableId}/rules`);
+async function fetchTableQualityRules(tableId: string): Promise<TableRules> {
+  const response = await fetch(`${API_BASE_URL}/quality/table/${tableId}/rules`);
   if (!response.ok) throw new Error('Failed to fetch table quality rules');
   return response.json();
 }
@@ -1171,6 +1172,7 @@ export default function TableDetailsPage() {
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
                             <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleRefetchUpdatedGraph={(tableId) => refetch()} />
+
                           </div>
                         </div>
 
@@ -1201,7 +1203,7 @@ export default function TableDetailsPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="text-center py-12">
+                      <div className="text-center">
                         <Share className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900">No Lineage Data Available</h3>
                         <p className="mt-1 text-sm text-gray-500">
@@ -1213,13 +1215,16 @@ export default function TableDetailsPage() {
                 )}
 
                 {activeTab === 'quality' && (
-                  <div className="text-center py-12">
+                  <div className="text-center">
                     {isTableQualityRulesLoading ? (
                       <div className="w-full flex justify-center">
                         <Loader2 className="animate-spin text-[#3B82F6] w-10 h-10" />
                       </div>
                     ) : tableQualityRules ? (
-                        <></>
+                        <div className="flex-col justify-center space-y-3">
+                          <h3 className="text-left text-lg font-semibold text-gray-900">Data Quality</h3>
+                          <RuleList table={tableQualityRules} />
+                        </div>
                     ) : (
                       <div className="text-center">
                         <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
