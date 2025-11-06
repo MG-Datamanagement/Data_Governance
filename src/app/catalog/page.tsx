@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Search,
@@ -198,7 +198,7 @@ async function fetchDomains(): Promise<DomainsResponse> {
   return response.json();
 }
 
-async function searchTables(query: string, filterParams: FilterState): Promise<any> {
+async function searchTables(query: string, filterParams: FilterState, abortControllerRef:MutableRefObject<AbortController | null>): Promise<any> {
   const params = new URLSearchParams();
   
   // Add query only if present
@@ -235,6 +235,7 @@ async function searchTables(query: string, filterParams: FilterState): Promise<a
     headers: {
       'Content-Type': 'application/json',
     },
+    signal: abortControllerRef?.current?.signal
   });
   if (!response.ok) throw new Error('Failed to search tables');
   return response.json();
@@ -281,6 +282,7 @@ export default function CatalogPage() {
 
   const router = useRouter();
   const debouncedSearch = useDebounce(search, 600);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: tablesData, isLoading: tablesLoading, refetch: refetchTables } = useQuery({
     queryKey: ['tables', page, selectedDomain],
@@ -322,13 +324,20 @@ export default function CatalogPage() {
     });
 
   const searchTablesMutation = useMutation({
-    mutationFn: ({query, filters}:{query: string, filters: FilterState}) =>
-      searchTables(query, filters),
+    mutationFn: ({query, filters}:{query: string, filters: FilterState}) =>{
+      abortControllerRef.current = new AbortController();
+
+      return searchTables(query, filters, abortControllerRef)
+    },
     onSuccess: (data) => {
       setQueryResults(data)
     },
     onError: (error) => {
-      console.error('Failed to search tables:', error);
+      if (error.name === 'CanceledError') {
+        console.log('Tables Search canceled!');
+      } else {
+        console.error('Failed to search tables:', error);
+      }
     },
   });
 
@@ -343,7 +352,6 @@ export default function CatalogPage() {
   },[filters, search, tablesData])
 
   useEffect(() => {
-
     if (debouncedSearch.trim() === "" && !hasFilters) {
       setQueryResults(undefined);
       return;
@@ -369,6 +377,9 @@ export default function CatalogPage() {
   const handleClearSearch = () => {
     setSearch(""); 
     setQueryResults(undefined)
+    abortControllerRef.current?.abort();
+    searchTablesMutation.reset();
+    // !queryResults && search && toast.success("Tables Search cancelled!")
   }
 
   const handleApplyFilters = (newFilters: FilterState) => {
@@ -445,7 +456,7 @@ export default function CatalogPage() {
                 <Loader2 className="absolute right-3 top-3 h-5 w-5 text-gray-400 animate-spin" />
               )}
               {(queryResults?.results && search) && (
-                <button type="button"title='Clear Search' onClick={handleClearSearch} className="absolute right-3 top-3">
+                <button type="button"title='Clear Search' onClick={handleClearSearch} className="absolute right-12 top-3">
                   <X className="h-5 w-5 text-gray-400" />
                 </button>
               )}
