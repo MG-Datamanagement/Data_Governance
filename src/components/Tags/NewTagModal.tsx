@@ -5,8 +5,9 @@ import { Tag } from "@/app/tags/page";
 export interface TagFormData {
   name: string;
   description: string;
-  parent_tag_id: number | "";
+  parent_tag_id: number | undefined;
   is_system_tag: boolean;
+  is_active?: boolean;
 }
 
 interface NewTagModalProps {
@@ -29,7 +30,7 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
   const [formData, setFormData] = useState<TagFormData>({
     name: "",
     description: "",
-    parent_tag_id: "",
+    parent_tag_id: undefined,
     is_system_tag: false,
   });
 
@@ -39,13 +40,17 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
     if (tag) {
       setFormData((prev) => ({
         ...prev,
-        ...tag,
+        name: tag?.name,
+        description: tag?.description,
+        parent_tag_id: tag?.parent_tag_id,
+        is_system_tag: tag?.is_system_tag,
+        is_active: tag?.is_active
       }));
     } else {
       setFormData({
         name: "",
         description: "",
-        parent_tag_id: "",
+        parent_tag_id: undefined,
         is_system_tag: false,
       });
     }
@@ -205,13 +210,17 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={formData.is_system_tag}
-                  onChange={(e) =>
-                    setFormData({ ...formData, is_system_tag: e.target.checked })
-                  }
+                  checked={tag ? formData.is_active : formData.is_system_tag}
+                  onChange={(e) =>{
+                    if(tag){
+                      setFormData({ ...formData, is_active: e.target.checked })
+                    } else {
+                      setFormData({ ...formData, is_system_tag: e.target.checked })
+                    }
+                  }}
                   disabled={isLoading}
                 />
-                <span className="text-sm text-slate-700">Is System Tag</span>
+                <span className="text-sm text-slate-700">{ tag ? "Is Active" : "Is System Tag"}</span>
               </label>
             </div>
           </div>

@@ -657,14 +657,6 @@ export default function CatalogPage() {
                         View Details
                       </button>
                     )}
-
-                    <button disabled={table.is_active ? false : true} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                      <Tag className="h-5 w-5" />
-                    </button>
-
-                    <button disabled={table.is_active ? false : true} className="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
-                      <Star className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
               </div>

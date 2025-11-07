@@ -274,7 +274,7 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 setIsModalOpen(true);
@@ -293,13 +293,13 @@ export default function TagDetailPage({ params }: { params: { id: string } }) {
             >
               <Trash2 className="h-5 w-5" />
             </button>
-          </div>
-          
           <div 
             className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
             style={{ backgroundColor: tag.color }}
             title={`Tag color: ${tag.color}`}
           ></div>
+          </div>
+          
         </div>
       </div>
 
