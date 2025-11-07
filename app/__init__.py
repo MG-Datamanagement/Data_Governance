@@ -1,0 +1,3 @@
+"""
+MetaPortal application package.
+"""
