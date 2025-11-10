@@ -1,12 +1,14 @@
 
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, MutableRefObject } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Search, Settings, User, Bell } from 'lucide-react';
+import { Search, Settings, User, Bell, Loader2, X } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useDebounce } from "@/hooks/useDebounce";
+import toast from "react-hot-toast";
 
 type Suggestion = {
   id: number;
@@ -19,7 +21,20 @@ export function Header() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
+  const debouncedSearch = useDebounce(query, 600);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+
+  useEffect(() => {
+    if (debouncedSearch.trim() === "") {
+      setSuggestions([]);
+      return;
+    }
+
+    fetchSuggestions(debouncedSearch);
+  }, [debouncedSearch]);
 
   
   function groupByType(suggestions: Suggestion[]) {
@@ -38,12 +53,19 @@ const fetchSuggestions = async (q: string) => {
   }
 
   setLoading(true);
+  abortControllerRef.current = new AbortController();
+
   try {
     const res = await axios.get(
-      `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/search/suggestions?q=${encodeURIComponent(q)}`
+      `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/search/suggestions?q=${encodeURIComponent(q)}`, {
+        signal: abortControllerRef.current?.signal
+      }
     );
 
     setSuggestions(res.data.suggestions || []);
+    if(!res.data.suggestions.length){
+      toast.error("No, Search results matching query! Try with different query.")
+    }
   } catch (err) {
     console.error("Error fetching suggestions", err);
     setSuggestions([]);
@@ -55,9 +77,14 @@ const fetchSuggestions = async (q: string) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value;
     setQuery(q);
-    fetchSuggestions(q);
   };
 
+  const handleClearSearch = () => {
+    setQuery(""); 
+    setSuggestions([]);
+    abortControllerRef.current?.abort();
+    // !queryResults && search && toast.success("Tables Search cancelled!")
+  }
   
   const handleSelect = (s: Suggestion) => {
     const path = s.type === 'tables' ? 'catalog' : s.type;
@@ -105,6 +132,14 @@ const fetchSuggestions = async (q: string) => {
       value={query}
       onChange={handleChange}
     />
+    {loading && (
+      <Loader2 className="absolute right-3 top-4 h-5 w-5 text-gray-400 animate-spin" />
+    )}
+    {((suggestions || []) && query) && (
+      <button type="button"title='Clear Search' onClick={handleClearSearch} className="absolute right-12 top-4">
+        <X className="h-5 w-5 text-gray-400" />
+      </button>
+    )}
 
     {/* Suggestions dropdown */}
 
