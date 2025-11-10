@@ -755,7 +755,7 @@ export default function QualityPage() {
         </div>
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-500">
-            Last scan: {formatDate(runQualityScanActionMutation?.data?.data?.scan_triggered_at ?? "NA")}
+            Last scan: {runQualityScanActionMutation?.data?.data?.scan_triggered_at ? formatDate(runQualityScanActionMutation?.data?.data?.scan_triggered_at) : "-"}
           </div>
           <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Bell className="h-4 w-4 mr-2" />
