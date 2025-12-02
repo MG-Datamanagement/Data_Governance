@@ -14,7 +14,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { TablesResponse } from '../catalog/page';
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 // Mock favorite tables data since backend endpoints are stubs
 const mockFavorites = [

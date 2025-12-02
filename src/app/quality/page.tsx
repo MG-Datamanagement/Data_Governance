@@ -444,7 +444,7 @@ const mockAttentionTables: AttentionRequiredTableResponse = {
 
 
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 // Mock quality data since backend doesn't have quality endpoints yet
 const mockQualityData = {

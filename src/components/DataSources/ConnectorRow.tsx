@@ -1,6 +1,6 @@
 import { RefreshCw, Edit2, Trash2, Settings } from "lucide-react";
 import { memo } from "react";
-import { DATABASE_TYPES } from "./constants";
+import { ALL_INTEGRATIONS } from "./utils/integrations";
 import StatusBadge from "./StatusBadge";
 import { Connector } from "./types/types";
 
@@ -37,7 +37,7 @@ const ConnectorRow: React.FC<ConnectorRowProps> = memo(
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <span className="text-lg">
-            {DATABASE_TYPES.find((db) => db.name === connector.type)?.icon}
+            {ALL_INTEGRATIONS.find((integration) => integration.name === connector.type)?.icon}
           </span>
           <span className="text-sm text-gray-700">{connector.type}</span>
         </div>

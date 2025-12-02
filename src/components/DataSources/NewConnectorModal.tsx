@@ -6,16 +6,27 @@ import {
   Loader,
   Check,
   Server,
-  Info,
   Shield,
   RefreshCw,
   Database as DatabaseIcon,
   Sparkles,
+  Activity,
+  BarChart2,
+  Book,
+  Box,
+  Brain,
+  CheckCircle,
+  Cpu,
+  Database,
+  GitBranch,
+  Key,
+  Layers,
+  Search,
 } from "lucide-react";
 import { memo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DATABASE_TYPES } from "./constants";
+import { ALL_INTEGRATIONS, CATEGORIES } from "./utils/integrations";
 import { Connector } from "./types/types";
 import { connectorApi } from "./services/connectorApi";
 import {
@@ -36,6 +47,23 @@ interface NewConnectorModalProps {
   onClose: () => void;
   onCreateConnector: (connector: Connector) => void;
 }
+export const CATEGORY_ICONS: Record<string, JSX.Element> = {
+  database: <Server size={16} />,
+  cloud: <Cloud size={16} />,
+  storage: <Database size={16} />,
+  streaming: <Activity size={16} />,
+  orchestration: <GitBranch size={16} />,
+  bi: <BarChart2 size={16} />,
+  governance: <Shield size={16} />,
+  processing: <Cpu size={16} />,
+  etl: <Layers size={16} />,
+  quality: <CheckCircle size={16} />,
+  ml: <Brain size={16} />,
+  iam: <Key size={16} />,
+  search: <Search size={16} />,
+  metadata: <Book size={16} />,
+  source: <Box size={16} />,
+};
 
 const NewConnectorModal: React.FC<NewConnectorModalProps> = memo(
   ({ show, onClose, onCreateConnector }: NewConnectorModalProps) => {
@@ -101,7 +129,10 @@ const NewConnectorModal: React.FC<NewConnectorModalProps> = memo(
         onClose();
       } catch (error: any) {
         // alert(error.message || "Failed to create connector");
-        addNotification("error", error.message || error.detail || "Failed to create connector");
+        addNotification(
+          "error",
+          error.message || error.detail || "Failed to create connector"
+        );
       } finally {
         setIsSaving(false);
       }
@@ -137,35 +168,45 @@ const NewConnectorModal: React.FC<NewConnectorModalProps> = memo(
 
           {!selectedConnectorType ? (
             <div className="p-6">
-              {["database", "cloud"].map((category) => {
-                const categoryDbs = DATABASE_TYPES.filter(
-                  (db) => db.category === category
+              {CATEGORIES.map((category) => {
+                const allIntegrations = ALL_INTEGRATIONS.filter(
+                  (integration) => integration.category === category
                 );
-                if (categoryDbs.length === 0) return null;
+
+                if (allIntegrations.length === 0) return null;
 
                 return (
                   <div key={category} className="mb-6">
                     <h3 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider flex items-center gap-2">
-                      {category === "database" && <Server size={16} />}
-                      {category === "cloud" && <Cloud size={16} />}
+                      {CATEGORY_ICONS[category] || null}
                       {category}
                     </h3>
+
                     <div className="grid grid-cols-4 gap-3">
-                      {categoryDbs.map((db) => (
+                      {allIntegrations.map((integration) => (
                         <button
-                          key={db.id}
+                          key={integration.id}
                           onClick={() => {
-                            setSelectedConnectorType(db);
-                            setValue("port", db.defaultPort);
+                            setSelectedConnectorType(integration);
+                            setValue(
+                              "port",
+                              integration?.defaultPort || "0000"
+                            );
                           }}
-                          className={`${db.color} border-2 rounded-lg p-4 text-center hover:shadow-md transition-all cursor-pointer group`}
+                          className={`${integration.color} flex flex-col justify-center items-center gap-2 border-2 rounded-lg p-4 text-center hover:shadow-md transition-all cursor-pointer group`}
                         >
-                          <div className="text-3xl mb-2">{db.icon}</div>
+                          <img
+                            src={integration.icon}
+                            alt={integration.name}
+                            className="w-8"
+                          />
+
                           <div className="text-sm font-medium text-gray-800 group-hover:text-gray-900">
-                            {db.name}
+                            {integration.name}
                           </div>
+
                           <div className="text-xs text-gray-500 mt-1">
-                            {db.description}
+                            {integration.description}
                           </div>
                         </button>
                       ))}
@@ -219,7 +260,7 @@ const NewConnectorModal: React.FC<NewConnectorModalProps> = memo(
                       <FormInput
                         label="Host"
                         name="host"
-                        placeholder="localhost or db.example.com"
+                        placeholder="localhost or integration.example.com"
                         required
                         register={register}
                         error={errors.host}

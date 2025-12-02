@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { Edit2, RefreshCw, Settings, Trash2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-import { DATABASE_TYPES } from "./constants";
+import { ALL_INTEGRATIONS } from "./utils/integrations";
 import { Connector } from "./types/types";
 
 interface ConnectorCardProps {
@@ -14,7 +14,7 @@ interface ConnectorCardProps {
 
 export const ConnectorCard = memo<ConnectorCardProps>(
   ({ connector, onSync, onEdit, onDelete, onViewDetails }) => {
-    const dbType = DATABASE_TYPES.find((db) => db.name === connector.type);
+    const dbType = ALL_INTEGRATIONS.find((integration) => integration.name === connector.type);
 
     return (
       <tr

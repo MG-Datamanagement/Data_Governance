@@ -36,7 +36,7 @@ import { QualityTrendChart, DomainQualityChart, DataSourcesChart, RecentAlerts }
 import Link from 'next/link';
 import { fetchDatasources, fetchUsers } from './catalog/[id]/page';
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 async function fetchStats() {
   const [tablesResponse, domainsResponse, tagsResponse] = await Promise.all([
@@ -176,7 +176,7 @@ export default function HomePage() {
                       <ShieldCheck className="h-8 w-8 text-slate-600 dark:text-slate-400" />
                     </div>
                     <div className="text-2xl font-bold mb-1">{statsData?.domainsCount}</div>
-                    <div className="text-slate-600 dark:text-slate-400 text-sm">Compliance Score</div>
+                    <div className="text-slate-600 dark:text-slate-400 text-sm">Domains</div>
                   </div>
                   <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-200/20 dark:border-slate-700/20">
                     <div className="flex items-center mb-3">

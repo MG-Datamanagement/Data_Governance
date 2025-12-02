@@ -57,7 +57,7 @@ const fetchSuggestions = async (q: string) => {
 
   try {
     const res = await axios.get(
-      `https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1/search/suggestions?q=${encodeURIComponent(q)}`, {
+      `http://localhost:8000/api/v1/search/suggestions?q=${encodeURIComponent(q)}`, {
         signal: abortControllerRef.current?.signal
       }
     );

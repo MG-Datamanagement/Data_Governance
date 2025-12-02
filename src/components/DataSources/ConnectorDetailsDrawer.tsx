@@ -13,7 +13,7 @@ import {
 import { memo, useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DATABASE_TYPES } from "./constants";
+import { ALL_INTEGRATIONS } from "./utils/integrations";
 import StatusBadge from "./StatusBadge";
 import { Connector } from "./types/types";
 import { connectorApi } from "./services/connectorApi";
@@ -262,8 +262,8 @@ const ConnectorDetailsDrawer: React.FC<ConnectorDetailsDrawerProps> = memo(
                     <div className="px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 flex items-center gap-2">
                       <span className="text-lg">
                         {
-                          DATABASE_TYPES.find(
-                            (db) => db.name === connector.type
+                          ALL_INTEGRATIONS.find(
+                            (integration) => integration.name === connector.type
                           )?.icon
                         }
                       </span>

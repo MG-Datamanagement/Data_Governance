@@ -117,7 +117,7 @@ interface Tag {
   is_system_tag: boolean;
 }
 
-const API_BASE_URL = 'https://nmqhfvs3-8000.inc1.devtunnels.ms/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 async function fetchTableDetails(tableId: string): Promise<TableDetails> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);

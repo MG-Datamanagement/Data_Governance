@@ -191,7 +191,7 @@ interface Filters {
 }
 
 // ==================== API SERVICE ====================
-const baseUrl = "https://nmqhfvs3-8000.inc1.devtunnels.ms";
+const baseUrl = "http://localhost:8000";
 
 // ==================== UTILITY FUNCTIONS ====================
 // const getCategoryColor = (category: string): string => {
