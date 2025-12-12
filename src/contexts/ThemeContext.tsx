@@ -16,13 +16,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
-  // Handle hydration
+  // Initialize theme on mount
   useEffect(() => {
-    // Check localStorage and system preference
-    const savedTheme = localStorage.getItem('theme') as Theme;
+    const root = document.documentElement;
+
+    // Check localStorage first, then system preference
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const initialTheme = savedTheme || systemTheme;
-    
+
+    // Apply theme immediately to prevent flash
+    root.classList.remove('light', 'dark');
+    root.classList.add(initialTheme);
+
     setTheme(initialTheme);
     setMounted(true);
   }, []);
@@ -30,15 +36,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Update document class and localStorage when theme changes
   useEffect(() => {
     if (!mounted) return;
-    
+
     const root = document.documentElement;
-    
+
     // Remove both classes first
     root.classList.remove('light', 'dark');
-    
+
     // Add the current theme class
     root.classList.add(theme);
-    
+
     // Save to localStorage
     localStorage.setItem('theme', theme);
   }, [theme, mounted]);
@@ -49,11 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {!mounted ? (
-        <div style={{ visibility: 'hidden' }}>{children}</div>
-      ) : (
-        children
-      )}
+      {children}
     </ThemeContext.Provider>
   );
 }

@@ -31,7 +31,7 @@ export interface TagsResponse {
   items: Tag[];
 }
 
-const API_BASE_URL = "http://localhost:8000/api/v1"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 async function createTag(tagData: TagFormData): Promise<Tag> {
   const response = await fetch(

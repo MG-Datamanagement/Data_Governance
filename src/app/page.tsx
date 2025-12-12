@@ -36,13 +36,13 @@ import { QualityTrendChart, DomainQualityChart, DataSourcesChart, RecentAlerts }
 import Link from 'next/link';
 import { fetchDatasources, fetchUsers } from './catalog/[id]/page';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 
 async function fetchStats() {
   const [tablesResponse, domainsResponse, tagsResponse] = await Promise.all([
-    fetch(`${API_BASE_URL}/tables`),
-    fetch(`${API_BASE_URL}/domains`),
-    fetch(`${API_BASE_URL}/tags`)
+    fetch(`${GRAPHQL_ENDPOINT}/tables`),
+    fetch(`${GRAPHQL_ENDPOINT}/domains`),
+    fetch(`${GRAPHQL_ENDPOINT}/tags`)
   ]);
 
   const [tables, domains, tags] = await Promise.all([

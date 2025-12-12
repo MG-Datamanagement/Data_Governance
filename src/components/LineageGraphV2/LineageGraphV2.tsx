@@ -140,7 +140,7 @@ interface LineageGraphProps {
   handleRefetchUpdatedGraph: (tableId: number) => void;
 }
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
 
 const LineageGraph: React.FC<LineageGraphProps> = (props: LineageGraphProps) => {
   const { lineageData, addTablesFeat = false, handleRefetchUpdatedGraph } = props;

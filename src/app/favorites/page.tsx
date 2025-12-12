@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { TablesResponse } from '../catalog/page';
+import { TablesResponse } from '../catalog/pagev1';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 // Mock favorite tables data since backend endpoints are stubs
 const mockFavorites = [

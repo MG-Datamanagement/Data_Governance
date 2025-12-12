@@ -125,9 +125,8 @@ const NewDomainModal: React.FC<NewDomainModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.name ? "border-red-300 bg-red-50" : "border-slate-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? "border-red-300 bg-red-50" : "border-slate-300"
+                  }`}
                 placeholder="Domain name"
                 disabled={isLoading}
               />
@@ -151,11 +150,10 @@ const NewDomainModal: React.FC<NewDomainModalProps> = ({
                       steward_id: Number(e.target.value),
                     })
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none ${
-                    errors.steward_id
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none ${errors.steward_id
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300"
-                  }`}
+                    }`}
                   disabled={isLoading}
                 >
                   <option value="">Select steward</option>
@@ -184,11 +182,10 @@ const NewDomainModal: React.FC<NewDomainModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
-                  errors.description
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${errors.description
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300"
-                }`}
+                  }`}
                 rows={2}
                 placeholder="Enter description"
                 disabled={isLoading}

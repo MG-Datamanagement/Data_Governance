@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Folder, Database, User, Plus } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NewDomainModal, {
   DomainFormData,
 } from "@/components/Domains/NewDomainModal";
@@ -14,12 +14,12 @@ export interface Domain {
   urn?: string;
   name: string;
   description: string;
-  color: string;
+  color?: string;
   steward_id?: number;
   steward_name?: string;
-  created_at: string;
-  updated_at: string;
-  tables_count: number;
+  created_at?: string | any;
+  updated_at?: string | any;
+  tables_count?: number;
 }
 
 interface DomainsResponse {
@@ -30,58 +30,183 @@ interface DomainsResponse {
   has_next: boolean;
 }
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// const API_BASE_URL = 'http://localhost:8000/api/v1';
 
-async function createDomain(domainData: DomainFormData): Promise<Domain> {
-  const response = await fetch(
-    `${API_BASE_URL}/domains`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(domainData),
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
+
+async function createDomain(domainData: Omit<DomainFormData, "id">): Promise<Domain> {
+  const mutation = `
+    mutation CreateDomain($input: CreateDomainInput!) {
+      createDomain(input: $input)
     }
-  );
-  const data = await response.json();
-  if (!response.ok) throw new Error("Failed to create Domain");
-  return data;
+  `;
+
+  const variables = {
+    input: {
+      name: domainData.name,
+      description: domainData.description || "",
+    },
+  };
+
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: mutation,
+      variables,
+    }),
+  });
+
+  const json = await response.json();
+
+  if (json.errors || !json.data?.createDomain) {
+    throw new Error(json.errors?.[0]?.message || "Failed to create Domain");
+  }
+
+  const urn: string = json.data.createDomain;
+
+  const newDomain: Domain = {
+    id: 0,
+    urn,
+    name: domainData.name,
+    description: domainData.description || "",
+  };
+
+  return newDomain;
 }
 
 export default function DomainsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchDomains = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/domains`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch domains");
+  async function fetchDomains(): Promise<DomainsResponse> {
+    const query = `
+    query listAllDomains {
+      listDomains(input: { start: 0, count: 100 }) {
+        total
+        domains {
+          urn
+          id
+          ownership {
+            owners {
+              owner {
+                ...on CorpUser {
+                  username
+                }
+              }
+            }
+          }
+          properties {
+            name
+            description
+            createdOn {
+              time
+            }
+          }
+        }
       }
-      const data: DomainsResponse = await response.json();
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load domains");
     }
-  };
+  `;
+
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    const json = await response.json();
+
+    if (json.errors || !json.data?.listDomains) {
+      throw new Error(json.errors?.[0]?.message || "Failed to fetch domains from GraphQL");
+    }
+
+    const result = json.data.listDomains;
+
+    const mappedDomains: Domain[] = result.domains.map((d: any) => {
+      const stewardName =
+        d.ownership?.owners?.[0]?.owner?.username || null;
+
+      const color = stringToColor(d.properties.name || d.id);
+
+      return {
+        id: Number(d.id) || d.id,
+        urn: d.urn,
+        name: d.properties.name || "Unnamed Domain",
+        description: d.properties.description || "",
+        color,
+        steward_id: undefined,
+        steward_name: stewardName,
+        created_at: new Date(d.properties.createdOn.time).toISOString(),
+        updated_at: new Date(d.properties.createdOn.time).toISOString(),
+        tables_count: 0,
+      };
+    });
+    return {
+      domains: mappedDomains,
+      total: result.total,
+      page: 1,
+      size: result.domains.length,
+      has_next: result.domains.length < result.total,
+    };
+  }
+
+  function stringToColor(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 50%)`;
+  }
 
   const { data: domains, isLoading: isDomainsLoading, refetch: refetchDomains } = useQuery({
     queryKey: ['domains'],
     queryFn: fetchDomains,
   });
 
+  const queryClient = useQueryClient();
+
   const createDomainMutation = useMutation({
-    mutationFn: (domainData: DomainFormData) => createDomain(domainData),
-    onSuccess: (data) => {
-      setIsModalOpen(false);
-      refetchDomains();
-      toast.success("Successfully Domain Created!");
+    mutationFn: createDomain,
+    onMutate: async (newDomainData) => {
+      await queryClient.cancelQueries({ queryKey: ['domains'] });
+
+      const previousDomains = queryClient.getQueryData<DomainsResponse>(['domains']);
+
+      if (previousDomains) {
+        const tempId = Date.now();
+
+        queryClient.setQueryData<DomainsResponse>(['domains'], {
+          ...previousDomains,
+          domains: [
+            ...previousDomains.domains,
+            {
+              id: tempId,
+              urn: "urn:li:dataDomain:temp-" + tempId,
+              name: newDomainData.name,
+              description: newDomainData.description,
+            }
+          ],
+          total: previousDomains.total + 1,
+        });
+      }
+
+      return { previousDomains };
     },
-    onError: (error) => {
+    onError: (err, newDomain, context) => {
+      queryClient.setQueryData(['domains'], context?.previousDomains);
       toast.error("Failed to create domain");
-      console.error("Failed to create domain:", error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['domains'] });
+    },
+    onSuccess: () => {
+      setIsModalOpen(false);
+      toast.success("Domain created successfully!");
     },
   });
 
@@ -201,7 +326,7 @@ export default function DomainsPage() {
                       <div>
                         <span>
                           Created:{" "}
-                          {new Date(domain.created_at).toLocaleDateString()}
+                          {new Date(domain?.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>

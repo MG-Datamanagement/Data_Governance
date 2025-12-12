@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
   "https://wpn22kg2-8000.inc1.devtunnels.ms/api/v1";
 
 const apiClient: AxiosInstance = axios.create({

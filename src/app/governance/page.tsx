@@ -191,7 +191,7 @@ interface Filters {
 }
 
 // ==================== API SERVICE ====================
-const baseUrl = "http://localhost:8000";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
 // ==================== UTILITY FUNCTIONS ====================
 // const getCategoryColor = (category: string): string => {

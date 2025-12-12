@@ -77,18 +77,14 @@ export function Navigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-64 bg-white dark:bg-slate-800 shadow-sm border-r border-slate-200/60 dark:border-slate-700/60 min-h-screen transition-all duration-300">
-      <div className="p-4">
-        <div className="mb-6">
-          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-3">
-            Navigation
-          </h2>
-        </div>
+    <nav className="hidden md:block fixed top-20 left-0 bottom-0 w-64 bg-white dark:bg-slate-800 z-40 border-r border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+      <div className="p-4 h-full overflow-auto">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Navigation</h2>
         <ul className="space-y-2">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
             const isImplemented = item.implemented;
-            
+
             const linkContent = (
               <>
                 <item.icon
@@ -109,7 +105,7 @@ export function Navigation() {
                 </span>
               </>
             );
-            
+
             return (
               <li key={item.name}>
                 {isImplemented ? (

@@ -43,71 +43,12 @@ import { normalizeLineageData } from '@/utils/utils';
 import { ConfirmModal } from '@/components/common/ConfirmModalNew';
 import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
-import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
-import { DomainsResponse } from '../page';
+import TableModal, { TableFormData, TableDetails } from '@/components/DataCatalog/TableModel';
+import { DomainsResponse } from '../pagev1';
 import { fetchFavorites } from '@/app/favorites/page';
 import { extractSchemaData } from '@/utils/schemaMapper';
 import { convertToCSV, downloadFile, TableData } from '@/utils/exportUitls';
 import { RuleList, TableRules } from '@/components/DataCatalog/RuleList';
-
-export interface TableDetails {
-  id: number;
-  urn?: string;
-  name: string;
-  schema_name: string;
-  description?: string;
-  data_source: {
-    id: number;
-    name: string;
-    type: string;
-  };
-  domain: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  owner: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  table_type: string;
-  sensitivity_level: string;
-  is_active: boolean;
-  is_certified: boolean;
-  certification_notes?: string;
-  created_at: string;
-  updated_at: string;
-  stats?: {
-    row_count: number;
-    size_bytes: number;
-    quality_score: number;
-    query_count_last_30d: number;
-    unique_users_last_30d: number;
-  };
-  columns: Array<{
-    id: number;
-    name: string;
-    description?: string;
-    data_type: string;
-    max_length?: number;
-    precision?: number;
-    scale?: number;
-    is_nullable: boolean;
-    is_primary_key: boolean;
-    is_foreign_key: boolean;
-    default_value?: string;
-    is_pii: boolean;
-    sensitivity_level: string;
-    ordinal_position: number;
-  }>;
-  tags?: Array<{
-    id: number;
-    name: string;
-    color: string;
-    description?: string;
-  }>;
-}
 
 interface Tag {
   id: number;
@@ -117,9 +58,139 @@ interface Tag {
   is_system_tag: boolean;
 }
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 
-async function fetchTableDetails(tableId: string): Promise<TableDetails> {
+const GQL_DATASET_DETAILS = `
+query IngestionFromParticularTable($urn: String!)
+{
+  dataset(urn: $urn) {
+    name # Name of the Table **under main card
+    urn # URN of the Table  **under main card
+    platform {
+      urn
+      type # Table Type **under main card **under Table Information
+      name # Database Name   **under main card
+    }
+    properties {
+      name
+      description #description of the table/catalog    **under main card
+      lastModified{
+        time #last modification timestamp  **under Table Information
+      }
+      created #created at timestamp **under Table Information
+      createdActor #data steward    **under main card
+    }
+    domain {
+      domain {
+        urn
+        properties {
+          name # Name of the Domain **under main card **under Table Information
+        }
+      }
+    }
+    tags {
+      tags {
+        tag {
+          properties {
+            name
+            colorHex
+          }
+        }
+      }
+}
+    schemaMetadata { # ** under schema card
+      fields {
+        fieldPath #column_name
+        nativeDataType #datatype
+        description #description
+        nullable #nullable
+        isPartOfKey #active or inactive
+        label
+      }
+    }
+  }
+}
+`;
+
+interface GraphQLDatasetResponse {
+  dataset: {
+    urn: string;
+    name: string;
+    platform: {
+      urn: string;
+      name: string;
+      type: string;
+    };
+    properties: {
+      name: string;
+      description: string | null;
+      lastModified: { time: number } | null;
+      created: { time: number } | null;
+      createdActor: string | null;
+    };
+    domain: {
+      domain: {
+        urn: string;
+        properties: { name: string } | null;
+      }
+    } | null;
+    tags: {
+      tags: {
+        tag: {
+          urn: string;
+          properties: {
+            name: string;
+            colorHex?: string;
+          }
+        }
+      }[]
+    } | null;
+    schemaMetadata: {
+      fields: {
+        fieldPath: string;
+        nativeDataType: string;
+        description: string | null;
+        nullable: boolean;
+        isPartOfKey: boolean;
+        label: string | null;
+      }[];
+    } | null;
+  } | null;
+}
+
+async function gqlRequest<T>(query: string, variables?: Record<string, any>): Promise<T> {
+  const res = await fetch(GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0]?.message || 'GraphQL Error');
+  return json.data;
+}
+
+async function fetchDatasetByUrn(urn: string): Promise<GraphQLDatasetResponse> {
+  return gqlRequest<GraphQLDatasetResponse>(GQL_DATASET_DETAILS, { urn });
+}
+
+declare global {
+  interface String {
+    hashCode(): number;
+  }
+}
+String.prototype.hashCode = function () {
+  let hash = 0;
+  for (let i = 0; i < this.length; i++) {
+    const chr = this.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+async function fetchTableDetails(tableId: string | undefined | undefined): Promise<TableDetails> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);
   if (!response.ok) throw new Error('Failed to fetch table details');
   return response.json();
@@ -131,7 +202,7 @@ async function fetchAvailableTags(): Promise<{ items: Tag[] }> {
   return response.json();
 }
 
-async function addTagsToTable(tableId: string, tagIds: number[]): Promise<void> {
+async function addTagsToTable(tableId: string | undefined | undefined, tagIds: number[]): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/tags`, {
     method: 'POST',
     headers: {
@@ -142,7 +213,7 @@ async function addTagsToTable(tableId: string, tagIds: number[]): Promise<void> 
   if (!response.ok) throw new Error('Failed to add tags to table');
 }
 
-async function removeTagToTable(tableId: string, tagId: number): Promise<void> {
+async function removeTagToTable(tableId: string | undefined, tagId: number): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/tags/${tagId}`, {
     method: 'DELETE',
     headers: {
@@ -153,7 +224,7 @@ async function removeTagToTable(tableId: string, tagId: number): Promise<void> {
   return response.json();
 }
 
-async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promise<void> {
+async function toggleTableFavorite(tableId: string | undefined, isFavorited: boolean): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/favorite`, {
     method: isFavorited ? 'DELETE' : 'POST',
     headers: {
@@ -165,7 +236,7 @@ async function toggleTableFavorite(tableId: string, isFavorited: boolean): Promi
   return response.json();
 }
 
-async function updateTable(tableId: string, tableData: TableFormData): Promise<void> {
+async function updateTable(tableId: string | undefined, tableData: TableFormData): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`, {
     method: 'PUT',
     headers: {
@@ -176,7 +247,7 @@ async function updateTable(tableId: string, tableData: TableFormData): Promise<v
   if (!response.ok) throw new Error('Failed to update table description');
 }
 
-async function deleteTable(tableId: string): Promise<any> {
+async function deleteTable(tableId: string | undefined): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}`, {
     method: 'DELETE',
     headers: {
@@ -188,7 +259,7 @@ async function deleteTable(tableId: string): Promise<any> {
   return data
 }
 
-async function getTableStats(tableId: string): Promise<any> {
+async function getTableStats(tableId: string | undefined): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/stats`, {
     method: 'GET',
     headers: {
@@ -200,7 +271,7 @@ async function getTableStats(tableId: string): Promise<any> {
   return data
 }
 
-async function updateColumnDescription(tableId: string, columnId: number, description: string): Promise<void> {
+async function updateColumnDescription(tableId: string | undefined, columnId: number, description: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${columnId}`, {
     method: 'PUT',
     headers: {
@@ -239,7 +310,7 @@ async function fetchDomains(): Promise<DomainsResponse> {
   return response.json();
 }
 
-async function fetchTableQualityRules(tableId: string): Promise<TableRules> {
+async function fetchTableQualityRules(tableId: string | undefined): Promise<TableRules> {
   const response = await fetch(`${API_BASE_URL}/quality/table/${tableId}/rules`);
   if (!response.ok) throw new Error('Failed to fetch table quality rules');
   return response.json();
@@ -269,7 +340,7 @@ interface LineageGraph {
   };
 }
 
-export async function fetchTableLineage(tableId: string): Promise<LineageGraph> {
+export async function fetchTableLineage(tableId: string | undefined): Promise<LineageGraph> {
   const response = await fetch(`${API_BASE_URL}/lineage/table/${tableId}/full-graph?max_depth=2`);
   if (!response.ok) throw new Error('Failed to fetch table lineage');
   return response.json();
@@ -324,24 +395,18 @@ function getDataTypeIcon(dataType: string) {
 
 export default function TableDetailsPage() {
   const params = useParams();
-  const tableId = params.id as string;
+  const urn = decodeURIComponent(params.id as string);
 
-  const isFavoriteTable = useMemo(() => {
-    return (favorites?.tables || []).some(
-      (f) => f.urn === table?.urn || f.id === table?.id
-    );
-  }, [tableId]);
-  
   const [activeTab, setActiveTab] = useState<'schema' | 'lineage' | 'quality' | 'usage'>('schema');
   const [showTagModal, setShowTagModal] = useState(false);
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState('');
   const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
-  const [columnDescriptions, setColumnDescriptions] = useState<{[key: number]: string}>({});
+  const [columnDescriptions, setColumnDescriptions] = useState<{ [key: number]: string }>({});
   const [searchTags, setSearchTags] = useState('');
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [removeTag, setRemoveTag] = useState<Tag | undefined>();
-  const [isFavorited, setIsFavorited] = useState(isFavoriteTable);
+  const [isFavorited, setIsFavorited] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [tableStats, setTableStats] = useState<TableStats | undefined>();
   const [isTableStatsLoading, setIsTableStatsLoading] = useState<boolean>(false);
@@ -350,16 +415,89 @@ export default function TableDetailsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const { data: table, isLoading } = useQuery({
-    queryKey: ['table', tableId],
-    queryFn: () => fetchTableDetails(tableId),
-    enabled: !!tableId,
+  // Fetch dataset from GraphQL using URN
+  const { data: gqlData, isLoading: gqlLoading, error: gqlError } = useQuery({
+    queryKey: ['dataset', urn],
+    queryFn: () => fetchDatasetByUrn(urn),
+    enabled: !!urn,
   });
+
+  // Transform GraphQL data to TableDetails format
+  const table: TableDetails | null = useMemo(() => {
+    if (!gqlData?.dataset) return null;
+
+    const d = gqlData.dataset;
+
+    return {
+      id: 0, // GraphQL doesn't provide numeric ID
+      urn: d.urn,
+      name: d.properties.name || d.name,
+      schema_name: d.urn.includes('Patient360DB') ? 'Patient360DB' : '',
+      description: d.properties.description || 'No description available',
+      data_source: {
+        id: 0,
+        name: d.platform.name,
+        type: d.platform.type,
+      },
+      domain: {
+        id: 0,
+        name: d.domain?.domain?.properties?.name || 'Uncategorized',
+        color: '#6366f1', // indigo-500
+      },
+      owner: {
+        id: 0,
+        name: d.properties.createdActor || 'Data Platform',
+        email: '',
+      },
+      table_type: 'COLLECTION',
+      sensitivity_level: 'medium',
+      is_active: true,
+      is_certified: false,
+      created_at: d.properties.created?.time
+        ? new Date(d.properties.created.time).toISOString()
+        : new Date().toISOString(),
+      updated_at: d.properties.lastModified?.time
+        ? new Date(d.properties.lastModified.time).toISOString()
+        : new Date().toISOString(),
+      stats: {
+        row_count: 0,
+        size_bytes: 0,
+        quality_score: 85,
+        query_count_last_30d: 0,
+        unique_users_last_30d: 0,
+      },
+      columns: (d.schemaMetadata?.fields || []).map(f => ({
+        id: f.fieldPath.hashCode(),
+        name: f.fieldPath,
+        data_type: f.nativeDataType,
+        description: f.description || '',
+        is_nullable: f.nullable,
+        is_primary_key: f.isPartOfKey,
+        is_foreign_key: false,
+        is_pii: false,
+        sensitivity_level: 'low',
+        ordinal_position: 0,
+      })),
+      tags: d.tags?.tags.map(t => ({
+        id: t.tag.urn.hashCode(),
+        name: t.tag.properties.name,
+        color: t.tag.properties.colorHex || '#94a3b8',
+      })) || [],
+    };
+  }, [gqlData]);
+
+  const isLoading = gqlLoading;
+  const tableId = table?.id?.toString() || '0';
+
+  // NOTE: Features like lineage, quality rules, favorites, tags, etc. require a numeric table ID
+  // from the REST API. Since we're fetching from GraphQL using URN, these features will be
+  // disabled unless the table also exists in the REST API database.
+  const hasRestApiSupport = tableId !== '0';
 
   const { data: lineageData, isLoading: lineageLoading, refetch } = useQuery({
     queryKey: ['table-lineage', tableId],
     queryFn: () => fetchTableLineage(tableId),
-    enabled: !!tableId && activeTab === 'lineage',
+    enabled: hasRestApiSupport && activeTab === 'lineage',
   });
 
   const { data: domainsData } = useQuery({
@@ -367,200 +505,47 @@ export default function TableDetailsPage() {
     queryFn: () => fetchDomains(),
   });
 
-  const {data: users} = useQuery({
+  const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => fetchUsers(),
   })
 
-  const {data: datasources} = useQuery({
+  const { data: datasources } = useQuery({
     queryKey: ['datasources'],
     queryFn: () => fetchDatasources(),
   })
-  // For now, let's use default React Flow nodes to ensure edges work
-  const nodeTypes = {
-    // We'll use default nodes for better compatibility
-  };
-
-  // Transform lineage data for React Flow
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    if (!lineageData) return { nodes: [], edges: [] };
-
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-
-    // Calculate better positioning
-    const upstreamCount = lineageData.upstream_links.length;
-    const downstreamCount = lineageData.downstream_links.length;
-    const maxCount = Math.max(upstreamCount, downstreamCount);
-    
-    // Center table position
-    const centerY = maxCount > 0 ? (maxCount * 150) / 2 : 200;
-
-    // Add center table node
-    const centerNodeId = `table_${lineageData.center_table.table_id}`;
-    nodes.push({
-      id: centerNodeId,
-      type: 'default',
-      position: { x: 400, y: centerY },
-      data: {
-        label: `${lineageData.center_table.schema_name}.${lineageData.center_table.table_name}\nCurrent Table`
-      },
-      style: {
-        background: '#dcfce7',
-        border: '2px solid #16a34a',
-        borderRadius: '8px',
-        padding: '12px',
-        minWidth: '220px',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        color: '#15803d',
-      },
-    });
-
-    // Add upstream table nodes
-    lineageData.upstream_links.forEach((table, index) => {
-      const nodeId = `table_${table.table_id}`;
-      const yPosition = upstreamCount === 1 ? centerY : index * 150 + 50;
-      
-      nodes.push({
-        id: nodeId,
-        type: 'default',
-        position: { x: 50, y: yPosition },
-        data: {
-          label: `${table.schema_name}.${table.table_name}\n${table.confidence_score}% confidence`
-        },
-        style: {
-          background: '#dbeafe',
-          border: '2px solid #3b82f6',
-          borderRadius: '8px',
-          padding: '12px',
-          minWidth: '220px',
-          fontSize: '13px',
-          fontWeight: '500',
-          color: '#1d4ed8',
-        },
-      });
-
-      // Add edge from upstream to center
-      edges.push({
-        id: `edge_${nodeId}_to_center`,
-        source: nodeId,
-        target: centerNodeId,
-        type: 'default',
-        animated: true,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#3b82f6',
-        },
-        style: {
-          stroke: '#3b82f6',
-          strokeWidth: 2,
-        },
-        label: table.confidence_score ? `${table.confidence_score}%` : '',
-        labelStyle: { fontSize: '12px', fill: '#1f2937', fontWeight: 'bold' },
-        labelBgStyle: { fill: '#ffffff', fillOpacity: 0.8 },
-        labelBgPadding: [4, 2] as [number, number],
-      });
-    });
-
-    // Add downstream table nodes
-    lineageData.downstream_links.forEach((table, index) => {
-      const nodeId = `table_${table.table_id}`;
-      const yPosition = downstreamCount === 1 ? centerY : index * 150 + 50;
-      
-      nodes.push({
-        id: nodeId,
-        type: 'default',
-        position: { x: 750, y: yPosition },
-        data: {
-          label: `${table.schema_name}.${table.table_name}\n${table.confidence_score}% confidence`
-        },
-        style: {
-          background: '#fed7aa',
-          border: '2px solid #f59e0b',
-          borderRadius: '8px',
-          padding: '12px',
-          minWidth: '220px',
-          fontSize: '13px',
-          fontWeight: '500',
-          color: '#d97706',
-        },
-      });
-
-      // Add edge from center to downstream
-      edges.push({
-        id: `edge_center_to_${nodeId}`,
-        source: centerNodeId,
-        target: nodeId,
-        type: 'default',
-        animated: true,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#f59e0b',
-        },
-        style: {
-          stroke: '#f59e0b',
-          strokeWidth: 2,
-        },
-        label: table.confidence_score ? `${table.confidence_score}%` : '',
-        labelStyle: { fontSize: '12px', fill: '#1f2937', fontWeight: 'bold' },
-        labelBgStyle: { fill: '#ffffff', fillOpacity: 0.8 },
-        labelBgPadding: [4, 2] as [number, number],
-      });
-    });
-
-    console.log('Generated nodes:', nodes.map(n => ({ id: n.id, position: n.position })));
-    console.log('Generated edges:', edges.map(e => ({ id: e.id, source: e.source, target: e.target })));
-
-    return { nodes, edges };
-  }, [lineageData]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  // Update nodes and edges when lineage data changes
-  useEffect(() => {
-    if (lineageData) {
-      const { nodes: newNodes, edges: newEdges } = { nodes: initialNodes, edges: initialEdges };
-      setNodes(newNodes);
-      setEdges(newEdges);
-    }
-  }, [initialNodes, initialEdges, lineageData, setNodes, setEdges]);
-
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    console.log('Clicked node:', node);
-    // You can add navigation logic here, e.g., redirect to table detail page
-  }, []);
-
-  // Initialize column descriptions when table data loads
-  useEffect(() => {
-    if (table?.columns) {
-      const descriptions: {[key: number]: string} = {};
-      table.columns.forEach(column => {
-        descriptions[column.id] = column.description || '';
-      });
-      setColumnDescriptions(descriptions);
-    }
-  }, [table]);
-
-  const { data: availableTags, isLoading: isTagsLoading } = useQuery({
-    queryKey: ['available-tags'],
-    queryFn: fetchAvailableTags,
-    enabled: showTagModal,
-  });
 
   const { data: favorites, isLoading: isFavoritesLoading, refetch: refetchFavorites } = useQuery({
     queryKey: ['favorites'],
     queryFn: fetchFavorites
   });
 
+  // Check if current table is favorited (works with both URN and ID)
+  const isFavoriteTable = useMemo(() => {
+    if (!favorites?.tables || !table) return false;
+    return favorites.tables.some(
+      (f: any) => f.urn === table.urn || f.id === table.id
+    );
+  }, [favorites, table]);
+
+  // Update isFavorited state when favorites data changes
+  useEffect(() => {
+    setIsFavorited(isFavoriteTable);
+  }, [isFavoriteTable]);
+
   const { data: tableQualityRules, isLoading: isTableQualityRulesLoading, refetch: refetchTableQualityRules } = useQuery({
     queryKey: ['tablequalityrules'],
-    queryFn: () => fetchTableQualityRules(tableId)
+    queryFn: () => fetchTableQualityRules(tableId),
+    enabled: hasRestApiSupport,
+  });
+
+  const { data: availableTags } = useQuery({
+    queryKey: ['available-tags'],
+    queryFn: fetchAvailableTags,
   });
 
   const addTagsMutation = useMutation({
-    mutationFn: ({ tableId, tagIds }: { tableId: string; tagIds: number[] }) =>
+    mutationFn: ({ tableId, tagIds }: { tableId: string | undefined; tagIds: number[] }) =>
       addTagsToTable(tableId, tagIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
@@ -574,7 +559,7 @@ export default function TableDetailsPage() {
   });
 
   const removeTagMutation = useMutation({
-    mutationFn: ({ tableId, tagId }: { tableId: string; tagId: number }) =>
+    mutationFn: ({ tableId, tagId }: { tableId: string | undefined; tagId: number }) =>
       removeTagToTable(tableId, tagId),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
@@ -590,7 +575,7 @@ export default function TableDetailsPage() {
   });
 
   const favoriteMutation = useMutation({
-    mutationFn: ({ tableId, isFavorited }: { tableId: string; isFavorited: boolean }) =>
+    mutationFn: ({ tableId, isFavorited }: { tableId: string | undefined; isFavorited: boolean }) =>
       toggleTableFavorite(tableId, isFavorited),
     onSuccess: (data: any) => {
       setIsFavorited(!isFavorited);
@@ -604,7 +589,7 @@ export default function TableDetailsPage() {
   });
 
   const updateTableMutation = useMutation({
-    mutationFn: ({ tableId, tableData }: { tableId: string; tableData: TableFormData }) =>
+    mutationFn: ({ tableId, tableData }: { tableId: string | undefined; tableData: TableFormData }) =>
       updateTable(tableId, tableData),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
@@ -618,7 +603,7 @@ export default function TableDetailsPage() {
   });
 
   const deleteTableMutation = useMutation({
-    mutationFn: (tableId : string ) =>
+    mutationFn: (tableId: string | undefined) =>
       deleteTable(tableId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
@@ -633,7 +618,7 @@ export default function TableDetailsPage() {
   });
 
   const getTableStatsMutation = useMutation({
-    mutationFn: (tableId : string ) =>
+    mutationFn: (tableId: string | undefined) =>
       getTableStats(tableId),
     onSuccess: (data) => {
       setTableStats(data)
@@ -646,7 +631,7 @@ export default function TableDetailsPage() {
   });
 
   const updateColumnDescriptionMutation = useMutation({
-    mutationFn: ({ tableId, columnId, description }: { tableId: string; columnId: number; description: string }) =>
+    mutationFn: ({ tableId, columnId, description }: { tableId: string | undefined; columnId: number; description: string }) =>
       updateColumnDescription(tableId, columnId, description),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table', tableId] });
@@ -703,7 +688,7 @@ export default function TableDetailsPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Table not found</h2>
           <p className="text-gray-600 mb-4">The requested table could not be found.</p>
-          <Link 
+          <Link
             href="/catalog"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -735,7 +720,7 @@ export default function TableDetailsPage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <h1 className="text-3xl font-bold text-gray-900">{fullTableName}</h1>
-                
+
                 {table.is_certified && (
                   <div className="flex items-center gap-1 px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
                     <ShieldCheck className="h-4 w-4" fill="currentColor" />
@@ -743,10 +728,10 @@ export default function TableDetailsPage() {
                   </div>
                 )}
 
-                <span 
+                <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{ 
-                    backgroundColor: table.domain.color + '20', 
+                  style={{
+                    backgroundColor: table.domain.color + '20',
                     color: table.domain.color,
                     border: `1px solid ${table.domain.color}40`
                   }}
@@ -763,11 +748,12 @@ export default function TableDetailsPage() {
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-1">
                   <Server className="h-4 w-4" />
-                  {table.data_source.name} ({table.data_source.type})
+                  {table.data_source.name}
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  {table.owner.name}
+                  {/* {table.owner?.name || 'Unknown'} */}
+                  John Doe
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
@@ -833,9 +819,8 @@ export default function TableDetailsPage() {
             <div className="flex items-center gap-2 ml-6">
               <button
                 onClick={() => favoriteMutation.mutate({ tableId, isFavorited })}
-                className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
-                  isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'
-                }`}
+                className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${isFavorited ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'
+                  }`}
                 disabled={favoriteMutation.isPending}
                 title='Mark favorite'
               >
@@ -940,16 +925,15 @@ export default function TableDetailsPage() {
                         key={tab.key}
                         onClick={() => {
                           setActiveTab(tab.key as any);
-                          if(tab.key === "usage"){
+                          if (tab.key === "usage") {
                             setIsTableStatsLoading(true);
                             getTableStatsMutation.mutate(tableId)
                           }
                         }}
-                        className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                          activeTab === tab.key
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
                       >
                         <Icon className="h-4 w-4" />
                         {tab.label}
@@ -967,7 +951,7 @@ export default function TableDetailsPage() {
                         Table Schema ({table.columns?.length || 0} columns)
                       </h3>
                     </div>
-                    
+
                     <div className="overflow-auto border border-gray-200 rounded-lg">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -1014,11 +998,10 @@ export default function TableDetailsPage() {
                                 </code>
                               </td>
                               <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  column.is_nullable 
-                                    ? 'bg-yellow-100 text-yellow-800' 
-                                    : 'bg-green-100 text-green-800'
-                                }`}>
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${column.is_nullable
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-green-100 text-green-800'
+                                  }`}>
                                   {column.is_nullable ? 'Nullable' : 'Not Null'}
                                 </span>
                               </td>
@@ -1122,7 +1105,7 @@ export default function TableDetailsPage() {
                         View Full Lineage Explorer
                       </Link>
                     </div>
-                    
+
                     {lineageLoading ? (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -1168,7 +1151,6 @@ export default function TableDetailsPage() {
                         </div>
 
 
-                        {/* D3 Lineage Graph */}
                         <div className="bg-white border rounded-lg">
                           <div style={{ width: '100%' }}>
                             <LineageGraphV2 lineageData={normalizeLineageData(lineageData) as any} addTablesFeat handleRefetchUpdatedGraph={(tableId) => refetch()} />
@@ -1176,31 +1158,30 @@ export default function TableDetailsPage() {
                           </div>
                         </div>
 
-                        {/* Transformation Details */}
                         {(lineageData.upstream_links.some(t => t.transformation_logic) ||
                           lineageData.downstream_links.some(t => t.transformation_logic)) && (
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900 mb-4">Transformation Details</h4>
-                            <div className="space-y-3">
-                              {lineageData.upstream_links.filter(t => t.transformation_logic).map(table => (
-                                <div key={table.table_id} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                  <div className="font-medium text-blue-900">
-                                    {table.schema_name}.{table.table_name} → {lineageData.center_table.table_name}
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900 mb-4">Transformation Details</h4>
+                              <div className="space-y-3">
+                                {lineageData.upstream_links.filter(t => t.transformation_logic).map(table => (
+                                  <div key={table.table_id} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="font-medium text-blue-900">
+                                      {table.schema_name}.{table.table_name} → {lineageData.center_table.table_name}
+                                    </div>
+                                    <div className="text-sm text-blue-700 mt-1">{table.transformation_logic}</div>
                                   </div>
-                                  <div className="text-sm text-blue-700 mt-1">{table.transformation_logic}</div>
-                                </div>
-                              ))}
-                              {lineageData.downstream_links.filter(t => t.transformation_logic).map(table => (
-                                <div key={table.table_id} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                  <div className="font-medium text-orange-900">
-                                    {lineageData.center_table.table_name} → {table.schema_name}.{table.table_name}
+                                ))}
+                                {lineageData.downstream_links.filter(t => t.transformation_logic).map(table => (
+                                  <div key={table.table_id} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                    <div className="font-medium text-orange-900">
+                                      {lineageData.center_table.table_name} → {table.schema_name}.{table.table_name}
+                                    </div>
+                                    <div className="text-sm text-orange-700 mt-1">{table.transformation_logic}</div>
                                   </div>
-                                  <div className="text-sm text-orange-700 mt-1">{table.transformation_logic}</div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     ) : (
                       <div className="text-center">
@@ -1221,10 +1202,10 @@ export default function TableDetailsPage() {
                         <Loader2 className="animate-spin text-[#3B82F6] w-10 h-10" />
                       </div>
                     ) : tableQualityRules ? (
-                        <div className="flex-col justify-center space-y-3">
-                          <h3 className="text-left text-lg font-semibold text-gray-900">Data Quality</h3>
-                          <RuleList table={tableQualityRules} />
-                        </div>
+                      <div className="flex-col justify-center space-y-3">
+                        <h3 className="text-left text-lg font-semibold text-gray-900">Data Quality</h3>
+                        <RuleList table={tableQualityRules} />
+                      </div>
                     ) : (
                       <div className="text-center">
                         <ShieldCheck className="mx-auto h-12 w-12 text-gray-400" />
@@ -1265,7 +1246,7 @@ export default function TableDetailsPage() {
           {/* Sidebar */}
           <div className="col-span-3 space-y-6">
             {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm border p-4">
+            {/* <div className="bg-white rounded-lg shadow-sm border p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-2">
                 <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
@@ -1276,24 +1257,24 @@ export default function TableDetailsPage() {
                   <FileText className="h-4 w-4" />
                   Export Schema
                 </button>
-                <button 
+                <button
                   onClick={() => {
-                    if(activeTab !== "usage"){
+                    if (activeTab !== "usage") {
                       setActiveTab("usage")
                       setIsTableStatsLoading(true);
                       getTableStatsMutation.mutate(tableId)
                     }
-                  }} 
+                  }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                    <BarChart3 className="h-4 w-4" />
-                    View Analytics
+                  <BarChart3 className="h-4 w-4" />
+                  View Analytics
                 </button>
-                <button onClick={() => {setActiveTab("lineage")}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                <button onClick={() => { setActiveTab("lineage") }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   <Share className="h-4 w-4" />
                   View Lineage
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Table Info */}
             <div className="bg-white rounded-lg shadow-sm border p-4">
@@ -1317,7 +1298,7 @@ export default function TableDetailsPage() {
                 </div>
                 <div>
                   <span className="text-gray-600">Owner:</span>
-                  <div className="text-gray-900">{table.owner.name}</div>
+                  <div className="text-gray-900">{table.owner?.name || 'Unknown'}</div>
                 </div>
                 {table.stats?.unique_users_last_30d && (
                   <div>
@@ -1344,7 +1325,7 @@ export default function TableDetailsPage() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -1356,16 +1337,15 @@ export default function TableDetailsPage() {
                   className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
+
               <div className="max-h-64 overflow-y-auto space-y-2">
                 {filteredTags.map(tag => {
                   const isAlreadyAttached = table?.tags?.some(existingTag => existingTag.id === tag.id);
                   const isSelected = selectedTags.includes(tag.id);
-                  
+
                   return (
-                    <label key={tag.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                      isAlreadyAttached ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-gray-50'
-                    }`}>
+                    <label key={tag.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isAlreadyAttached ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-gray-50'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -1398,7 +1378,7 @@ export default function TableDetailsPage() {
                 })}
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
               <button
                 onClick={() => {
@@ -1440,22 +1420,21 @@ export default function TableDetailsPage() {
       {editing && <TableModal
         isOpen={editing}
         onClose={() => setEditing(false)}
-        onSubmit={(tableData: TableFormData) => updateTableMutation.mutate({tableId: table?.id?.toString(), tableData})}
-        isLoading={updateTableMutation.isPending}
+        onSubmit={(tableData: TableFormData) => updateTableMutation.mutate({ tableId: table?.id?.toString(), tableData })} isLoading={updateTableMutation.isPending}
         sourceList={datasources?.data_sources}
         domainList={domainsData?.domains as any[]}
         userList={users?.users}
         table={table}
       />}
 
-      {isRemoveTagModalOpen && <ConfirmModal
+      {isRemoveTagModalOpen && removeTag && <ConfirmModal
         isOpen={isRemoveTagModalOpen}
         onClose={() => {
           setIsRemoveTagModalOpen(false);
         }}
-        onConfirm={() => removeTagMutation.mutate({tableId, tagId:removeTag?.id})}
+        onConfirm={() => removeTagMutation.mutate({ tableId, tagId: removeTag.id })}
         isLoading={removeTagMutation.isPending}
-        entityName={`${removeTag?.name} Tag`}
+        entityName={`${removeTag.name} Tag`}
       />}
     </div>
   );
