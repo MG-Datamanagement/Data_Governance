@@ -52,6 +52,7 @@ import { RuleList, TableRules } from '@/components/DataCatalog/RuleList';
 
 interface Tag {
   id: number;
+  urn: string;
   name: string;
   color: string;
   description?: string;
@@ -138,7 +139,7 @@ interface GraphQLDatasetResponse {
     tags: {
       tags: {
         tag: {
-          urn: string;
+          urn: string | undefined
           properties: {
             name: string;
             colorHex?: string;
@@ -158,6 +159,35 @@ interface GraphQLDatasetResponse {
     } | null;
   } | null;
 }
+
+const GQL_TAGS_QUERY = `
+        query ListAllTags {
+          searchAcrossEntities(
+            input: {
+              types: [TAG]
+              query: ""
+              start: 0
+              count: 100
+            }
+          ) {
+            total
+            start
+            searchResults {
+              entity {
+                urn
+                ... on Tag {
+                  name
+                  description
+                  properties {
+                    description
+                    colorHex
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
 
 async function gqlRequest<T>(query: string, variables?: Record<string, any>): Promise<T> {
   const res = await fetch(GRAPHQL_ENDPOINT, {
@@ -197,9 +227,37 @@ async function fetchTableDetails(tableId: string | undefined | undefined): Promi
 }
 
 async function fetchAvailableTags(): Promise<{ items: Tag[] }> {
-  const response = await fetch(`${API_BASE_URL}/tags`);
-  if (!response.ok) throw new Error('Failed to fetch tags');
-  return response.json();
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: GQL_TAGS_QUERY }),
+  });
+
+  const json = await response.json();
+  if (!response.ok) {
+    throw new Error('Failed to fetch tags');
+  }
+  const items: Tag[] =
+    json.data.searchAcrossEntities.searchResults.map(
+      (result: any, index: number) => {
+        const entity = result.entity;
+
+        return {
+          id: index + 1, // temporary UI id
+          urn: entity.urn,
+          name: entity.name,
+          description: entity.description ?? "",
+          color: entity.properties?.colorHex ?? "#CBD5E1", // fallback color
+          is_system_tag: false,
+          is_active: true,
+          usage_count: 0, // not available from GraphQL
+          created_at: "",
+          updated_at: "",
+        };
+      }
+    );
+
+  return { items };
 }
 
 async function addTagsToTable(tableId: string | undefined | undefined, tagIds: number[]): Promise<void> {
@@ -404,7 +462,7 @@ export default function TableDetailsPage() {
   const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
   const [columnDescriptions, setColumnDescriptions] = useState<{ [key: number]: string }>({});
   const [searchTags, setSearchTags] = useState('');
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [removeTag, setRemoveTag] = useState<Tag | undefined>();
   const [isFavorited, setIsFavorited] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -479,7 +537,7 @@ export default function TableDetailsPage() {
         ordinal_position: 0,
       })),
       tags: d.tags?.tags.map(t => ({
-        id: t.tag.urn.hashCode(),
+        id: t.tag.urn ?? 0,
         name: t.tag.properties.name,
         color: t.tag.properties.colorHex || '#94a3b8',
       })) || [],
@@ -544,19 +602,66 @@ export default function TableDetailsPage() {
     queryFn: fetchAvailableTags,
   });
 
+  const ADD_TAG_MUTATION = `
+mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
+  addTag(
+    input: {
+      tagUrn: $tagUrn
+      resourceUrn: $resourceUrn
+    }
+  )
+}
+`;
+
+  async function addTagsToDataset(
+    datasetUrn: string,
+    tagUrns: string[]
+  ): Promise<void> {
+    await Promise.all(
+      tagUrns.map(tagUrn =>
+        gqlRequest(ADD_TAG_MUTATION, {
+          tagUrn,
+          resourceUrn: datasetUrn,
+        })
+      )
+    );
+  }
+
   const addTagsMutation = useMutation({
-    mutationFn: ({ tableId, tagIds }: { tableId: string | undefined; tagIds: number[] }) =>
-      addTagsToTable(tableId, tagIds),
+    mutationFn: ({
+      datasetUrn,
+      tagUrns,
+    }: {
+      datasetUrn: string;
+      tagUrns: string[];
+    }) => addTagsToDataset(datasetUrn, tagUrns),
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['table', tableId] });
+      toast.success('Tags added successfully');
+      queryClient.invalidateQueries({ queryKey: ['dataset', urn] });
       setShowTagModal(false);
       setSelectedTags([]);
       setSearchTags('');
     },
-    onError: (error) => {
-      console.error('Failed to add tags:', error);
-    }
+
+    onError: () => {
+      toast.error('Failed to add tags');
+    },
   });
+
+  // const addTagsMutation = useMutation({
+  //   mutationFn: ({ tableId, tagIds }: { tableId: string | undefined; tagIds: number[] }) =>
+  //     addTagsToTable(tableId, tagIds),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ['table', tableId] });
+  //     setShowTagModal(false);
+  //     setSelectedTags([]);
+  //     setSearchTags('');
+  //   },
+  //   onError: (error) => {
+  //     console.error('Failed to add tags:', error);
+  //   }
+  // });
 
   const removeTagMutation = useMutation({
     mutationFn: ({ tableId, tagId }: { tableId: string | undefined; tagId: number }) =>
@@ -1338,10 +1443,10 @@ export default function TableDetailsPage() {
                 />
               </div>
 
-              <div className="max-h-64 overflow-y-auto space-y-2">
+              <div className="max-h-64 overflow-y-auto overscroll-none space-y-2">
                 {filteredTags.map(tag => {
                   const isAlreadyAttached = table?.tags?.some(existingTag => existingTag.id === tag.id);
-                  const isSelected = selectedTags.includes(tag.id);
+                  const isSelected = selectedTags.includes(tag.urn);
 
                   return (
                     <label key={tag.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isAlreadyAttached ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-gray-50'
@@ -1352,9 +1457,9 @@ export default function TableDetailsPage() {
                         disabled={isAlreadyAttached}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedTags([...selectedTags, tag.id]);
+                            setSelectedTags([...selectedTags, tag.urn]);
                           } else {
-                            setSelectedTags(selectedTags.filter(id => id !== tag.id));
+                            setSelectedTags(selectedTags.filter(id => id !== tag.urn));
                           }
                         }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
@@ -1394,7 +1499,7 @@ export default function TableDetailsPage() {
               <button
                 onClick={() => {
                   if (selectedTags.length > 0) {
-                    addTagsMutation.mutate({ tableId, tagIds: selectedTags });
+                    addTagsMutation.mutate({ tagUrns: selectedTags, datasetUrn: urn });
                   }
                 }}
                 disabled={selectedTags.length === 0 || addTagsMutation.isPending}
