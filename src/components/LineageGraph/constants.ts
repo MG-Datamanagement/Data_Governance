@@ -17,3 +17,5 @@ export const GRAPH_CONFIG = {
     max: 4,
   },
 } as const;
+
+export const UNCATEGORIZED_DOMAIN = 'Uncategorized'

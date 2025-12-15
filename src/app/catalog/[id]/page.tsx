@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
+  PlusCircle,
   Plus,
   Search,
   Trash2,
@@ -44,11 +45,13 @@ import { ConfirmModal } from '@/components/common/ConfirmModalNew';
 import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
 import TableModal, { TableFormData, TableDetails } from '@/components/DataCatalog/TableModel';
-import { DomainsResponse } from '../pagev1';
 import { fetchFavorites } from '@/app/favorites/page';
 import { extractSchemaData } from '@/utils/schemaMapper';
 import { convertToCSV, downloadFile, TableData } from '@/utils/exportUitls';
 import { RuleList, TableRules } from '@/components/DataCatalog/RuleList';
+import { UNCATEGORIZED_DOMAIN } from '@/components/LineageGraph/constants';
+import { DomainsDataResponse } from '@/services/DomainsDataResponse';
+import AddDomainModal from '@/components/DataCatalog/AddDomainModal';
 
 interface Tag {
   id: number;
@@ -362,12 +365,6 @@ export async function fetchDatasources(): Promise<any> {
   return response.json();
 }
 
-async function fetchDomains(): Promise<DomainsResponse> {
-  const response = await fetch(`${API_BASE_URL}/domains`);
-  if (!response.ok) throw new Error('Failed to fetch domains');
-  return response.json();
-}
-
 async function fetchTableQualityRules(tableId: string | undefined): Promise<TableRules> {
   const response = await fetch(`${API_BASE_URL}/quality/table/${tableId}/rules`);
   if (!response.ok) throw new Error('Failed to fetch table quality rules');
@@ -457,6 +454,7 @@ export default function TableDetailsPage() {
 
   const [activeTab, setActiveTab] = useState<'schema' | 'lineage' | 'quality' | 'usage'>('schema');
   const [showTagModal, setShowTagModal] = useState(false);
+  const [showDomainsModal, setShowDomainsModal] = useState(false);
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState('');
   const [editingColumnId, setEditingColumnId] = useState<number | null>(null);
@@ -499,7 +497,7 @@ export default function TableDetailsPage() {
       },
       domain: {
         id: 0,
-        name: d.domain?.domain?.properties?.name || 'Uncategorized',
+        name: d.domain?.domain?.properties?.name || UNCATEGORIZED_DOMAIN,
         color: '#6366f1', // indigo-500
       },
       owner: {
@@ -540,6 +538,7 @@ export default function TableDetailsPage() {
         id: t.tag.urn ?? 0,
         name: t.tag.properties.name,
         color: t.tag.properties.colorHex || '#94a3b8',
+        urn: t.tag.urn
       })) || [],
     };
   }, [gqlData]);
@@ -556,11 +555,6 @@ export default function TableDetailsPage() {
     queryKey: ['table-lineage', tableId],
     queryFn: () => fetchTableLineage(tableId),
     enabled: hasRestApiSupport && activeTab === 'lineage',
-  });
-
-  const { data: domainsData } = useQuery({
-    queryKey: ['domains'],
-    queryFn: () => fetchDomains(),
   });
 
   const { data: users } = useQuery({
@@ -842,6 +836,7 @@ mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
                   }}
                 >
                   {table.domain.name}
+                  {table.domain.name === UNCATEGORIZED_DOMAIN ? <PlusCircle className='ml-2 cursor-pointer' onClick={() => setShowDomainsModal(true)} /> : ''}
                 </span>
 
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getSensitivityColor(table.sensitivity_level)}`}>
@@ -1445,7 +1440,7 @@ mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
 
               <div className="max-h-64 overflow-y-auto overscroll-none space-y-2">
                 {filteredTags.map(tag => {
-                  const isAlreadyAttached = table?.tags?.some(existingTag => existingTag.id === tag.id);
+                  const isAlreadyAttached = table?.tags?.some(existingTag => existingTag.urn === tag.urn);
                   const isSelected = selectedTags.includes(tag.urn);
 
                   return (
@@ -1512,6 +1507,11 @@ mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
         </div>
       )}
 
+      <AddDomainModal
+        open={showDomainsModal}
+        onClose={() => setShowDomainsModal(false)}
+        entityUrn={urn}
+      />
       {isDeleteModalOpen && <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -1527,7 +1527,6 @@ mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
         onClose={() => setEditing(false)}
         onSubmit={(tableData: TableFormData) => updateTableMutation.mutate({ tableId: table?.id?.toString(), tableData })} isLoading={updateTableMutation.isPending}
         sourceList={datasources?.data_sources}
-        domainList={domainsData?.domains as any[]}
         userList={users?.users}
         table={table}
       />}

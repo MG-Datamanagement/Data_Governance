@@ -18,7 +18,7 @@ export interface TableDetails {
   created_at: string;
   updated_at: string;
   columns: any[];
-  tags?: Array<{ id: number | string; name: string; color: string }>;
+  tags?: Array<{ id: number | string; name: string; color: string; urn: string | undefined }>;
   stats?: any;
 }
 
@@ -182,7 +182,7 @@ const TableModal: React.FC<TableModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Table Name {isEditMode && <span className="text-gray-400 text-xs">(from DataHub)</span>}
+                Table Name
               </label>
               <input
                 type="text"
@@ -202,7 +202,7 @@ const TableModal: React.FC<TableModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Database / Schema {isEditMode && <span className="text-gray-400 text-xs">(from DataHub)</span>}
+                Database / Schema
               </label>
               <input
                 type="text"

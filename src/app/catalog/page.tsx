@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { fetchFavorites } from '../favorites/page';
 import { FiltersModal, FilterState } from '@/components/DataCatalog/FiltersModal';
+import { UNCATEGORIZED_DOMAIN } from '@/components/LineageGraph/constants';
 
 /* -------------------------------------------------------
  * TYPES
@@ -384,7 +385,7 @@ async function fetchTables(
     const props = dataset.properties || {};
 
     const platformName = dataset.platform?.name || 'Unknown Platform';
-    const domainName = dataset.domain?.domain?.properties?.name || 'Uncategorized';
+    const domainName = dataset.domain?.domain?.properties?.name || UNCATEGORIZED_DOMAIN;
 
     // Use last part of URN as stable ID (or hash if needed)
     const urnParts = dataset.urn.split(':');
