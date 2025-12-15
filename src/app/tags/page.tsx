@@ -31,24 +31,74 @@ export interface TagsResponse {
   items: Tag[];
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
+
+// async function createTag(tagData: TagFormData): Promise<Tag> {
+//   const response = await fetch(
+//     `${API_BASE_URL}/tags`,
+//     {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(tagData),
+//     }
+//   );
+//   const data = await response.json();
+//   if (!response.ok) throw new Error("Failed to create Tag");
+//   return data;
+// }
 
 async function createTag(tagData: TagFormData): Promise<Tag> {
-  const response = await fetch(
-    `${API_BASE_URL}/tags`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(tagData),
+  const mutation = `
+    mutation CreateTag($input: CreateTagInput!) {
+      createTag(input: $input)
     }
-  );
-  const data = await response.json();
-  if (!response.ok) throw new Error("Failed to create Tag");
-  return data;
-}
+  `;
 
+  const variables = {
+    input: {
+      name: tagData.name,
+      description: tagData.description || "",
+    },
+  };
+
+
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: mutation,
+      variables,
+    }),
+  });
+
+  const json = await response.json();
+
+  if (!response.ok || json.errors) {
+    throw new Error(json.errors?.[0]?.message || "Failed to create tag");
+  }
+
+  const createdTag = json.data.createTag;
+
+  // Map GraphQL response → Tag UI model
+  return {
+    id: Date.now(), // temporary UI id
+    urn: createdTag.urn,
+    name: createdTag.name,
+    description: createdTag.description ?? "",
+    color: createdTag.properties?.colorHex ?? "#CBD5E1",
+    is_system_tag: false,
+    is_active: true,
+    usage_count: 0,
+    created_at: "",
+    updated_at: "",
+  };
+}
 
 export default function TagsPage() {
   const [error, setError] = useState<string | null>(null);
@@ -56,12 +106,70 @@ export default function TagsPage() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tags`);
+      const query = `
+        query ListAllTags {
+          searchAcrossEntities(
+            input: {
+              types: [TAG]
+              query: ""
+              start: 0
+              count: 100
+            }
+          ) {
+            total
+            start
+            searchResults {
+              entity {
+                urn
+                ... on Tag {
+                  name
+                  description
+                  properties {
+                    description
+                    colorHex
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await fetch(GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const json = await response.json();
+
       if (!response.ok) {
         throw new Error('Failed to fetch tags');
       }
-      const data: TagsResponse = await response.json();
-      return data
+
+      const items: Tag[] =
+        json.data.searchAcrossEntities.searchResults.map(
+          (result: any, index: number) => {
+            const entity = result.entity;
+
+            return {
+              id: index + 1, // temporary UI id
+              urn: entity.urn,
+              name: entity.name,
+              description: entity.description ?? "",
+              color: entity.properties?.colorHex ?? "#CBD5E1", // fallback color
+              is_system_tag: false,
+              is_active: true,
+              usage_count: 0, // not available from GraphQL
+              created_at: "",
+              updated_at: "",
+            };
+          }
+        );
+
+      return { items };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tags');
     }
@@ -72,7 +180,7 @@ export default function TagsPage() {
     queryFn: fetchTags,
   });
 
-  
+  console.log('tata', tags)
   const createTagMutation = useMutation({
     mutationFn: (tagData: TagFormData) =>
       createTag(tagData),
@@ -233,17 +341,17 @@ export default function TagsPage() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900">All Tags</h2>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(tags?.items || []).map((tag) => (
-              <div 
-                key={tag.id} 
+              <div
+                key={tag.id}
                 className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: `${tag.color}20` }}
                     >
@@ -293,7 +401,7 @@ export default function TagsPage() {
               </div>
             ))}
           </div>
-          
+
           {(tags?.items || []).length === 0 && (
             <div className="text-center py-12">
               <Tag className="w-12 h-12 text-gray-400 mx-auto mb-4" />

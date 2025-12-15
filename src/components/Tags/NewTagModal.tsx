@@ -63,8 +63,8 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
     if (!formData.name.trim()) newErrors.name = "Tag name is required";
     if (!formData.description.trim())
       newErrors.description = "Description is required";
-    if (!formData.parent_tag_id)
-      newErrors.parent_tag_id = "Select a Parent tag";
+    // if (!formData.parent_tag_id)
+    //   newErrors.parent_tag_id = "Select a Parent tag";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -143,7 +143,7 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
               )}
             </div>
             {/* Parent tag */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Parent Tag <span className="text-red-500">*</span>
               </label>
@@ -177,7 +177,7 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
                   {errors.parent_tag_id}
                 </p>
               )}
-            </div>
+            </div> */}
           </div>
 
           {/* Description */}
@@ -206,7 +206,7 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
                 </p>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -222,7 +222,7 @@ const NewTagModal: React.FC<NewTagModalProps> = ({
                 />
                 <span className="text-sm text-slate-700">{ tag ? "Is Active" : "Is System Tag"}</span>
               </label>
-            </div>
+            </div> */}
           </div>
         </form>
 
