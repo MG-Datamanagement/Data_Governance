@@ -22,6 +22,8 @@ jobs:
 
       - name: Deploy App
         run: |
+          # The EOF is quoted (<< 'EOF') to prevent shell variable expansion on the GitHub Runner.
+          # All variable expansion (like ${{ secrets.APP_DIR }}) happens before the script is sent to the VM.
           ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
 
@@ -36,13 +38,16 @@ jobs:
             else
               echo "Directory not a git repo, initializing..."
               git init
-              git remote add origin https://github.com/${{ github.repository }}.git
+              # 🚨 FIX: Using the PAT secret for authentication in the HTTPS URL
+              # The secret 'ACTIONS_PAT' must be created in your GitHub repo settings.
+              git remote add origin https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git
               git fetch
+              # Check out the main branch
               git checkout -t origin/main
             fi
 
             # Install dependencies
-            npm install -i
+            npm install --legacy-peer-deps # Added flag for modern npm versions
 
             # Restart app via PM2
             pm2 delete fe-app || true
