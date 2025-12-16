@@ -1,0 +1,42 @@
+name: FE Auto Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy App
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            set -e
+
+            cd ${{ secrets.APP_DIR }}
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }} .
+            else
+              git pull origin main
+            fi
+
+            npm install -i
+
+            pm2 delete fe-app || true
+            pm2 start npm --name fe-app -- run dev
+
+            pm2 save
+          EOF
