@@ -22,35 +22,41 @@ jobs:
 
       - name: Deploy App
         run: |
-          # The EOF is quoted (<< 'EOF') to prevent shell variable expansion on the GitHub Runner.
-          # All variable expansion (like ${{ secrets.APP_DIR }}) happens before the script is sent to the VM.
           ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
 
+            # Define the authenticated remote URL using the PAT secret
+            # This variable is expanded by the GitHub Actions runner before SSH executes
+            AUTH_URL="https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git"
+
             cd ${{ secrets.APP_DIR }}
 
-            # If directory has git, reset and pull; else initialize repo
+            # Check if directory has git initialized
             if [ -d ".git" ]; then
-              echo "Directory has git, pulling latest..."
+              echo "Directory has git, applying PAT URL and pulling latest..."
+              
+              # 🚀 FIX: Update the remote URL to use the authenticated PAT
+              git remote set-url origin $AUTH_URL
+              
+              # Perform clean pull
               git reset --hard
               git clean -fd
               git pull origin main
             else
               echo "Directory not a git repo, initializing..."
               git init
-              # 🚨 FIX: Using the PAT secret for authentication in the HTTPS URL
-              # The secret 'ACTIONS_PAT' must be created in your GitHub repo settings.
-              git remote add origin https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git
+              # Initialize with the authenticated PAT URL
+              git remote add origin $AUTH_URL
               git fetch
-              # Check out the main branch
               git checkout -t origin/main
             fi
 
             # Install dependencies
-            npm install --legacy-peer-deps # Added flag for modern npm versions
+            npm install --legacy-peer-deps
 
             # Restart app via PM2
-            pm2 delete fe-app || true
+            # '|| true' allows the script to continue if the app doesn't exist yet
+            pm2 delete fe-app || true 
             pm2 start npm --name fe-app -- run dev
             pm2 save
           EOF
