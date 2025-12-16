@@ -6,7 +6,8 @@ import {
   Tag,
   Hash,
   BarChart3,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import URNDisplay from '../../components/common/URNDisplay';
 import NewTagModal, { TagFormData } from '@/components/Tags/NewTagModal';
@@ -15,7 +16,7 @@ import toast from 'react-hot-toast';
 
 export interface Tag {
   id: number;
-  urn?: string;
+  urn: string;
   name: string;
   description: string;
   color: string;
@@ -100,9 +101,32 @@ async function createTag(tagData: TagFormData): Promise<Tag> {
   };
 }
 
+async function deleteTag(tagUrn: string): Promise<void> {
+  const mutation = `
+    mutation DeleteMyTag {
+      deleteTag(urn: "${tagUrn}")
+    }
+  `;
+
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query: mutation }),
+  });
+
+  const json = await response.json();
+
+  if (!response.ok || json.errors) {
+    throw new Error(json.errors?.[0]?.message || "Failed to delete tag");
+  }
+}
+
 export default function TagsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
 
   const fetchTags = async () => {
     try {
@@ -193,6 +217,19 @@ export default function TagsPage() {
       toast.error("Failed to create tag");
       console.error('Failed to create tag:', error);
     }
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (urn: string) => deleteTag(urn),
+    onSuccess: () => {
+      toast.success("Tag deleted successfully");
+      setTagToDelete(null);
+      refetchTags();
+    },
+    onError: (error) => {
+      toast.error("Failed to delete tag");
+      console.error("Delete tag error:", error);
+    },
   });
 
   if (isTagsLoading) {
@@ -361,18 +398,24 @@ export default function TagsPage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <Link
-                          href={`/tags/${tag.id}` as any}
-                          className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors truncate"
-                        >
-                          {tag.name}
-                        </Link>
-                        {tag.is_system_tag && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                            System
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <Link
+                            href={`/tags/${tag.id}` as any}
+                            className="text-sm font-medium truncate"
+                          >
+                            {tag.name}
+                          </Link>
+                          {true && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100">
+                              System
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className="w-3 h-3 rounded-full border border-gray-200 flex-shrink-0 mr-1"
+                          style={{ backgroundColor: tag.color }}
+                        />
                       </div>
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                         {tag.description}
@@ -389,10 +432,11 @@ export default function TagsPage() {
                         <span className="text-xs text-gray-500">
                           Used by {tag.usage_count} items
                         </span>
-                        <div
-                          className="w-3 h-3 rounded-full border border-gray-200"
-                          style={{ backgroundColor: tag.color }}
-                          title={`Color: ${tag.color}`}
+                        <Trash2
+                          className="mt-auto cursor-pointer text-gray-600 hover:text-red-600"
+                          onClick={() => {
+                            setTagToDelete(tag);
+                          }}
                         />
                       </div>
                     </div>
@@ -419,6 +463,47 @@ export default function TagsPage() {
         isLoading={createTagMutation.isPending}
         tagsList={(tags?.items || [])}
       />
-    </div>
+
+      {tagToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete Tag
+            </h3>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-gray-900">
+                {tagToDelete.name}
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setTagToDelete(null)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() =>
+                  deleteTagMutation.mutate(tagToDelete.urn, {
+                    onSettled: () => {
+                      setTagToDelete(null);
+                    },
+                  })}
+                disabled={deleteTagMutation.isPending}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteTagMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+      }
+    </div >
   );
 }

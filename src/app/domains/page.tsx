@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Folder, Database, User, Plus } from "lucide-react";
+import { Folder, Database, User, Plus, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NewDomainModal, {
   DomainFormData,
@@ -77,9 +77,32 @@ async function createDomain(domainData: Omit<DomainFormData, "id">): Promise<Dom
   return newDomain;
 }
 
+async function deleteDomain(domainUrn: string): Promise<void> {
+  const mutation = `
+    mutation DeleteDomain {
+      deleteDomain(urn: "${domainUrn}")
+    }
+  `;
+
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: mutation,
+    }),
+  });
+
+  const json = await response.json();
+
+  if (json.errors) {
+    throw new Error(json.errors[0]?.message || "Failed to delete domain");
+  }
+}
+
 export default function DomainsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [domainToDelete, setDomainToDelete] = useState<Domain | null>(null);
 
   async function fetchDomains(): Promise<DomainsResponse> {
     const query = `
@@ -121,6 +144,7 @@ export default function DomainsPage() {
     const json = await response.json();
 
     if (json.errors || !json.data?.listDomains) {
+      setError(json.errors?.[0]?.message || "Failed to fetch domains from GraphQL");
       throw new Error(json.errors?.[0]?.message || "Failed to fetch domains from GraphQL");
     }
 
@@ -207,6 +231,20 @@ export default function DomainsPage() {
     onSuccess: () => {
       setIsModalOpen(false);
       toast.success("Domain created successfully!");
+      refetchDomains();
+    },
+  });
+
+  const deleteDomainMutation = useMutation({
+    mutationFn: (urn: string) => deleteDomain(urn),
+    onSuccess: () => {
+      toast.success("Domain deleted successfully");
+      setDomainToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      refetchDomains();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete domain");
     },
   });
 
@@ -277,7 +315,7 @@ export default function DomainsPage() {
           {(domains?.domains || [])?.map((domain: Domain) => (
             <div
               key={domain.id}
-              className="p-6 hover:bg-gray-50 transition-colors"
+              className="relative p-6 hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4">
@@ -333,12 +371,16 @@ export default function DomainsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end space-y-2">
+                <div className="absolute top-6 right-6 bottom-6 flex flex-col items-center">
                   <div
                     className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                     style={{ backgroundColor: domain.color }}
                     title={`Domain color: ${domain.color}`}
-                  ></div>
+                  />
+                  <Trash2
+                    className="mt-auto cursor-pointer text-gray-600 hover:text-red-600"
+                    onClick={() => setDomainToDelete(domain)}
+                  />
                 </div>
               </div>
             </div>
@@ -364,6 +406,43 @@ export default function DomainsPage() {
         onSubmit={(data: DomainFormData) => createDomainMutation.mutate(data)}
         isLoading={createDomainMutation.isPending}
       />
+
+      {domainToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete Domain
+            </h3>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-gray-900">
+                {domainToDelete.name}
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDomainToDelete(null)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() =>
+                  deleteDomainMutation.mutate(domainToDelete.urn!)
+                }
+                disabled={deleteDomainMutation.isPending}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteDomainMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

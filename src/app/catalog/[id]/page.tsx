@@ -52,6 +52,7 @@ import { RuleList, TableRules } from '@/components/DataCatalog/RuleList';
 import { UNCATEGORIZED_DOMAIN } from '@/components/LineageGraph/constants';
 import { DomainsDataResponse } from '@/services/DomainsDataResponse';
 import AddDomainModal from '@/components/DataCatalog/AddDomainModal';
+import AddTagModal from '@/components/DataCatalog/AddTagModal';
 
 interface Tag {
   id: number;
@@ -1412,100 +1413,27 @@ mutation AddTag($tagUrn: String!, $resourceUrn: String!) {
         </div>
       </div>
 
-      {/* Add Tag Modal */}
-      {showTagModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Add Tags</h3>
-              <button
-                onClick={() => setShowTagModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTags}
-                  onChange={(e) => setSearchTags(e.target.value)}
-                  placeholder="Search tags..."
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="max-h-64 overflow-y-auto overscroll-none space-y-2">
-                {filteredTags.map(tag => {
-                  const isAlreadyAttached = table?.tags?.some(existingTag => existingTag.urn === tag.urn);
-                  const isSelected = selectedTags.includes(tag.urn);
-
-                  return (
-                    <label key={tag.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isAlreadyAttached ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-gray-50'
-                      }`}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        disabled={isAlreadyAttached}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedTags([...selectedTags, tag.urn]);
-                          } else {
-                            setSelectedTags(selectedTags.filter(id => id !== tag.urn));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                      />
-                      <span
-                        className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
-                        style={{
-                          backgroundColor: tag.color + '20',
-                          color: tag.color,
-                          border: `1px solid ${tag.color}40`
-                        }}
-                      >
-                        {tag.name}
-                        {isAlreadyAttached && (
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-600" />
-                        )}
-                      </span>
-                      <span className="text-sm text-gray-600 flex-1">{tag.description}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowTagModal(false);
-                  setSelectedTags([]);
-                  setSearchTags('');
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={addTagsMutation.isPending}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (selectedTags.length > 0) {
-                    addTagsMutation.mutate({ tagUrns: selectedTags, datasetUrn: urn });
-                  }
-                }}
-                disabled={selectedTags.length === 0 || addTagsMutation.isPending}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {addTagsMutation.isPending ? 'Adding...' : `Add Tags${selectedTags.length > 0 ? ` (${selectedTags.length})` : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddTagModal
+        open={showTagModal}
+        onClose={() => {
+          setShowTagModal(false);
+          setSelectedTags([]);
+          setSearchTags('');
+        }}
+        table={table}
+        availableTags={availableTags?.items || []}
+        selectedTags={selectedTags}
+        setSelectedTags={setSelectedTags}
+        search={searchTags}
+        setSearch={setSearchTags}
+        isSubmitting={addTagsMutation.isPending}
+        onSubmit={() =>
+          addTagsMutation.mutate({
+            datasetUrn: table.urn,
+            tagUrns: selectedTags,
+          })
+        }
+      />
 
       <AddDomainModal
         open={showDomainsModal}

@@ -34,27 +34,63 @@ import {
 import { GovernanceMetrics, ComplianceOverview, DataStewardshipMetrics } from '@/components/governance/GovernanceMetrics';
 import { QualityTrendChart, DomainQualityChart, DataSourcesChart, RecentAlerts } from '@/components/governance/AnalyticsCharts';
 import Link from 'next/link';
-import { fetchDatasources, fetchUsers } from './catalog/[id]/page';
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 
 async function fetchStats() {
-  const [tablesResponse, domainsResponse, tagsResponse] = await Promise.all([
-    fetch(`${GRAPHQL_ENDPOINT}/tables`),
-    fetch(`${GRAPHQL_ENDPOINT}/domains`),
-    fetch(`${GRAPHQL_ENDPOINT}/tags`)
-  ]);
+  const response = await fetch(GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: `
+        query GetEntityCounts {
+          datasets: searchAcrossEntities(
+            input: {
+              types: [DATASET]
+              query: "*"
+              start: 0
+              count: 0
+            }
+          ) {
+            total
+          }
+          domains: searchAcrossEntities(
+            input: {
+              types: [DOMAIN]
+              query: "*"
+              start: 0
+              count: 0
+            }
+          ) {
+            total
+          }
+          tags: searchAcrossEntities(
+            input: {
+              types: [TAG]
+              query: "*"
+              start: 0
+              count: 0
+            }
+          ) {
+            total
+          }
+        }
+      `,
+    }),
+  });
 
-  const [tables, domains, tags] = await Promise.all([
-    tablesResponse.json(),
-    domainsResponse.json(),
-    tagsResponse.json()
-  ]);
+  if (!response.ok) {
+    throw new Error('Failed to fetch entity counts');
+  }
+
+  const { data } = await response.json();
 
   return {
-    tablesCount: tables.total || tables.length || 0,
-    domainsCount: domains.total || domains.length || 0,
-    tagsCount: tags.items?.length || tags.length || 0
+    tablesCount: data?.datasets?.total ?? 0,
+    domainsCount: data?.domains?.total ?? 0,
+    tagsCount: data?.tags?.total ?? 0,
   };
 }
 
@@ -92,21 +128,12 @@ const stats = [
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [trends, setTrends] = useState<Record<string, number>>({});
-  
+
   const { data: statsData, isLoading } = useQuery({
     queryKey: ['stats'],
     queryFn: fetchStats,
+    staleTime: 5 * 60 * 1000,
   });
-
-  const { data: datasources, isLoading: isDataSourceLoading } = useQuery({
-    queryKey: ['datasources'],
-    queryFn: fetchDatasources,
-  });
-
-  const {data: users} = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-  })
 
   useEffect(() => {
     // Generate trends only on client side to prevent hydration mismatch
@@ -121,9 +148,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="px-6 py-8 space-y-8">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 rounded-2xl p-8 text-slate-900 dark:text-white relative overflow-hidden border border-slate-200 dark:border-slate-700">
+      {/* <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 rounded-2xl p-8 text-slate-900 dark:text-white relative overflow-hidden border border-slate-200 dark:border-slate-700">
         <div className="absolute inset-0 bg-gradient-to-r from-white/50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-sm"></div>
         <div className="relative z-10">
           <div className="max-w-6xl mx-auto">
@@ -197,16 +224,16 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           let count = 0;
           let trend = 0;
-          
+
           if (statsData && !isLoading) {
-            switch(stat.name) {
+            switch (stat.name) {
               case 'Data Tables':
                 count = statsData.tablesCount;
                 break;
@@ -324,7 +351,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
@@ -340,7 +367,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -373,7 +400,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6 pt-4 border-t border-gray-200">
               <Link href={"/activity" as any} className="text-sm text-slate-600 hover:text-slate-700 font-medium">
                 View all activity →
@@ -407,7 +434,7 @@ export default function HomePage() {
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">5/5 Online</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/20 rounded-lg">
                 <div className="flex items-center">
                   <div className="p-2 bg-slate-600 rounded-lg mr-3">
@@ -420,7 +447,7 @@ export default function HomePage() {
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">All Passing</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/20 rounded-lg">
                 <div className="flex items-center">
                   <div className="p-2 bg-slate-600 rounded-lg mr-3">
@@ -430,7 +457,7 @@ export default function HomePage() {
                 </div>
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">2 mins ago</span>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                 <div className="flex items-center">
                   <div className="p-2 bg-orange-600 rounded-lg mr-3">
@@ -441,7 +468,7 @@ export default function HomePage() {
                 <div className="flex items-center">
                   <span className="text-sm font-bold text-orange-700 dark:text-orange-300">95.2%</span>
                   <div className="w-16 bg-orange-200 dark:bg-orange-700 rounded-full h-2 ml-2">
-                    <div className="bg-orange-600 h-2 rounded-full" style={{width: '95.2%'}}></div>
+                    <div className="bg-orange-600 h-2 rounded-full" style={{ width: '95.2%' }}></div>
                   </div>
                 </div>
               </div>
@@ -465,7 +492,7 @@ export default function HomePage() {
                   </div>
                   <span className="text-sm text-gray-400">→</span>
                 </Link>
-                
+
                 <Link
                   href="/domains"
                   className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-200"
@@ -476,7 +503,7 @@ export default function HomePage() {
                   </div>
                   <span className="text-sm text-gray-400">→</span>
                 </Link>
-                
+
                 <Link
                   href="/tags"
                   className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-200"
@@ -487,7 +514,7 @@ export default function HomePage() {
                   </div>
                   <span className="text-sm text-gray-400">→</span>
                 </Link>
-                
+
                 <Link
                   href={"/quality" as any}
                   className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-200"
@@ -520,7 +547,7 @@ export default function HomePage() {
                 85% of your tables have assigned data stewards, ensuring proper governance and accountability.
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="mx-auto w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
                 <FileText className="h-8 w-8 text-slate-600 dark:text-slate-400" />
@@ -530,7 +557,7 @@ export default function HomePage() {
                 92% of your critical tables have comprehensive documentation and business context.
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="mx-auto w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
                 <BarChart3 className="h-8 w-8 text-slate-600 dark:text-slate-400" />

@@ -18,7 +18,7 @@ import { clsx } from 'clsx';
 
 const navigationItems = [
   {
-    name: 'Overview',
+    name: 'Dashboard',
     href: '/',
     icon: Home,
     implemented: true,
@@ -29,24 +29,24 @@ const navigationItems = [
     icon: Database,
     implemented: true,
   },
-  {
-    name: 'Data Quality',
-    href: '/quality',
-    icon: BarChart3,
-    implemented: true,
-  },
+  // {
+  //   name: 'Data Quality',
+  //   href: '/quality',
+  //   icon: BarChart3,
+  //   implemented: true,
+  // },
   {
     name: 'Data Lineage',
     href: '/lineage',
     icon: GitBranch,
     implemented: true,
   },
-  {
-    name: 'Governance',
-    href: '/governance',
-    icon: ShieldCheck,
-    implemented: true,
-  },
+  // {
+  //   name: 'Governance',
+  //   href: '/governance',
+  //   icon: ShieldCheck,
+  //   implemented: true,
+  // },
   {
     name: 'Data Sources',
     href: '/data-sources',
