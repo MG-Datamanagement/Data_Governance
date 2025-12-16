@@ -27,16 +27,25 @@ jobs:
 
             cd ${{ secrets.APP_DIR }}
 
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/${{ github.repository }} .
-            else
+            # If directory has git, reset and pull; else initialize repo
+            if [ -d ".git" ]; then
+              echo "Directory has git, pulling latest..."
+              git reset --hard
+              git clean -fd
               git pull origin main
+            else
+              echo "Directory not a git repo, initializing..."
+              git init
+              git remote add origin https://github.com/${{ github.repository }}.git
+              git fetch
+              git checkout -t origin/main
             fi
 
+            # Install dependencies
             npm install -i
 
+            # Restart app via PM2
             pm2 delete fe-app || true
             pm2 start npm --name fe-app -- run dev
-
             pm2 save
           EOF
