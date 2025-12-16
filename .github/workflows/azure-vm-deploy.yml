@@ -3,7 +3,7 @@ name: FE Auto Deploy to Azure VM
 on:
   push:
     branches:
-      - main
+      - feat/graphql-implementation  # updated branch
 
 jobs:
   deploy:
@@ -26,7 +26,6 @@ jobs:
             set -e
 
             # Define the authenticated remote URL using the PAT secret
-            # This variable is expanded by the GitHub Actions runner before SSH executes
             AUTH_URL="https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git"
 
             cd ${{ secrets.APP_DIR }}
@@ -34,28 +33,22 @@ jobs:
             # Check if directory has git initialized
             if [ -d ".git" ]; then
               echo "Directory has git, applying PAT URL and pulling latest..."
-              
-              # 🚀 FIX: Update the remote URL to use the authenticated PAT
               git remote set-url origin $AUTH_URL
-              
-              # Perform clean pull
               git reset --hard
               git clean -fd
-              git pull origin main
+              git pull origin feat/graphql-implementation  # updated branch
             else
               echo "Directory not a git repo, initializing..."
               git init
-              # Initialize with the authenticated PAT URL
               git remote add origin $AUTH_URL
               git fetch
-              git checkout -t origin/main
+              git checkout -t origin/feat/graphql-implementation  # updated branch
             fi
 
             # Install dependencies
             npm install --legacy-peer-deps
 
             # Restart app via PM2
-            # '|| true' allows the script to continue if the app doesn't exist yet
             pm2 delete fe-app || true 
             pm2 start npm --name fe-app -- run dev
             pm2 save
