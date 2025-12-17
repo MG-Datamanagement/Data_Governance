@@ -202,3 +202,12 @@ a {
 .toast-info {
   @apply bg-primary-500 text-white;
 }
+
+.glossary-editor .ql-container {
+  height: 260px;
+}
+
+.glossary-editor .ql-editor {
+  height: 100%;
+  overflow-y: auto;
+}

@@ -12,7 +12,8 @@ import {
   Building2,
   ShieldCheck,
   Star,
-  GitBranch
+  GitBranch,
+  BookA
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -69,6 +70,12 @@ const navigationItems = [
     name: 'Tags',
     href: '/tags',
     icon: Tag,
+    implemented: true,
+  },
+  {
+    name: 'Business Glossary',
+    href: '/business-glossary',
+    icon: BookA,
     implemented: true,
   },
 ];
