@@ -44,7 +44,7 @@ import { ConfirmModal } from '@/components/common/ConfirmModalNew';
 import toast from 'react-hot-toast';
 import TableStatsCard, { TableStats } from '@/components/DataCatalog/TableStatsCard';
 import TableModal, { TableFormData } from '@/components/DataCatalog/TableModel';
-import { DomainsResponse } from '../page';
+import { DomainsResponse } from '../pagev1';
 import { fetchFavorites } from '@/app/favorites/page';
 import { extractSchemaData } from '@/utils/schemaMapper';
 import { convertToCSV, downloadFile, TableData } from '@/utils/exportUitls';
