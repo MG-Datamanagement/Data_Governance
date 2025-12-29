@@ -10,12 +10,68 @@ import Image from 'next/image';
 import { useDebounce } from "@/hooks/useDebounce";
 import toast from "react-hot-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+// const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
+
+const SEARCH_SUGGESTIONS_QUERY = `
+  query SearchAcrossEntities($query: String!, $start: Int!, $count: Int!) {
+    searchAcrossEntities(
+      input: {
+        types: [DATASET, DOMAIN, TAG, GLOSSARY_TERM]
+        query: $query
+        start: $start
+        count: $count
+      }
+    ) {
+      searchResults {
+        entity {
+          urn
+          type
+          ... on Dataset {
+            name
+            platform { name }
+          }
+          ... on Domain {
+            properties { name }
+          }
+          ... on Tag {
+            properties { name }
+          }
+          ... on GlossaryTerm {
+            properties { name }
+          }
+        }
+      }
+    }
+  }
+`;
+
+async function gqlRequest<T>(
+  query: string,
+  variables: Record<string, any>,
+  signal?: AbortSignal
+): Promise<T> {
+  const res = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+    signal,
+  });
+
+  const json = await res.json();
+
+  if (json?.errors?.length) {
+    throw new Error(json.errors[0].message);
+  }
+
+  return json.data;
+}
 
 type Suggestion = {
-  id: number;
+  id: string;
   text: string;
-  type: string;
+  type: "tables" | "domains" | "tags" | "glossary";
+  meta?: string;
 };
 
 export function Header() {
@@ -30,7 +86,7 @@ export function Header() {
 
 
   useEffect(() => {
-    if (debouncedSearch.trim() === "") {
+    if (!debouncedSearch.trim()) {
       setSuggestions([]);
       return;
     }
@@ -48,34 +104,99 @@ export function Header() {
   }
 
 
-  const fetchSuggestions = async (q: string) => {
-    if (!q.trim()) {
-      setSuggestions([]);
-      return;
-    }
+  // const fetchSuggestions = async (q: string) => {
+  //   if (!q.trim()) {
+  //     setSuggestions([]);
+  //     return;
+  //   }
 
-    setLoading(true);
+  //   setLoading(true);
+  //   abortControllerRef.current = new AbortController();
+
+  //   try {
+  //     const res = await axios.get(
+  //       `${API_URL}/search/suggestions?q=${encodeURIComponent(q)}`, {
+  //       signal: abortControllerRef.current?.signal
+  //     }
+  //     );
+
+  //     setSuggestions(res.data.suggestions || []);
+  //     if (!res.data.suggestions.length) {
+  //       toast.error("No, Search results matching query! Try with different query.")
+  //     }
+  //   } catch (err) {
+  //     console.error("Error fetching suggestions", err);
+  //     setSuggestions([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchSuggestions = async (q: string) => {
+    abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
 
+    setLoading(true);
+
     try {
-      const res = await axios.get(
-        `${API_URL}/search/suggestions?q=${encodeURIComponent(q)}`, {
-        signal: abortControllerRef.current?.signal
-      }
+      const data = await gqlRequest<any>(
+        SEARCH_SUGGESTIONS_QUERY,
+        { query: q, start: 0, count: 20 },
+        abortControllerRef.current.signal
       );
 
-      setSuggestions(res.data.suggestions || []);
-      if (!res.data.suggestions.length) {
-        toast.error("No, Search results matching query! Try with different query.")
+      const results = data?.searchAcrossEntities?.searchResults ?? [];
+
+      const mapped: Suggestion[] = results
+        .map((r: any) => {
+          const e = r.entity;
+
+          switch (e.type) {
+            case "DATASET":
+              return {
+                id: e.urn,
+                text: e.name,
+                type: "tables",
+                meta: e.platform?.name,
+              };
+            case "DOMAIN":
+              return {
+                id: e.urn,
+                text: e.properties?.name,
+                type: "domains",
+              };
+            case "TAG":
+              return {
+                id: e.urn,
+                text: e.properties?.name,
+                type: "tags",
+              };
+            case "GLOSSARY_TERM":
+              return {
+                id: e.urn,
+                text: e.properties?.name,
+                type: "glossary",
+              };
+            default:
+              return null;
+          }
+        })
+        .filter((s: any): s is Suggestion => Boolean(s));
+
+      setSuggestions(mapped);
+
+      if (!mapped.length) {
+        toast.error("No search results matching query");
       }
-    } catch (err) {
-      console.error("Error fetching suggestions", err);
-      setSuggestions([]);
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        console.error("Search error:", err);
+        setSuggestions([]);
+      }
     } finally {
       setLoading(false);
     }
   };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value;
     setQuery(q);
@@ -85,15 +206,26 @@ export function Header() {
     setQuery("");
     setSuggestions([]);
     abortControllerRef.current?.abort();
-  }
-
-  const handleSelect = (s: Suggestion) => {
-    const path = s.type === 'tables' ? 'catalog' : s.type;
-    const route = `/${path}/${s.id}`;
-    router.push(route as any);
-    setSuggestions([]);
   };
 
+  // const handleSelect = (s: Suggestion) => {
+  //   const path = s.type === 'tables' ? 'catalog' : s.type;
+  //   const route = `/${path}/${s.id}`;
+  //   router.push(route as any);
+  //   setSuggestions([]);
+  // };
+
+  const handleSelect = (s: Suggestion) => {
+    const pathMap: Record<string, string> = {
+      tables: "catalog",
+      domains: "domains",
+      tags: "tags",
+      glossary: "glossary",
+    };
+
+    router.push(`/${pathMap[s.type]}/${encodeURIComponent(s.id)}` as any);
+    setSuggestions([]);
+  };
 
   const grouped = groupByType(suggestions);
 

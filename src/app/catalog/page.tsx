@@ -511,7 +511,7 @@ export default function CatalogPage() {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors space-y-4">
-      <div className="flex justify-between items-end px-6">
+      <div className="flex justify-between items-end p-2">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Data Catalog</h1>
           <p className="text-base text-gray-600 dark:text-gray-300 mt-2">
