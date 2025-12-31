@@ -49,13 +49,13 @@ async def index_all_entities():
     conn = get_pg_conn()
     cur = conn.cursor()
     
-    print("🔄 Indexing ALL DataHub entities...")
+    print("Indexing ALL DataHub entities...")
     
     # Collect ALL entities
     all_entities = []
     
     # 1. DATASETS
-    print("📊 Datasets...")
+    print(" Datasets...")
     cur.execute("""
         SELECT 'dataset' as type, urn, name, COALESCE(description,''), platform_name, COALESCE(domain_name,'')
         FROM dh_dataset 
@@ -65,7 +65,7 @@ async def index_all_entities():
         all_entities.append(row)
     
     # 2. FIELDS
-    print("📈 Fields...")
+    print(" Fields...")
     cur.execute("""
         SELECT 'field' as type, d.urn||'::'||df.field_path as urn, df.field_path, 
                COALESCE(df.description,''), d.platform_name, COALESCE(d.domain_name,'')
@@ -76,19 +76,19 @@ async def index_all_entities():
         all_entities.append(row)
     
     # 3. DOMAINS
-    print("🏢 Domains...")
+    print(" Domains...")
     cur.execute("SELECT 'domain' as type, urn, name, COALESCE(description,''), '' as platform, '' as domain FROM dh_domain WHERE name IS NOT NULL")
     for row in cur.fetchall():
         all_entities.append(row)
     
     # 4. TAGS
-    print("🏷️ Tags...")
+    print("Tags...")
     cur.execute("SELECT 'tag' as type, urn, name, COALESCE(description,''), '' as platform, '' as domain FROM dh_tag WHERE name IS NOT NULL")
     for row in cur.fetchall():
         all_entities.append(row)
     
     # 5. GLOSSARY TERMS
-    print("📚 Glossary...")
+    print("Glossary...")
     cur.execute("SELECT 'glossary_term' as type, urn, name, COALESCE(description,''), 'glossary' as platform, '' as domain FROM dh_glossary_term WHERE name IS NOT NULL")
     for row in cur.fetchall():
         all_entities.append(row)
@@ -135,7 +135,7 @@ async def index_all_entities():
     conn.close()
     
     took_ms = (time.time() - start_time) * 1000
-    print(f"✅ Indexed {len(documents)} entities in {took_ms:.1f}ms")
+    print(f"Indexed {len(documents)} entities in {took_ms:.1f}ms")
     
     return {
         "status": "success",
