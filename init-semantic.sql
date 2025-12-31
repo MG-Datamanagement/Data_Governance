@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS dh_tag (
   urn          TEXT NOT NULL UNIQUE,           
   name         TEXT NOT NULL,                  
   description  TEXT,                           
-  color_hex    TEXT                             
+  color_hex    TEXT     
+);                        
 
 ------------------------------------------------------------
 -- Entity–Tag mapping (from Dataset.tags.tags.tag)
