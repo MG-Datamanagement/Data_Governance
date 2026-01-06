@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS dh_domain (
   id             BIGSERIAL PRIMARY KEY,
   urn            TEXT NOT NULL UNIQUE,        
   domain_id      TEXT,                          
-  name           TEXT NOT NULL,                 -
+  name           TEXT NOT NULL,                 
   display_name   TEXT,                          
   description    TEXT,                         
   created_actor  TEXT,                          

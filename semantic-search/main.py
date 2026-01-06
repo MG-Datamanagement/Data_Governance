@@ -57,7 +57,7 @@ async def index_all_entities():
     # 1. DATASETS
     print(" Datasets...")
     cur.execute("""
-        SELECT 'dataset' as type, urn, name, COALESCE(description,''), platform_name, COALESCE(domain_name,'')
+        SELECT 'dataset' as type, urn, name, COALESCE(description,''), platform_name, COALESCE(domain_urn,'')
         FROM dh_dataset 
         WHERE name IS NOT NULL AND COALESCE(is_soft_deleted, FALSE) = FALSE
     """)
@@ -68,7 +68,7 @@ async def index_all_entities():
     print(" Fields...")
     cur.execute("""
         SELECT 'field' as type, d.urn||'::'||df.field_path as urn, df.field_path, 
-               COALESCE(df.description,''), d.platform_name, COALESCE(d.domain_name,'')
+               COALESCE(df.description,''), d.platform_name, COALESCE(d.domain_urn,'')
         FROM dh_dataset_field df JOIN dh_dataset d ON df.dataset_urn = d.urn
         WHERE df.field_path IS NOT NULL AND d.name IS NOT NULL AND COALESCE(d.is_soft_deleted, FALSE) = FALSE
     """)

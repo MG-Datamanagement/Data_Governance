@@ -312,8 +312,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    # networks:
-    #   - datahub_network        # same network as other services
 
   postgres:
     image: postgres:16
@@ -414,30 +412,68 @@ services:
     restart: unless-stopped
     networks:
       - default
-
-  # semantic-sync:
-  #   build: ./semantic-sync
-  #   container_name: datahub-semantic-sync
-  #   depends_on:
-  #     nginx-proxy:
-  #       condition: service_healthy
-  #     postgres:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./semantic-sync:/app
-  #   environment:
-  #     DATAHUB_GRAPHQL_URL: http://nginx-proxy/graphql
-  #     PG_HOST: postgres
-  #     PG_PORT: 5432
-  #     PG_DB: semantic_search
-  #     PG_USER: semantic_user
-  #     PG_PASS: semantic_pass
-  #   ports:
-  #     - "8001:8001"  # Expose FastAPI on port 8001
-  #   restart: unless-stopped
-  #   networks:
-  #     - default
       
+  chatbot-api:
+    build: ./chatbot-api
+    container_name: datahub-chatbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      semantic-sync:
+        condition: service_healthy
+      nginx-proxy:
+        condition: service_healthy
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+    networks:
+      - default
+
+    
+  solr:
+    image: solr:8.11
+    container_name: datahub-solr
+    ports:
+      - "8983:8983"
+    command:
+      - solr-precreate
+      - dh_search_core
+    volumes:
+      - solr_data:/var/solr
+    networks:
+      - default
+   
+  semantic-solr-sync:
+    build: ./semantic-solr-sync
+    container_name: datahub-semantic-solr-sync
+    depends_on:
+      postgres:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    networks:
+      - default
+    command: ["python", "index_to_solr.py"]
+    restart: "no"
+
+  solr-search-api:
+    build: ./solr-search-api
+    container_name: datahub-solr-search
+    depends_on:
+      solr:
+        condition: service_healthy
+    environment:
+      # only needed if you want to parametrize URL, but hard-coded in main.py now
+      SOLR_URL: http://solr:8983/solr/dh_search_core
+    ports:
+      - "8010:8010"     # host:container
+    networks:
+      - default
+    restart: unless-stopped
 
 volumes:
   broker: null
@@ -448,3 +484,4 @@ volumes:
   zklogs: null
   pgdata: null 
   qdrant_data: {}
+  solr_data:

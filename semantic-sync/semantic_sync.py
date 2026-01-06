@@ -145,10 +145,7 @@ query DataCatalog($start: Int!, $count: Int!) {
           domain {
             domain {
               urn
-              properties {
-                name
-                description
-              }
+
             }
           }
         }
@@ -436,7 +433,7 @@ def sync_datasets_and_fields(cur, page_size=100):
             platform_name = platform.get("name")
             domain = (ds.get("domain") or {}).get("domain") or {}
             domain_urn = domain.get("urn")
-            domain_name = (domain.get("properties") or {}).get("name")
+            # domain_name = (domain.get("properties") or {}).get("name")
 
             page_dataset_rows.append(
                 (
@@ -447,7 +444,6 @@ def sync_datasets_and_fields(cur, page_size=100):
                     None,
                     desc,
                     domain_urn,
-                    domain_name,
                     created_at,
                     created_actor,
                     last_modified_at,
@@ -496,11 +492,11 @@ def sync_datasets_and_fields(cur, page_size=100):
             """
             INSERT INTO dh_dataset (
               urn, platform_urn, platform_name, name, full_name,
-              description, domain_urn, domain_name,
+              description, domain_urn, 
               created_at, created_actor, last_modified_at,
               glossary_summary, is_soft_deleted
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,
             all_dataset_rows,
         )
