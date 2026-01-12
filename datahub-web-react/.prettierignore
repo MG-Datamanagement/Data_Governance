@@ -1,7 +1,0 @@
-../docs-website
-**/.venv
-**/venv
-**/.tox
-**/build
-**/.gradle
-**/.pytest_cache
