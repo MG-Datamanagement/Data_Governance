@@ -1,0 +1,16 @@
+# psycopg2-binary==2.9.9
+# requests==2.31.0
+
+
+# requests
+# psycopg2-binary
+# fastapi==0.115.0
+# uvicorn[standard]==0.30.6
+
+
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+gql==3.5.0  
+asyncpg==0.29.0
+aiohttp==3.9.5
+pydantic==2.5.3

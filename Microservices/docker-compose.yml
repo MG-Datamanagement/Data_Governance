@@ -1,0 +1,89 @@
+version: "3.9"
+
+networks:
+  default:
+    name: datahub_network
+    external: true   # reuse network from first compose project
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: datahub-postgres
+    environment:
+      POSTGRES_USER: semantic_user
+      POSTGRES_PASSWORD: semantic_pass
+      POSTGRES_DB: semantic_search
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # - ./init-semantic.sql:/docker-entrypoint-initdb.d/init-semantic.sql:ro
+    restart: unless-stopped
+    networks:
+      - default
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: datahub-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - default
+
+  semantic-sync:
+    build: ./semantic-sync
+    container_name: datahub-semantic-sync
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./semantic-sync:/app
+    environment:
+      DATAHUB_GRAPHQL_URL: http://nginx-proxy/graphql
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DB: semantic_search
+      PG_USER: semantic_user
+      PG_PASS: semantic_pass
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    networks:
+      - default
+
+  dataset-sync:
+    build: ./dataset-sync
+    container_name: datahub-dataset-sync
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./dataset-sync:/app
+      - ./.env:/app/.env:ro
+    env_file:
+      - .env 
+    environment:
+      DATAHUB_GRAPHQL_URL: http://nginx-proxy/graphql
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DB: semantic_search
+      PG_USER: semantic_user
+      PG_PASS: semantic_pass
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION}
+      AZURE_DEPLOYMENT: ${AZURE_DEPLOYMENT:-gpt-35-turbo-16k}
+    ports:
+      - "8005:8005"
+    restart: unless-stopped
+    networks:
+      - default
+
+volumes:
+  pgdata:

@@ -1,0 +1,138 @@
+[
+  {
+    "question": "describe this dataset sales_specialoffer_sales_specialoffer",
+    "answer": "- DEFINITION: A dataset linking sales transactions to special offers applied.  \n- PURPOSE: To analyze the impact of special offers on sales performance.  \n- EXAMPLE: Records showing which special offer was used in each sales order.  \n- KEY POINT: Connects sales data with promotional campaigns for targeted insights.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:40:57.859348",
+    "session_id": null
+  },
+  {
+    "question": "give the critical information about this dataset person_countryregion_person_countryregion",
+    "answer": "- DEFINITION: A dataset linking persons to their respective country or region affiliations.\n- PURPOSE: To analyze or map individuals based on geographic or regional data.\n- EXAMPLE: Mapping employees to their country of residence or origin.\n- KEY POINT: Ensures accurate geographic categorization for person-related data analysis.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:41:43.438036",
+    "session_id": null
+  },
+  {
+    "question": "list the datasets which are tagged with Hr tag",
+    "answer": "1. ANSWER: No datasets tagged with \"Hr\" found  \n2. COUNT: 0 results found  \n3. KEY DATA: - None  \n4. NOTE: No datasets currently have the \"Hr\" tag in the system",
+    "query_type": "sql",
+    "sql_query": "SELECT d.urn AS dataset_urn, d.name AS dataset_name, dt.tag_name AS tag_name\nFROM datahub_datasets d\nJOIN dataset_tags dt ON d.urn = dt.dataset_urn\nWHERE dt.tag_name ILIKE 'hr'\nLIMIT 100;",
+    "timestamp": "2026-01-19T07:42:45.119177",
+    "session_id": null
+  },
+  {
+    "question": "list the datasets which are tagged with HR tag",
+    "answer": "1. ANSWER: Dataset tagged with HR is \"humanresources_employeedepartmenthistory_humanresources_employe\"\n2. COUNT: 1 result found\n3. KEY DATA:\n   - Dataset URN: postgres,infinity_governance.public.humanresources_employeedepartmenthistory_humanresources_employe\n   - Tag: hr_data\n4. NOTE: Tag name is \"hr_data\", related to employee department history",
+    "query_type": "sql",
+    "sql_query": "SELECT d.urn AS dataset_urn, d.name AS dataset_name, dt.tag_name AS tag_name\nFROM datahub_datasets d\nJOIN dataset_tags dt ON d.urn = dt.dataset_urn\nWHERE dt.tag_name = 'hr_data'\nLIMIT 100;",
+    "timestamp": "2026-01-19T07:43:00.786219",
+    "session_id": null
+  },
+  {
+    "question": "can you explain how to employ governance to datasets in HR domain",
+    "answer": "- DEFINITION: Governance in HR datasets involves policies and controls to ensure data quality, privacy, and compliance.  \n- PURPOSE: To secure sensitive employee information and maintain data accuracy.  \n- EXAMPLE: Implement role-based access to salary data and enforce data retention policies.  \n- KEY POINT: Ensure compliance with regulations like GDPR and maintain audit trails for data access.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:43:27.130565",
+    "session_id": null
+  },
+  {
+    "question": "can you explain how to check quality in datasets under HR domain",
+    "answer": "- DEFINITION: Checking quality in HR datasets involves validating accuracy, completeness, consistency, and timeliness of employee-related data.  \n- PURPOSE: To ensure reliable HR analytics and informed decision-making.  \n- EXAMPLE: Verify no missing employee IDs, consistent job titles, correct date formats for hire dates.  \n- KEY POINT: Focus on key HR attributes like employee ID, department codes, dates, and salary for integrity.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:44:02.998073",
+    "session_id": null
+  },
+  {
+    "question": "give the total assets count in the application",
+    "answer": "1. ANSWER: Total assets count is 70  \n2. COUNT: 1 result found  \n3. KEY DATA:  \n   - total_assets_count: 70  \n4. NOTE: Data from single-row result.",
+    "query_type": "sql",
+    "sql_query": "SELECT COUNT(*) AS total_assets_count\nFROM datahub_datasets;",
+    "timestamp": "2026-01-19T07:44:46.383636",
+    "session_id": null
+  },
+  {
+    "question": "which datasets has lineage relationships",
+    "answer": "1. ANSWER: 19 datasets have lineage relationships.\n2. COUNT: 19 results found\n3. KEY DATA:\n   - sales_specialoffer_sales_specialoffer\n   - humanresources_department_humanresources_department\n   - person_businessentityaddress_person_businessentityaddress\n4. NOTE: All datasets are from the \"infinity_governance.public\" schema on the Postgres platform in PROD environment.",
+    "query_type": "sql",
+    "sql_query": "SELECT DISTINCT d.urn AS dataset_urn, d.name AS dataset_name\nFROM datasets d\nJOIN lineage_relationships lr ON d.urn = lr.source_dataset_urn OR d.urn = lr.target_dataset_urn\nLIMIT 100;",
+    "timestamp": "2026-01-19T07:45:21.369958",
+    "session_id": null
+  },
+  {
+    "question": "Best practices for organizing datasets in this application ",
+    "answer": "- DEFINITION: Structuring datasets within DataHub for efficient management and retrieval.  \n- PURPOSE: To ensure easy navigation, collaboration, and scalability of data assets.  \n- EXAMPLE: Group datasets by domain (e.g., Sales, Marketing), use clear naming conventions, and tag datasets with relevant metadata.  \n- KEY POINT: Consistency in naming and metadata tagging is crucial for discoverability and maintenance.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:45:51.740966",
+    "session_id": null
+  },
+  {
+    "question": "how can we calculate quality in this dataset",
+    "answer": "- **What is it?**  \n  Quality in a dataset refers to the accuracy, completeness, consistency, and reliability of the data.\n\n- **Why use it?**  \n  Ensuring data quality helps in making valid conclusions and improves model performance.\n\n- **EXAMPLE:**  \n  Calculate % of missing values per column or check for duplicates and outliers.\n\n- **KEY POINT:**  \n  Use data profiling tools or write scripts to quantify quality metrics; continuous monitoring is essential.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:47:13.507088",
+    "session_id": null
+  },
+  {
+    "question": "what is datahub?",
+    "answer": "- **Definition:** DataHub is a metadata platform for managing, discovering, and governing data assets across an organization.  \n- **Business Value:** It improves data visibility and trust, enabling better decision-making and compliance.  \n- **Practical Example:** Companies use DataHub to track data lineage and ownership, ensuring data quality and regulatory adherence.  \n- **Key Takeaway:** Centralized metadata management drives data transparency and operational efficiency.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:49:35.582770",
+    "session_id": null
+  },
+  {
+    "question": "How do I add glossary terms to datasets",
+    "answer": "- **Definition**: Adding glossary terms to datasets involves linking standardized business terms to dataset fields for consistent data understanding.\n- **Business Value**: Enhances data clarity and governance by ensuring common definitions across teams.\n- **Practical Example**: Tagging \"Customer ID\" field with the glossary term \"Unique Customer Identifier\" to align reporting and analysis.\n- **Key Takeaway**: Always associate relevant glossary terms to dataset fields to improve data trust and usability.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:49:58.567777",
+    "session_id": null
+  },
+  {
+    "question": "list the datasets under snowflake  platform",
+    "answer": "1. ANSWER: Datasets under Snowflake platform are LINEITEM and ORDERS.\n2. COUNT: 2 results found\n3. KEY DATA:\n   - LINEITEM (ecommerce_db.public.lineitem)\n   - ORDERS (ecommerce_db.public.orders)\n4. NOTE: Both datasets are in the PROD environment.",
+    "query_type": "sql",
+    "sql_query": "SELECT urn, name, platform_name AS platform\nFROM datasets\nWHERE platform_name = 'snowflake'\nLIMIT 100;",
+    "timestamp": "2026-01-19T07:50:41.269822",
+    "session_id": null
+  },
+  {
+    "question": "how can i ingest big query data source through UI in datahub",
+    "answer": "- **Definition**: Ingesting BigQuery data through DataHub UI means connecting and importing metadata from BigQuery into DataHub via its graphical interface.  \n- **Business Value**: Enables centralized metadata management and data discovery without coding.  \n- **Practical Example**: Using DataHub’s UI, you configure a BigQuery source by entering credentials and dataset details to automatically pull schema and table metadata.  \n- **Key Takeaway**: Leverage DataHub’s UI connectors for seamless, no-code BigQuery metadata ingestion to accelerate data cataloging.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-19T07:51:12.478228",
+    "session_id": null
+  },
+  {
+    "question": "Hi",
+    "answer": "- **Definition:** A greeting used to initiate communication.  \n- **Business Value:** Establishes rapport for effective collaboration and data discussions.  \n- **Practical Example:** Starting a DataHub consultation meeting with a polite \"Hi\" sets a positive tone.  \n- **Key Takeaway:** Clear and respectful communication fosters productive data management partnerships.",
+    "query_type": "descriptive",
+    "sql_query": null,
+    "timestamp": "2026-01-20T07:08:08.721763",
+    "session_id": null
+  },
+  {
+    "question": "list all tags in the application",
+    "answer": "1. ANSWER: The application has 7 tags: Address Tag, Civil status, Entity, HR data, PII, gender, sale_entity.  \n2. COUNT: 7 results found  \n3. KEY DATA:  \n- Address Tag: address of the entity, color #248f5b  \n- Civil status: civil status of the person, color #80cbc4  \n- HR data: Data tag of HR, color #fbc02d  \n4. NOTE: sale_entity tag has no description provided.",
+    "query_type": "sql",
+    "sql_query": "SELECT urn AS tag_urn, name AS tag_name, description AS tag_description, color_hex AS tag_color\nFROM datahub_tags\nLIMIT 100;",
+    "timestamp": "2026-01-20T09:21:25.321021",
+    "session_id": null
+  },
+  {
+    "question": "list all domains in the application",
+    "answer": "1. ANSWER: Domains are Purchasing, Sales, Production, and HR.\n2. COUNT: 4 results found\n3. KEY DATA:\n   - Purchasing: \"This is purchasing domain\"\n   - Sales: \"This is Sales domain\"\n   - HR: \"This is Human Resource Domain\"\n4. NOTE: All domains created by \"datahub\" actor.",
+    "query_type": "sql",
+    "sql_query": "SELECT urn AS domain_urn, id AS domain_id, name AS domain_name, description AS domain_description, created_actor AS domain_created_actor\nFROM datahub_domains\nLIMIT 100;",
+    "timestamp": "2026-01-20T10:31:32.147763",
+    "session_id": null
+  }
+]
