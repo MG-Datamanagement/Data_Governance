@@ -8,6 +8,7 @@ check these containers are running:
   datahub-actions
   broker  
   zookeeper
+
   schema-registry
   neo4j
   mysql 
@@ -36,9 +37,9 @@ for mongodb:(YML file)
 source:
     type: mongodb
     config:
-        connect_uri: 'mongodb+srv://Md-Ashif:XDkD9CJaBBPBmKKr@cluster0.8z8om.mongodb.net/Patient360DB'
-        username: Md-Ashif
-        password: XDkD9CJaBBPBmKKr
+        connect_uri: 'uri'
+        username: your username 
+        password: your pass
         enableSchemaInference: true
         useRandomSampling: true
         maxSchemaSize: 300
@@ -83,12 +84,12 @@ source:
         stateful_ingestion:
             enabled: true
         warehouse: COMPUTE_WH
-        username: MDASHIFH
-        password: cYzD5xWZs5ANd5x
+        username: username
+        password: password
         role: PUBLIC
         database_pattern:
             allow:
-                - ECOMMERCE_DB
+                - SAMPLE_DB
         schema_pattern:
             allow:
                 - PUBLIC
