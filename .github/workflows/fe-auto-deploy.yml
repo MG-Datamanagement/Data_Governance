@@ -3,7 +3,7 @@ name: FE Auto Deploy to Azure VM
 on:
   push:
     branches:
-      - feat/graphql-implementation # Triggers deployment on push to this branch
+      - main-fe
 
 jobs:
   deploy:
@@ -25,46 +25,30 @@ jobs:
           ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
 
-            # Define the authenticated remote URL
             AUTH_URL="https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git"
-            DEPLOY_BRANCH="feat/graphql-implementation" # Define branch variable
 
             cd ${{ secrets.APP_DIR }}
-            
-            # 🚀 FIX: Configure a safe pull strategy for automated deployment
-            # 'ffonly' prevents the "divergent branches" error after a hard reset.
-            git config pull.ff only
 
-            # Check if directory has git initialized
             if [ -d ".git" ]; then
-              echo "Directory has git, applying PAT URL and pulling latest..."
-              
+              echo "Directory has git, syncing with remote..."
               git remote set-url origin $AUTH_URL
-              
-              # Ensure we are on the correct branch before resetting
-              git checkout $DEPLOY_BRANCH
-              
-              # Perform clean pull
-              git reset --hard
+              git fetch origin
+              git checkout main-fe || git checkout -b main-fe
+              git reset --hard origin/main-fe
               git clean -fd
-              
-              # Pull the latest changes for the specific branch
-              git pull origin $DEPLOY_BRANCH
             else
               echo "Directory not a git repo, initializing..."
               git init
               git remote add origin $AUTH_URL
-              git fetch
-              git checkout -t origin/$DEPLOY_BRANCH
+              git fetch origin
+              git checkout -b main-fe origin/main-fe
             fi
 
-            # Install dependencies 
-            # (Note: If you encounter the 'npm error enoent' again, you must add 
-            # 'cd <subdirectory>' here if package.json is not at the root.)
+            echo "Installing dependencies..."
             npm install --legacy-peer-deps
 
-            # Restart app via PM2
-            pm2 delete fe-app || true 
+            echo "Restarting frontend via PM2..."
+            pm2 delete fe-app || true
             pm2 start npm --name fe-app -- run dev
             pm2 save
           EOF
