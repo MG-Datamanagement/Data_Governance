@@ -1,0 +1,54 @@
+name: FE Auto Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - main-fe
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy App
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            set -e
+
+            AUTH_URL="https://${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }}.git"
+
+            cd ${{ secrets.APP_DIR }}
+
+            if [ -d ".git" ]; then
+              echo "Directory has git, syncing with remote..."
+              git remote set-url origin $AUTH_URL
+              git fetch origin
+              git checkout main-fe || git checkout -b main-fe
+              git reset --hard origin/main-fe
+              git clean -fd
+            else
+              echo "Directory not a git repo, initializing..."
+              git init
+              git remote add origin $AUTH_URL
+              git fetch origin
+              git checkout -b main-fe origin/main-fe
+            fi
+
+            echo "Installing dependencies..."
+            npm install --legacy-peer-deps
+
+            echo "Restarting frontend via PM2..."
+            pm2 delete fe-app || true
+            pm2 start npm --name fe-app -- run dev
+            pm2 save
+          EOF
