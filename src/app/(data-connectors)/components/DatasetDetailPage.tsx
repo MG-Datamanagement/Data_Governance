@@ -15,7 +15,7 @@ import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2 } from "lucide-react";
-
+import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
 const TABS = [
   "DataCard",
   "Columns",
@@ -35,6 +35,7 @@ interface DatasetDetailPageProps {
 }
 
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
+import { ReclassificationActionWithAiRequest } from "@/services/mock";
 
 const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   sourceId,
@@ -74,7 +75,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
     };
 
     const handleFetchClassifyApi = async() => {
-      // await handleReclassifyWithAI();
+      // await handleReclassificationActionWithAI();
       await fetchAll();
     }
     
@@ -119,22 +120,20 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   }, [catalogData, datacardData, sourceId]);
 
 
-  const handleReclassifyWithAI = async (manual: boolean = false) => {
-    if(manual) {
+  const handleReclassificationActionWithAI = async () => {
       setIsReclassifyAiLoading(true);
       setReclassifyAiScanPhase("scanning");
-    }
 
     try {
-      const payload = {
-        source_id: sourceId,
+      const payload:ReclassificationActionWithAiRequest = {
+        catalog_id: datasetId,
         save_to_db: CONSTANTS.saveToDb,
         assigned_by: CONSTANTS.assignedBy,
-        min_confidence: CONSTANTS.minConfidence,
+        min_confidence: 0.7,
       };
 
       const { dataSourcesService } = await import("@/services/mock");
-      const response: any = await dataSourcesService.reclassifyWithAi(payload);
+      const response: any = await dataSourcesService.reclassificationActionWithAi(payload);
 
       const map: any = {};
       response?.results?.forEach((r: any) => {
@@ -145,16 +144,17 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
       setAiResults(map);
 
-      await new Promise((res) => setTimeout(res, 1000));
-      if(manual) setReclassifyAiScanPhase("complete");
+      // await new Promise((res) => setTimeout(res, 1000)); 
+
+      setReclassifyAiScanPhase("complete");
     } catch (err) {
+      console.log("Error during PII classification:", "never", "false")
       console.error("Error during PII classification:", err);
-      if(manual) setReclassifyAiScanPhase("never");
+      setReclassifyAiScanPhase("never");
+      setIsReclassifyAiLoading(false);
     } finally {
-      if(manual) {
-        setIsReclassifyAiLoading(false);
-        setReclassifyAiScanPhase("re-scan");
-      }
+      setIsReclassifyAiLoading(false);
+      setReclassifyAiScanPhase("re-scan");
     }
   };
 
@@ -747,7 +747,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               <div className="flex items-center gap-2">
                 {reclassifyAiScanPhase === "never" && (
                   <button
-                    onClick={() => handleReclassifyWithAI(true)}
+                    onClick={handleReclassificationActionWithAI}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
                   >
                     <svg
@@ -784,7 +784,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   <button
                     onClick={() => {
                       setReclassifyAiScanPhase("re-scan");
-                      handleReclassifyWithAI(true);
+                      handleReclassificationActionWithAI();
                     }}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
                   >
@@ -944,8 +944,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                           <div className="flex flex-col justify-center items-start gap-1">
                             {ai ? (
                               <>
-                                <span className="gap-1 px-2 py-0.5 rounded-xl bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-200">
-                                  {ai.tag_name}
+                                <span className="gap-1 px-2 rounded-xl bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-200">
+                                  {ai?.tag_name ? ai?.tag_name?.toUpperCase() : ""}
                                 </span>
 
                                 <span className="items-center gap-1 px-2 rounded-xl bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 w-fit">
@@ -973,7 +973,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                                   key={tag.id}
                                   className="px-2 py-0.5 rounded-xl bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200 capitalize"
                                 >
-                                  {tag.name}
+                                  {tag?.name ? tag?.name?.toUpperCase() : ""}
                                 </span>
                               ))
                             ) : (
@@ -1029,7 +1029,13 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         )}
 
         {/* Other tabs — placeholder */}
-        {activeTab !== "DataCard" && activeTab !== "Columns" && (
+        {activeTab === "Lineage" && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ height: "600px" }}>
+            <DatasetLineage datasetId={datasetId} datasetName={detail.name} />
+          </div>
+        )}
+
+        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
             <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <svg
@@ -1057,3 +1063,4 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 };
 
 export default DatasetDetailPage;
+
