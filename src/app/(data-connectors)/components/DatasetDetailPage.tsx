@@ -144,8 +144,6 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
       setAiResults(map);
 
-      // await new Promise((res) => setTimeout(res, 1000)); 
-
       setReclassifyAiScanPhase("complete");
     } catch (err) {
       console.log("Error during PII classification:", "never", "false")
@@ -160,13 +158,55 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-gray-400 font-medium">
-            Loading dataset details...
-          </p>
+      <div className="min-h-screen bg-gray-50 font-sans">
+        {/* Global search bar */}
+        <div className="bg-white border-b border-gray-200 px-8 py-3">
+          <div className="max-w-7xl mx-auto">
+            <div className="relative max-w-lg">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Find tables, dashboards, people, and more"
+                className="pl-9 pr-16 py-2 border border-gray-200 rounded-lg text-sm bg-white w-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                disabled
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
+                  ⌘
+                </kbd>
+                <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
+                  K
+                </kbd>
+              </span>
+            </div>
+          </div>
         </div>
+        <main className="max-w-7xl mx-auto px-8 py-8">
+          {/* Breadcrumb skeleton */}
+          <div className="h-4 w-1/2 bg-gray-200 rounded mb-6 animate-pulse" />
+          {/* Dataset card skeleton */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-5 flex gap-4">
+            {/* Left skeleton */}
+            <div className="flex-1 min-w-0 space-y-4">
+              <div className="bg-gray-100 rounded-xl h-48 animate-pulse" />
+              <div className="bg-gray-100 rounded-xl h-32 animate-pulse" />
+            </div>
+            {/* Right sidebar skeleton */}
+            <div className="w-64 flex-shrink-0 bg-gray-100 rounded-xl h-96 animate-pulse" />
+          </div>
+        </main>
       </div>
     );
   }
