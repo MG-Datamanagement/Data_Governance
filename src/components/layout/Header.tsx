@@ -8,9 +8,10 @@ import { LuCircleHelp } from "react-icons/lu";
 import { LuBell } from "react-icons/lu";
 import { cn } from "@/lib/utils";
 import { NotificationsModal } from "../ui/NotificationsModal";
-import { useOverviewData } from "@/hooks/useOverviewData";
 import { Button } from "../ui/Button";
 import { useRouter } from "next/navigation";
+import { CONSTANTS } from "@/lib/constants";
+import { useRecentActivity } from "@/hooks/useDashboardQueries";
 
 interface HeaderProps {
   userName: string;
@@ -23,7 +24,7 @@ export function Header({ userName }: HeaderProps) {
   const [markAllAsRead, setMarkAllAsRead] = useState<boolean>(false);
 
   const router = useRouter();
-  const { activity } = useOverviewData();
+  const activity = useRecentActivity(CONSTANTS.userUrn);
 
   const {
     data: notifications,
