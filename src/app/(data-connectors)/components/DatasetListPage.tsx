@@ -260,16 +260,11 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
         min_confidence: CONSTANTS.minConfidence,
       };
 
+
       const response: ClassificationResponse =
         await dashboardApiServices.initPiiClassification(payload);
 
-      // Create lookup map from response
-      // const classificationMap: Record<string, "pii" | "clean"> = {};
-      // (response?.results || []).forEach((r) => {
-      //   const tag = (r.suggested_tag || "").toLowerCase();
-      //   classificationMap[r.catalog_id] =
-      //     tag === "error" ? "clean" : "pii";
-      // });
+
       const classificationMap: Record<string, "pii" | "clean"> = {};
       (response?.results || []).forEach((r) => {
         const tag = (r.suggested_tag || "").toLowerCase();
