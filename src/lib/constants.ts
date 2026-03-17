@@ -5,4 +5,5 @@ export const CONSTANTS = {
     assignedBy: "ai-auto",
     RequireHumanApproval: true,
     saveToDb: true,
+    userUrn: "urn:li:corpuser:datahub",
 } 
