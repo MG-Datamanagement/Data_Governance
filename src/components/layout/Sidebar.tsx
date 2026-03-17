@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { MdOutlineAutoAwesome } from "react-icons/md";
 import { LuMessageSquare, LuCable, LuSparkles } from "react-icons/lu";
+import { GiMicrochip } from "react-icons/gi";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { BrandLogo } from "../ui/BrandLogo";
@@ -35,6 +36,7 @@ const GOVERN_ITEMS = [
   { icon: Tag, label: "Tags", href: "/tags" },
   { icon: Book, label: "Glossary", href: "/glossary" },
   { icon: Bot, label: "Agents", href: "/agents" },
+  { icon: GiMicrochip, label: "Models", href: "/model" },
 ];
 
 const ADMIN_ITEMS = [
