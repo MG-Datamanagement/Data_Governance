@@ -112,6 +112,24 @@ export interface ApiCatalogDatacard {
   status: string;
 }
 
+export interface DatacardBulkGenerationResult {
+  catalog_id: string;
+  table_name: string;
+  full_name: string;
+  status: string;
+  error: string | null;
+  generated_at: string;
+}
+
+export interface DatacardBulkGenerationResponse {
+  source_id: string;
+  total_catalogs: number;
+  generated: number;
+  cached: number;
+  failed: number;
+  results: DatacardBulkGenerationResult[];
+}
+
 export interface ApiRunHistory {
   total: number;
   limit: number;
@@ -487,9 +505,16 @@ export const dashboardApiServices = {
   },
 
   async fetchCatalogDatacard(catalogId: string) {
-    return dashboardApiClient.post<ApiCatalogDatacard>(
+    return dashboardApiClient.get<ApiCatalogDatacard>(
       `/api/v1/catalogs/${catalogId}/datacard`,
-      {},
+    );
+  },
+
+  async generateBulkSourceDatacards(
+    sourceId: string, max_tokens?: number, skip_cached?: boolean
+  ): Promise<DatacardBulkGenerationResponse> {
+    return dashboardApiClient.post<DatacardBulkGenerationResponse>(
+      `/api/v1/sources/${sourceId}/datacards/bulk-generate`,
     );
   },
 

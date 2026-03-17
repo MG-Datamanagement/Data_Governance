@@ -125,9 +125,12 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
      const handleBatchApis = async () => {
        setIsSourceAiSummaryLoading(true);
        try {
-         await handleTableClassification();
-         await handleColumnClassification();
-         await handleFetchIngestionSourceAiSummary();
+        await Promise.allSettled([
+         handleTableClassification(),
+         handleColumnClassification(),
+         handleGenerateBulkDataCards(),
+         handleFetchIngestionSourceAiSummary(),
+        ])
        } catch (error) {
          console.error("Error during classification and Ai summary:", error);
          setIsSourceAiSummaryLoading(false);
@@ -176,9 +179,19 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
              addDsConfig?.sourceId,
            );
          setSourceAiSummary(response);
+         setIsSourceAiSummaryLoading(false);
        } catch (err) {
          console.error("Error during classification and Ai summary:", err);
          setIsSourceAiSummaryLoading(false);
+       }
+     };
+
+     const handleGenerateBulkDataCards = async () => {
+       try {
+         const response: any =
+           await dashboardApiServices.generateBulkSourceDatacards(addDsConfig?.sourceId);
+       } catch (err) {
+         console.error("Error during bulk data cards generation:", err);
        }
      };
 

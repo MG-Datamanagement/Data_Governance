@@ -98,13 +98,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     }
     if (trimmed.startsWith("## "))
       return (
-        <h2 key={index} className="text-xl font-bold text-gray-900 mt-6 mb-3">
-          {parseInlines(trimmed.replace("## ", ""))}
-        </h2>
+        // <h2 key={index} className="text-xl font-bold text-gray-900">
+        //   {parseInlines(trimmed.replace("## ", ""))}
+        // </h2>
+        <></>
       );
     if (trimmed.startsWith("### "))
       return (
-        <h3 key={index} className="text-base font-bold text-gray-900 mt-5 mb-2">
+        <h3 key={index} className="text-base font-bold text-gray-900 mt-2 mb-2">
           {parseInlines(trimmed.replace("### ", ""))}
         </h3>
       );
@@ -119,7 +120,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
         </li>
       );
     if (trimmed === "---")
-      return <hr key={index} className="my-6 border-gray-200" />;
+      return <></>;
     if (!trimmed) return <div key={index} className="h-2" />;
     return (
       <p key={index} className="text-sm text-gray-600 leading-relaxed mb-3">
