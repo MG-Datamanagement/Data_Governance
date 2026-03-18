@@ -100,7 +100,7 @@ function buildGraph(data: LineageVisualResponse): { nodes: InternalNode[]; edges
   const rootId = data.root.id;
   ups.forEach((n) => edges.push({
     from: n.id, to: rootId, isSecondary: false,
-    transformationQuery: apiById[rootId]?.transformation_query ?? null,
+    transformationQuery: apiById[n.id]?.transformation_query ?? null,
     fromLabel: n.table_name, toLabel: data.root.table_name,
   }));
   downs.forEach((n) => {
@@ -307,6 +307,23 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
             <span className="text-[12px] text-gray-600 leading-snug">
             {node.stats ?? `${node.columnCount} column${node.columnCount !== 1 ? "s" : ""}`}
           </span>
+          </div>
+
+          <div className="flex items-start gap-2">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
+            Quality
+          </span>
+            <div className="flex items-start gap-1.5 flex-1">
+              {node.qualityStatus === "healthy" ? (
+                  <CheckCircle2 size={13} className="text-green-500 flex-shrink-0 mt-px" />
+              ) : (
+                  <AlertCircle
+                      size={13}
+                      className={`flex-shrink-0 mt-px ${node.qualityStatus === "warning" ? "text-yellow-500" : "text-red-500"}`}
+                  />
+              )}
+              <span className="text-[12px] text-gray-600 leading-snug">{qualityLine}</span>
+            </div>
           </div>
 
           {/* Tags row (compact, only if present) */}
