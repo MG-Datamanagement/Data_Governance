@@ -10,7 +10,7 @@ import {
 } from "@/services/dashboardApiServices";
 import { Dataset, ApiTag, ApiColumn } from "@/types";
 import ComplianceReportModal from "@/app/(data-connectors)/components/ComplianceReportModal";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,10 @@ const TABS = [
   "Lineage",
   "Properties",
   "Queries",
-  "Stats",
-  "Quality",
-  "Governance",
-  "Incidents",
+  // "Stats",
+  // "Quality",
+  // "Governance",
+  // "Incidents",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -104,7 +104,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         name: c.name,
         description: c.comment || "Column metadata",
       })),
-      freshness: formatDateTime(catalogData.updated_at),
+      freshness: formatIST(catalogData.updated_at),
       volume:
         catalogData.row_count !== null
           ? catalogData.row_count.toLocaleString()
@@ -555,18 +555,18 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                 <h2 className="text-base font-semibold text-gray-900 mb-3">
                   Data Quality
                 </h2>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
                     {
                       label: "FRESHNESS",
                       value: detail.freshness,
                       color: "text-green-600",
                     },
-                    {
-                      label: "VOLUME",
-                      value: detail.volume,
-                      color: "text-green-600",
-                    },
+                    // {
+                    //   label: "VOLUME",
+                    //   value: detail.volume,
+                    //   color: "text-green-600",
+                    // },
                     {
                       label: "QUALITY SCORE",
                       value: detail.qualityScore,
@@ -575,12 +575,18 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   ].map((metric) => (
                     <div
                       key={metric.label}
-                      className="bg-green-50 border border-green-100 rounded-xl px-4 py-4"
+                      className="bg-green-50 border border-green-100 rounded-xl px-4 py-4 flex flex-col justify-center items-center"
                     >
-                      <p className="text-[10px] font-semibold text-gray-400 tracking-wide uppercase mb-1">
+                      {/* <p className="text-[10px] font-semibold text-gray-400 tracking-wide uppercase mb-1">
                         {metric.label}
                       </p>
                       <p className={`text-3xl font-extrabold ${metric.color}`}>
+                        {metric.value}
+                      </p> */}
+                      <p className="text-sm font-semibold text-gray-400 tracking-wide uppercase mb-1 text-center">
+                        {metric.label}
+                      </p>
+                      <p className={cn(`text-4xl font-extrabold ${metric.color} text-center`)}>
                         {metric.value}
                       </p>
                     </div>
