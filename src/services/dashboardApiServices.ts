@@ -666,6 +666,7 @@ export interface LineageApiNode {
   column_mappings: LineageApiColumnMapping[];
   depth: number;
   ai_summary: string;
+  stats: string;
 }
 
 export interface LineageVisualResponse {
