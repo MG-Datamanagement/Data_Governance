@@ -21,6 +21,7 @@ import {
   FileTextIcon,
   Book,
   Bot,
+  Building2
 } from "lucide-react";
 import { MdOutlineAutoAwesome } from "react-icons/md";
 import { LuMessageSquare, LuCable, LuSparkles } from "react-icons/lu";
@@ -32,11 +33,12 @@ import { BrandLogo } from "../ui/BrandLogo";
 const GOVERN_ITEMS = [
   { icon: Home, label: "Home", href: "/overview" },
   { icon: Database, label: "Data Sources", href: "/data-sources" },
-  { icon: Globe, label: "Domains", href: "/domains" },
+  // { icon: Globe, label: "Domains", href: "/domains" },
   { icon: Tag, label: "Tags", href: "/tags" },
-  { icon: Book, label: "Glossary", href: "/glossary" },
+  // { icon: Book, label: "Glossary", href: "/glossary" },
   { icon: Bot, label: "Agents", href: "/agents" },
   { icon: GiMicrochip, label: "Models", href: "/model" },
+  { icon: Building2, label: "Line of Business", href: "/line-of-business" },
 ];
 
 const ADMIN_ITEMS = [

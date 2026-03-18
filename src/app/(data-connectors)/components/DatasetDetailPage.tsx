@@ -958,8 +958,10 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                             ).toUpperCase()}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-sm text-gray-500 italic max-w-xs truncate">
-                          {col.description || "No description yet."}
+                        <td className="py-4 px-6 text-sm text-gray-500 italic">
+                          <div className="overflow-y-auto min-h-10 max-h-16">
+                            {col?.description || "No description yet."}
+                          </div>
                         </td>
                         {/* <td className="py-4 px-6 text-sm text-gray-600 font-medium">
                         <div className="flex flex-col gap-1.5">
