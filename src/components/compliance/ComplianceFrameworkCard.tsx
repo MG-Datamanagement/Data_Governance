@@ -100,7 +100,7 @@ export function ComplianceFrameworkCard({
       )}
 
       {/* Action Required Box (Mockup style for Warnings) */}
-      {(framework.status === "warning" || framework.status === "needs_attention") && (
+      {/* {(framework.status === "warning" || framework.status === "needs_attention") && (
         <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2">
             <AlertCircle size={14} className="text-orange-600" />
@@ -115,7 +115,7 @@ export function ComplianceFrameworkCard({
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* View Details Link */}
       <div className="flex justify-end pt-1">

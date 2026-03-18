@@ -28,6 +28,7 @@ export function TabNavigation() {
     } catch (err) {
       console.error("Failed to export compliance report:", err);
       alert("Failed to export report. Please try again.");
+      setIsExporting(false);
     } finally {
       setIsExporting(false);
     }

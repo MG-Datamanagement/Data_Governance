@@ -171,3 +171,30 @@ export const downloadFileFromResponse = async (response: Response) => {
 
   URL.revokeObjectURL(url);
 };
+
+export const formatIST = (isoString: string): string => {
+  const date = new Date(isoString);
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find(p => p.type === type)?.value ?? '';
+
+  const month = get('month').toUpperCase(); // MAR
+  const day = get('day');                   // 18
+  const year = get('year');                 // 2026
+  const hour = get('hour');                 // 08
+  const minute = get('minute');             // 30
+
+  return `${month}/${day}/${year}    ${hour}:${minute} IST`;
+};

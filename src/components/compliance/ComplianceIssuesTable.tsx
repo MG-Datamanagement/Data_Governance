@@ -130,7 +130,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
                     </span>
                   </td>
                   <td className="py-4 px-2">
-                    <div className="text-xs text-gray-500 font-medium font-mono">
+                    <div className="text-xs text-gray-500 font-medium font-mono overflow-x-hidden overflow-y-auto max-h-20 w-auto">
                       {issue.dataset}
                     </div>
                   </td>

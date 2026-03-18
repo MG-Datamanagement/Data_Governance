@@ -648,9 +648,9 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
                 {[
                   "Name",
                   "Type",
-                  "Rows",
+                  // "Rows",
                   "Columns",
-                  "Size",
+                  // "Size",
                   "Last Sync",
                   "Status",
                   "Actions",
@@ -740,9 +740,9 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
                     </td>
 
                     {/* Rows */}
-                    <td className="py-3.5 px-4 text-sm text-indigo-600 font-medium">
+                    {/* <td className="py-3.5 px-4 text-sm text-indigo-600 font-medium">
                       {dataset.rows ?? "—"}
-                    </td>
+                    </td> */}
 
                     {/* Columns */}
                     <td className="py-3.5 px-4 text-sm text-gray-600">
@@ -750,9 +750,9 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
                     </td>
 
                     {/* Size */}
-                    <td className="py-3.5 px-4 text-sm text-gray-600">
+                    {/* <td className="py-3.5 px-4 text-sm text-gray-600">
                       {dataset.size ?? "—"}
-                    </td>
+                    </td> */}
 
                     {/* Last Sync */}
                     <td className="py-3.5 px-4 text-sm text-gray-500">

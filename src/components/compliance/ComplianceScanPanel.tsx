@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, CheckCircle2, Bot, ChevronDown, ChevronUp } from "lucide-react";
+import { X, CheckCircle2, Bot, ChevronDown, ChevronUp, Loader2, DownloadIcon } from "lucide-react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,7 @@ export function ComplianceScanPanel({
   const [reasoning, setReasoning] = useState<ReasoningStep[]>([]);
   const [reasoningOpen, setReasoningOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   // Pending result from API — held until animation catches up
   const pendingResult = useRef<{
@@ -147,6 +148,20 @@ export function ComplianceScanPanel({
       setPhase("done");
     }
   }, [phase]);
+
+    const handleExportReport = async () => {
+    if (isDownloadingReport) return;
+    setIsDownloadingReport(true);
+    try {
+      await dashboardApiServices.exportComplianceReport();
+    } catch (err) {
+      console.error("Failed to export compliance report:", err);
+      alert("Failed to export report. Please try again.");
+      setIsDownloadingReport(false);
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
 
   // ── Auto-scroll active step into view ────────────────────────────────────
   //   useEffect(() => {
@@ -294,11 +309,12 @@ export function ComplianceScanPanel({
           {/* Animated progress border at bottom of header */}
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 overflow-hidden">
             {isScanning ? (
-              <div
-                key={progressPct}
-                className="csp-progress-bar csp-shimmer-bar h-full rounded-full"
-                style={{ width: `${Math.max(progressPct, 6)}%` }}
-              />
+              // <div
+              //   key={progressPct}
+              //   className="csp-progress-bar csp-shimmer-bar h-full rounded-full"
+              //   style={{ width: `${Math.max(progressPct, 6)}%` }}
+              // />
+              <></>
             ) : (
               <div className="h-full bg-emerald-400 w-full transition-all duration-700" />
             )}
@@ -353,8 +369,7 @@ export function ComplianceScanPanel({
           {isScanning && (
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-100 overflow-hidden">
               <div
-                key={progressPct}
-                className="csp-progress-bar csp-shimmer-bar h-full"
+                className="csp-shimmer-bar h-full transition-all duration-700 ease-in-out"
                 style={{ width: `${Math.max(progressPct, 6)}%` }}
               />
             </div>
@@ -636,10 +651,12 @@ export function ComplianceScanPanel({
         ) : (
           <div className="px-5 py-4 border-t border-gray-100 shrink-0">
             <button
-              onClick={onClose}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold py-3 rounded-xl transition-colors"
+              onClick={handleExportReport}
+              disabled={isDownloadingReport}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
-              View Full Report
+              {isDownloadingReport ? <Loader2 size={16} className="animate-spin" /> : <DownloadIcon size={16} /> }
+              {isDownloadingReport ? "Downloading..." : "Download Full Report"}
             </button>
           </div>
         )}
