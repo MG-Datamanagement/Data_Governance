@@ -665,6 +665,7 @@ export interface LineageApiNode {
   transformation_query: string | null;
   column_mappings: LineageApiColumnMapping[];
   depth: number;
+  ai_summary: string;
 }
 
 export interface LineageVisualResponse {
@@ -672,4 +673,3 @@ export interface LineageVisualResponse {
   upstreams: LineageApiNode[];
   downstreams: LineageApiNode[];
 }
-
