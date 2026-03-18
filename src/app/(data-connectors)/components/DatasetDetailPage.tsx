@@ -36,6 +36,7 @@ interface DatasetDetailPageProps {
 
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { ReclassificationActionWithAiRequest } from "@/services/mock";
+import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
 
 const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   sourceId,
@@ -53,6 +54,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const [reclassifyAiScanPhase, setReclassifyAiScanPhase] =
     useState<ClassifyScanPhase>("never");
   const [aiResults, setAiResults] = useState<any>({});
+  const [complianceData, setComplianceData] = useState<ComplianceApiResponse | null>(null);
+  const [isComplianceLoading, setIsComplianceLoading] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -74,13 +77,28 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       }
     };
 
-    const handleFetchClassifyApi = async() => {
+    const handleFetchClassifyApi = async () => {
       // await handleReclassificationActionWithAI();
       await fetchAll();
     }
-    
+
     handleFetchClassifyApi()
   }, [datasetId]);
+
+  const handleViewCompliance = async () => {
+    setShowCompliance(true);
+    // if (complianceData) return;
+    setIsComplianceLoading(true);
+    try {
+      const res = await datasourceApiServices.fetchDatasetComplianceReport(datasetId);
+      setComplianceData(res);
+    } catch (err) {
+      console.error("Failed to fetch compliance report", err);
+      setIsComplianceLoading(false);
+    } finally {
+      setIsComplianceLoading(false);
+    }
+  };
 
   const detail = useMemo(() => {
     if (!catalogData) return null;
@@ -95,7 +113,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       name: catalogData.table_name,
       type: catalogData.source_type
         ? catalogData.source_type.charAt(0).toUpperCase() +
-          catalogData.source_type.slice(1)
+        catalogData.source_type.slice(1)
         : "Dataset",
       overview:
         catalogData.description ||
@@ -121,11 +139,11 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
 
   const handleReclassificationActionWithAI = async () => {
-      setIsReclassifyAiLoading(true);
-      setReclassifyAiScanPhase("scanning");
+    setIsReclassifyAiLoading(true);
+    setReclassifyAiScanPhase("scanning");
 
     try {
-      const payload:ReclassificationActionWithAiRequest = {
+      const payload: ReclassificationActionWithAiRequest = {
         catalog_id: datasetId,
         save_to_db: CONSTANTS.saveToDb,
         assigned_by: CONSTANTS.assignedBy,
@@ -270,6 +288,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         <ComplianceReportModal
           datasetName={detail.name}
           onClose={() => setShowCompliance(false)}
+          complianceData={complianceData}
         />
       )}
 
@@ -445,7 +464,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowCompliance(true)}
+                onClick={handleViewCompliance}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg
@@ -483,20 +502,18 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               <button
                 key={name}
                 onClick={() => setActiveTab(name as Tab)}
-                className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
-                  activeTab === name
+                className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
                     ? "border-indigo-600 text-indigo-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 {name}
                 {count !== undefined && name !== "Properties" && (
                   <span
-                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${
-                      activeTab === name
+                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === name
                         ? "bg-indigo-100 text-indigo-600"
                         : "bg-gray-100 text-gray-500"
-                    }`}
+                      }`}
                   >
                     {count}
                   </span>
@@ -1061,15 +1078,15 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   })}
                   {(!catalogData?.columns ||
                     catalogData.columns.length === 0) && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-12 text-center text-sm text-gray-400 italic"
-                      >
-                        No columns found for this dataset.
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="py-12 text-center text-sm text-gray-400 italic"
+                        >
+                          No columns found for this dataset.
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </table>
             </div>

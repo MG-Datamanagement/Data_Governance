@@ -1,5 +1,6 @@
 "use client";
 
+import { ComplianceApiResponse, ComplianceRule } from "@/services/datasourceApiServices";
 import React, { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,7 +139,7 @@ const EvidenceIcon: React.FC<{ icon?: EvidenceItem["icon"] }> = ({ icon }) => {
     );
 };
 
-const CompliantRule: React.FC<{ rule: AuditRule }> = ({ rule }) => (
+const CompliantRule: React.FC<{ rule: ComplianceRule }> = ({ rule }) => (
     <div className="border border-gray-200 rounded-xl overflow-hidden">
         <div className="border-l-4 border-l-green-500 p-5">
             <div className="flex items-start justify-between gap-4">
@@ -146,15 +147,15 @@ const CompliantRule: React.FC<{ rule: AuditRule }> = ({ rule }) => (
                     <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3 className="text-sm font-semibold text-gray-900">{rule.title}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">{rule.rule_name}</h3>
                 </div>
                 <span className="inline-block text-[10px] font-bold tracking-wide text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5 flex-shrink-0">
-                    COMPLIANT
+                    {rule.status}
                 </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 ml-7">{rule.description}</p>
 
-            {rule.evidence && rule.evidence.length > 0 && (
+            {/* {rule.evidence && rule.evidence.length > 0 && (
                 <div className="mt-4 ml-7">
                     <p className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase mb-2">Evidence</p>
                     <div className="space-y-1.5">
@@ -169,7 +170,7 @@ const CompliantRule: React.FC<{ rule: AuditRule }> = ({ rule }) => (
                         ))}
                     </div>
                 </div>
-            )}
+            )} */}
         </div>
     </div>
 );
@@ -271,19 +272,22 @@ const ViolationRule: React.FC<{ rule: AuditRule }> = ({ rule }) => (
 interface ComplianceReportModalProps {
     datasetName?: string;
     onClose: () => void;
+    complianceData?: ComplianceApiResponse | null;
 }
 
 const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
     datasetName,
     onClose,
+    complianceData
 }) => {
     const data: ComplianceData = {
         ...defaultCompliance,
         datasetName: datasetName ?? defaultCompliance.datasetName,
     };
 
-    const scorePercent = (data.score / data.scoreMax) * 100;
-
+    // const scorePercent = (data.score / data.scoreMax) * 100;
+    const scorePercent = complianceData?.summary?.compliance_score;
+    console.log(complianceData);
     return (
         // Backdrop
         <div
@@ -354,7 +358,7 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                                 </div>
                             </div>
                             <p className="text-3xl font-extrabold text-gray-900 mb-2">
-                                {data.score}/{data.scoreMax}
+                                {scorePercent?.toFixed(1)}/{data.scoreMax}
                             </p>
                             <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
                                 <div
@@ -362,9 +366,9 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                                     style={{ width: `${scorePercent}%` }}
                                 />
                             </div>
-                            {data.criticalViolations > 0 && (
+                            {complianceData?.summary?.critical_violations && (
                                 <p className="text-xs font-medium text-orange-500">
-                                    {data.criticalViolations} Critical Violation Detected
+                                    {complianceData?.summary?.critical_violations} Critical Violation Detected
                                 </p>
                             )}
                         </div>
@@ -379,7 +383,7 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-extrabold text-gray-900 mb-1">{data.policiesChecked}</p>
+                            <p className="text-3xl font-extrabold text-gray-900 mb-1">{complianceData?.summary?.policies_checked}</p>
                             <p className="text-xs text-gray-400">Against &ldquo;{data.policyName}&rdquo;</p>
                         </div>
 
@@ -393,7 +397,7 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-extrabold text-gray-900 mb-1">{data.protectedAssets}</p>
+                            <p className="text-3xl font-extrabold text-gray-900 mb-1">{complianceData?.summary?.protected_assets}</p>
                             <p className="text-xs text-gray-400">{data.protectedLabel}</p>
                         </div>
                     </div>
@@ -402,12 +406,12 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                     <div>
                         <h3 className="text-sm font-bold text-gray-900 mb-3">Automated Audit Results</h3>
                         <div className="space-y-4">
-                            {data.rules.map((rule) =>
-                                rule.status === "compliant" ? (
-                                    <CompliantRule key={rule.id} rule={rule} />
-                                ) : (
-                                    <ViolationRule key={rule.id} rule={rule} />
-                                )
+                            {complianceData?.rules.map((complianceRule: ComplianceRule) =>
+                                // rule.status === "compliant" ? (
+                                <CompliantRule key={complianceRule.rule_id} rule={complianceRule} />
+                                // ) : (
+                                //     <ViolationRule key={rule.id} rule={rule} />
+                                // )
                             )}
                         </div>
                     </div>
