@@ -54,9 +54,9 @@ export function ComplianceHealthSection({ complianceRunQuery }: Props) {
             </p>
           </div>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+        {/* <button className="text-gray-400 hover:text-gray-600 transition-colors">
           <ChevronUp size={20} />
-        </button>
+        </button> */}
       </div>
 
       <div className="space-y-6">

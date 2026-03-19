@@ -1,4 +1,4 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -7,6 +7,7 @@ interface StatCardProps {
   iconBg?: string;
   label: string;
   value: string | number;
+  info?: string;
   change?: string;
   changeType?: "positive" | "negative" | "neutral";
 }
@@ -17,6 +18,7 @@ export function StatCard({
   iconBg,
   label,
   value,
+  info,
   change,
   changeType = "neutral",
 }: StatCardProps) {
@@ -24,11 +26,19 @@ export function StatCard({
     <>
       <div className="stat-card flex flex-col justify-between space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs/3 text-gray-600 font-medium">{label}</span>
+          <div className="flex items-center gap-1.5">
+            <div className={cn("p-1 rounded-md", iconBg)}>
+              <Icon size={12} className={cn(iconColor, "shrink-0")} />
+            </div>
+            <span className="text-xs text-gray-600 font-medium">{label}</span>
 
-          <div className={cn("p-1 rounded-md", iconBg)}>
-            <Icon size={14} className={cn(iconColor, "shrink-0")} />
           </div>
+
+          {info && (
+            <div title={info} className="cursor-help text-gray-400 hover:text-gray-600 transition-colors">
+              <Info size={12} />
+            </div>
+          )}
         </div>
 
         <div className="space-y-1">

@@ -13,6 +13,7 @@ import { InlineState } from "@/components/ui/InlineState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OverviewData } from "@/hooks/useOverviewData";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
+import { useRouter } from "next/navigation";
 
 type Props = {
   query: OverviewData["frameworks"];
@@ -22,6 +23,7 @@ type Props = {
 function ComplianceContent({ query, overviewQuery }: Props) {
   const { data: frameworks, isLoading: isFrameworksLoading, error: frameworksError, refetch: refetchFrameworks } = query;
   const { data: overview, isLoading: isOverviewLoading, error: overviewError, refetch: refetchOverview } = overviewQuery;
+  const router = useRouter();
 
   const isLoading = isFrameworksLoading || isOverviewLoading;
   const error = frameworksError || overviewError;
@@ -106,7 +108,7 @@ function ComplianceContent({ query, overviewQuery }: Props) {
         </div>
       )}
       <div>
-        <button className="w-full mt-10 flex items-center justify-center gap-2 p-2 text-xs text-center rounded-md border border-gray-200 hover:bg-gray-100 text-gray-800 font-medium">
+        <button onClick={() => router.push("/compliance")} className="w-full mt-10 flex items-center justify-center gap-2 p-2 text-xs text-center rounded-md border border-gray-200 hover:bg-gray-100 text-gray-800 font-medium">
           Details <ArrowRight size={14} />
         </button>
       </div>

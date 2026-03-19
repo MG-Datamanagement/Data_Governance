@@ -14,7 +14,7 @@ import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
 const TABS = [
   "DataCard",
@@ -507,6 +507,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                     : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
               >
+                {name === "DataCard" && <SparkleIcon className={cn(activeTab === name ? "text-indigo-600 fill-indigo-600" : "text-gray-500 fill-gray-500")} strokeWidth={1} size={14} />}
                 {name}
                 {count !== undefined && name !== "Properties" && (
                   <span
@@ -644,7 +645,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               </div>
 
               {/* Documentation */}
-              <div className="p-4 border-b border-gray-100">
+              {/* <div className="p-4 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
                     <svg
@@ -679,7 +680,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">No documentation yet.</p>
-              </div>
+              </div> */}
 
               {/* Lineage */}
               <div className="p-4 border-b border-gray-100">
@@ -939,9 +940,9 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                     <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       Classification
                     </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {/* <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       Terms
-                    </th>
+                    </th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -1053,9 +1054,9 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                           <span className="text-[10px] text-gray-300">—</span>
                         </div>
                       </td> */}
-                        <td className="py-2 px-6">
+                        {/* <td className="py-2 px-6">
                           <div className="flex flex-wrap gap-1">
-                            {/* {ai ? (
+                            {ai ? (
                               <span className="px-2 py-0.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
                                 {ai.tag_name}
                               </span>
@@ -1068,11 +1069,11 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                                   {tag.name}
                                 </span>
                               ))
-                            ) : ( */}
+                            ) : (
                             <span className="text-[10px] text-gray-300">—</span>
-                            {/* )} */}
+                            )}
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     );
                   })}

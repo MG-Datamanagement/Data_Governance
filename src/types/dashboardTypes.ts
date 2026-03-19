@@ -129,18 +129,31 @@ export interface ApiComplianceOverviewResponse {
 }
 
 
+export interface MetricValue {
+  value: number;
+  info: string;
+}
+
 export interface DashboardStats {
   totalAssets: number;
+  totalAssetsInfo?: string;
   totalAssetsChange?: string;
   governanceScore?: number;
+  governanceScoreInfo?: string;
   governanceScoreStatus?: string;
   classified: number;
+  classifiedInfo?: string;
   classifiedChange?: string;
   pendingReview?: number;
+  pendingReviewInfo?: string;
   aiRiskDomains?: number;
+  aiRiskDomainsInfo?: string;
   activeDomains: number;
+  activeDomainsInfo?: string;
   activeTables: number;
+  activeTablesInfo?: string;
   openIssues?: number;
+  openIssuesInfo?: string;
 }
 
 export interface AIGovernanceSnapshot {
@@ -206,15 +219,15 @@ export interface BaseApiResponse {
 }
 
 export interface DashboardEntityMetricsResponse extends BaseApiResponse {
-  total_assets: number;
+  total_assets: MetricValue;
   // counts: EntityCounts;
-  total_datasets: number;
-  total_domains: number;
-  total_tags: number;
-  pending_review?: number;
-  open_issues?: number;
-  governance_score?: number;
-  at_risk_domains?: number;
+  total_datasets: MetricValue;
+  total_domains: MetricValue;
+  total_tags: MetricValue;
+  pending_review?: MetricValue;
+  open_issues?: MetricValue;
+  governance_score?: MetricValue;
+  at_risk_domains?: MetricValue;
 }
 
 export type EntityCounts = Record<EntityType, number>;

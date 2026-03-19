@@ -4,9 +4,21 @@ import React, { useEffect, useState } from "react";
 import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
 import { ApiOwner } from "@/services/dashboardApiServices";
 import { useAppStore } from "@/store/appStore";
+import { RedshiftConfig } from "@/lib/constants";
 
 // ─── Only MongoDB + PostgreSQL ────────────────────────────────────────────────
 const CONNECTORS = [
+  {
+    "id": "redshift",
+    "name": "Redshift",
+    "description": "Extract and catalog Schemas, Tables, Views, and data lineage from your AWS Redshift data warehouse.",
+    "iconBg": "bg-white",
+    "icon": "redshift",
+    "configTitle": "Configure AWS Redshift Connection",
+    "docsLabel": "Redshift source docs",
+    "uriPlaceholder": "e.g. redshift-cluster.abc123.us-east-1.redshift.amazonaws.com",
+    "defaultName": "My Redshift Source"
+  },
   {
     id: "athena",
     name: "Athena",
@@ -299,7 +311,7 @@ const Step2: React.FC<{
       />
     ) : (
       <div className="space-y-4">
-        {connector.id !== 'athena' && (
+        {connector.id !== 'athena' && connector.id !== 'redshift' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Connection URI</label>
             <input
@@ -312,14 +324,14 @@ const Step2: React.FC<{
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        {connector.id !== 'redshift' && <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
             <input
               type="text"
               value={config.username}
               onChange={(e) => onChange("username", e.target.value)}
-              placeholder="e.g. admin"
+              placeholder={connector.id === 'redshift' ? "datahub_ingestion_user" : "e.g. admin"}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
@@ -329,11 +341,11 @@ const Step2: React.FC<{
               type="password"
               value={config.password}
               onChange={(e) => onChange("password", e.target.value)}
-              placeholder="••••••••"
+              placeholder={connector.id === 'redshift' ? "${REDSHIFT_PASSWORD}" : "••••••••"}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
-        </div>
+        </div>}
 
         {connector.id === 'athena' && (
           <>
@@ -368,6 +380,98 @@ const Step2: React.FC<{
                 placeholder="e.g. s3://athena-query-results-tmp-123/"
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
+            </div>
+          </>
+        )}
+
+        {connector.id === "redshift" && (
+          <>
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">Processing Engine Config</h3>
+                <select 
+                  value={config.processing_engine} 
+                  onChange={(e) => onChange("processing_engine", e.target.value)}
+                  className="px-2 py-1 border border-gray-200 rounded text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                >
+                  <option value="glue">AWS Glue</option>
+                  {/* <option value="emr" disabled>Spark on EMR (Coming Soon)</option> */}
+                </select>
+              </div>
+              {config.processing_engine === "glue" && (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Region</label>
+                    <input type="text" value={config.glue_region} onChange={(e) => onChange("glue_region", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Job Name</label>
+                    <input type="text" value={config.glue_job_name} onChange={(e) => onChange("glue_job_name", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Job Run ID</label>
+                    <input type="text" value={config.glue_job_run_id} onChange={(e) => onChange("glue_job_run_id", e.target.value)} placeholder="Leave empty for latest" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div className="flex items-center mt-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={config.glue_track_latest_run} onChange={(e) => onChange("glue_track_latest_run", e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                      <span className="text-[11px] font-medium text-gray-700">Track Latest Run</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">Query Source Config</h3>
+                <select 
+                  value={config.query_source} 
+                  onChange={(e) => onChange("query_source", e.target.value)}
+                  className="px-2 py-1 border border-gray-200 rounded text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                >
+                  <option value="cloudwatch">Amazon CloudWatch</option>
+                  {/* <option value="s3" disabled>Amazon S3 Logs (Coming Soon)</option> */}
+                </select>
+              </div>
+              {config.query_source === "cloudwatch" && (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Region</label>
+                    <input type="text" value={config.cw_region} onChange={(e) => onChange("cw_region", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Log Group Name</label>
+                    <input type="text" value={config.cw_log_group_name} onChange={(e) => onChange("cw_log_group_name", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Log Stream Name</label>
+                    <input type="text" value={config.cw_log_stream_name} onChange={(e) => onChange("cw_log_stream_name", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 mb-1">Filter Pattern</label>
+                    <input type="text" value={config.cw_filter_pattern} onChange={(e) => onChange("cw_filter_pattern", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-4 mb-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Authentication</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">Access Key ID</label>
+                  <input type="text" value={config.common_access_key_id} onChange={(e) => onChange("common_access_key_id", e.target.value)} placeholder="AKIA..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">Secret Access Key</label>
+                  <input type="password" value={config.common_secret_access_key} onChange={(e) => onChange("common_secret_access_key", e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1">Role ARN</label>
+                  <input type="text" value={config.common_role_arn} onChange={(e) => onChange("common_role_arn", e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -473,7 +577,8 @@ const Step3: React.FC<{
                 <input
                   type="text"
                   value={schedule.hour}
-                  onChange={(e) => onChange("hour", e.target.value.padStart(2, "0").slice(-2))}
+                  onChange={(e) => onChange("hour", e.target.value.replace(/\D/g, '').slice(0, 2))}
+                  onBlur={(e) => onChange("hour", e.target.value.padStart(2, "0"))}
                   maxLength={2}
                   className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
@@ -481,7 +586,8 @@ const Step3: React.FC<{
                 <input
                   type="text"
                   value={schedule.minute}
-                  onChange={(e) => onChange("minute", e.target.value.padStart(2, "0").slice(-2))}
+                  onChange={(e) => onChange("minute", e.target.value.replace(/\D/g, '').slice(0, 2))}
+                  onBlur={(e) => onChange("minute", e.target.value.padStart(2, "0"))}
                   maxLength={2}
                   className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
@@ -520,7 +626,7 @@ const Step3: React.FC<{
 // ─── Step 4: Finish Up ────────────────────────────────────────────────────────
 const Step4: React.FC<{
   connector: typeof CONNECTORS[0];
-  config: { uri: string };
+  config: any;
   schedule: { frequency: string; hour: string; minute: string; timezone: string };
   finish: { name: string; piiEnabled: boolean; piiApproval: boolean; failureEmail: string; owner_id: string };
   owners: ApiOwner[];
@@ -548,11 +654,23 @@ const Step4: React.FC<{
               <span className="text-sm font-medium text-gray-800">{connector.name}</span>
             </div>
           </div>
-          {connector.id !== 'athena' && (
+          {connector.id !== 'athena' && connector.id !== 'redshift' && (
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Connection URI</p>
               <span className="text-sm text-gray-500">{config.uri || "Not configured"}</span>
             </div>
+          )}
+          {connector.id === 'redshift' && (
+            <>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Host & Port</p>
+                <span className="text-sm text-gray-500">{config?.host_port || "Not configured"}</span>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Database</p>
+                <span className="text-sm text-gray-500">{config?.database || "Not configured"}</span>
+              </div>
+            </>
           )}
           <div>
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Schedule</p>
@@ -696,8 +814,13 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [config, setConfig] = useState({
     uri: "", username: "", password: "",
+    host_port: "", database: "",
     aws_region: "", work_group: "", s3_staging_dir: "",
     schemaInference: true, randomSampling: true, maxSchemaSize: "300", yamlMode: false,
+    processing_engine: "glue", query_source: "cloudwatch",
+    glue_region: "us-east-1", glue_job_name: "customer360-etl-job", glue_job_run_id: "", glue_track_latest_run: true,
+    cw_region: "us-east-1", cw_log_group_name: "/aws/spark/etl-jobs", cw_log_stream_name: "*", cw_filter_pattern: "SELECT",
+    common_access_key_id: "", common_secret_access_key: "", common_role_arn: "arn:aws:iam::123456789012:role/log-reader",
   });
   const [schedule, setSchedule] = useState({
     enabled: true, frequency: "Daily" as Frequency, hour: "00", minute: "00", timezone: "Asia/Calcutta",
@@ -797,10 +920,54 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
           work_group: config.work_group,
           s3_staging_dir: config.s3_staging_dir,
         };
+      } else if (selectedId === 'redshift') {
+        payload.connection_details = {
+          username: RedshiftConfig.username,
+          password: RedshiftConfig.password,
+          aws_region: RedshiftConfig.aws_region,
+          work_group: RedshiftConfig.work_group,
+          s3_staging_dir: RedshiftConfig.s3_staging_dir,
+        };
+        payload.include_views = true;
+        payload.include_tables = true;
+        payload.schema_pattern = [".*"];
+        payload.table_pattern = [".*"];
+
+        // if (config.processing_engine === 'glue') {
+        //   payload.processing_engine = {
+        //     type: "glue",
+        //     config: {
+        //       region: config.glue_region,
+        //       job_name: config.glue_job_name,
+        //       job_run_id: config.glue_job_run_id || null,
+        //       track_latest_run: config.glue_track_latest_run,
+        //       auth: {
+        //         role_arn: config.common_role_arn
+        //       }
+        //     }
+        //   };
+        // }
+
+        // if (config.query_source === 'cloudwatch') {
+        //   payload.query_source = {
+        //     type: "cloudwatch",
+        //     config: {
+        //       region: config.cw_region,
+        //       log_group_name: config.cw_log_group_name,
+        //       log_stream_name: config.cw_log_stream_name,
+        //       filter_pattern: config.cw_filter_pattern,
+        //       auth: {
+        //         access_key_id: config.common_access_key_id,
+        //         secret_access_key: config.common_secret_access_key,
+        //         role_arn: config.common_role_arn
+        //       }
+        //     }
+        //   };
+        // }
       }
 
       const { dashboardApiServices } = await import("@/services/dashboardApiServices");
-      const createdSource = await dashboardApiServices.createDataSource(selectedId as any, payload);
+      const createdSource = await dashboardApiServices.createDataSource(selectedId === "redshift" ? "athena" : selectedId as any, payload);
 
       // Trigger ingestion after creation
       let jobId = "";
