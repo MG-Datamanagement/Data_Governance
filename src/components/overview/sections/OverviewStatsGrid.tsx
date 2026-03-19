@@ -56,6 +56,7 @@ export function OverviewStatsGrid({
         iconColor="text-blue-600"
         label="Total Assets"
         value={stats?.totalAssets}
+        info={stats?.totalAssetsInfo}
         change={stats?.totalAssetsChange ?? "+12% vs last month"}
         changeType="positive"
         iconBg="bg-blue-100"
@@ -65,6 +66,7 @@ export function OverviewStatsGrid({
         iconColor="text-green-600"
         label="Governance Score"
         value={governanceScore ? `${governanceScore}%` : `${stats?.governanceScore ?? 0}%`}
+        info={stats?.governanceScoreInfo}
         change={stats?.governanceScoreStatus ?? "Above target"}
         changeType="neutral"
         iconBg="bg-green-100"
@@ -72,8 +74,9 @@ export function OverviewStatsGrid({
       <StatCard
         icon={FileTextIcon}
         iconColor="text-blue-600"
-        label="Classified"
+        label="Total Tags"
         value={stats?.classified}
+        info={stats?.classifiedInfo}
         change={"+8% vs last month"}
         changeType="positive"
         iconBg="bg-blue-100"
@@ -83,6 +86,7 @@ export function OverviewStatsGrid({
         iconColor="text-orange-600"
         label="Pending Review"
         value={pendingReviewCount ?? stats?.pendingReview ?? "0"}
+        info={stats?.pendingReviewInfo}
         iconBg="bg-orange-100"
       />
       <StatCard
@@ -90,6 +94,7 @@ export function OverviewStatsGrid({
         iconColor="text-gray-600"
         label="Active Domains"
         value={stats?.activeDomains ?? "16"}
+        info={stats?.activeDomainsInfo}
         iconBg="bg-gray-100"
       />
       <StatCard
@@ -97,6 +102,7 @@ export function OverviewStatsGrid({
         iconColor="text-red-600"
         label="Open Issues"
         value={openIssuesCount ?? stats?.openIssues ?? "0"}
+        info={stats?.openIssuesInfo}
         change="Needs attention"
         changeType="negative"
         iconBg="bg-red-100"

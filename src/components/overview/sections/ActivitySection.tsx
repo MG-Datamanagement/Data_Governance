@@ -9,7 +9,7 @@
  * slices without caring which tab is active.
  */
 
-import { Activity, Clock, Database } from "lucide-react";
+import { Activity, Clock, Database, CheckCircle2, AlertCircle, PlayCircle, PlusCircle, CheckSquare } from "lucide-react";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { InlineState } from "@/components/ui/InlineState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -124,22 +124,44 @@ type TimelineActivityItemProps = {
   time: string;
 };
 
+function analyzeActivity(msg: string) {
+  const lowerMsg = msg.toLowerCase();
+  
+  if (lowerMsg.includes("failed") || lowerMsg.includes("error")) {
+    return { color: "bg-red-500", icon: AlertCircle, iconColor: "text-red-500", highlightColor: "text-red-700" };
+  } else if (lowerMsg.includes("started") || lowerMsg.includes("running")) {
+    return { color: "bg-yellow-500", icon: PlayCircle, iconColor: "text-yellow-600", highlightColor: "text-yellow-700" };
+  } else if (lowerMsg.includes("registered") || lowerMsg.includes("new")) {
+    return { color: "bg-green-500", icon: PlusCircle, iconColor: "text-green-600", highlightColor: "text-green-700" };
+  } else if (lowerMsg.includes("completed")) {
+    return { color: "bg-emerald-500", icon: CheckCircle2, iconColor: "text-emerald-600", highlightColor: "text-emerald-700" };
+  } else if (lowerMsg.includes("retrieved")) {
+    return { color: "bg-blue-500", icon: CheckSquare, iconColor: "text-blue-500", highlightColor: "text-blue-700" };
+  }
+  
+  return { color: "bg-indigo-500", icon: Database, iconColor: "text-indigo-500", highlightColor: "text-indigo-700" };
+}
+
 function TimelineActivityItem({ name, time }: TimelineActivityItemProps) {
+  const { color, icon: Icon, iconColor } = analyzeActivity(name);
+
   return (
     <div className="relative pl-6 py-3">
       {/* Vertical Line */}
       <div className="absolute left-[10px] top-5 -bottom-6 w-px bg-gray-200" />
 
-      {/* Dot */}
-      <div className="absolute left-[5px] top-5 w-2.5 h-2.5 rounded-full bg-indigo-600 border-2 border-white" />
+      {/* Dot Focus */}
+      <div className={`absolute left-[5px] top-5 w-2.5 h-2.5 rounded-full ${color} border-2 border-white`} />
 
       {/* Content */}
       <div>
-        <div className="text-xs font-medium text-gray-800 line-clamp-2">
+        <div className="text-xs text-gray-800 line-clamp-2" title={name}>
           {name}
         </div>
+        
         {time && (
-          <div className="text-[10px] text-gray-500 mt-1">
+          <div className="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
+            <Icon size={10} className={`${iconColor}`} />
             {formatTimeAgo(time)}
           </div>
         )}

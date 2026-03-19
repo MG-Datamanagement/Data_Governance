@@ -191,7 +191,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
             // keep only pii & phi tags
             const filteredTags =
               cat.tags?.filter((tag) =>
-                ["pii", "phi"].includes(tag.name.toLowerCase())
+                ["pii", "phi", "financial","sensitive"].includes(tag.name.toLowerCase())
               ) || [];
 
             return {
@@ -269,7 +269,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
       (response?.results || []).forEach((r) => {
         const tag = (r.suggested_tag || "").toLowerCase();
 
-        classificationMap[r.catalog_id] = ["pii", "phi"].includes(tag)
+        classificationMap[r.catalog_id] = ["pii", "phi", "financial","sensitive"].includes(tag)
           ? "pii"
           : "clean";
       });
@@ -295,7 +295,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
       setAllDatasets((prev) =>
         prev.map((d) => {
           const result = classificationMap[d.id];
-          return result ? { ...d, hasPII: ["pii", "phi"].includes(result) } : d;
+          return result ? { ...d, hasPII: ["pii", "phi","financial","sensitive"].includes(result.toLowerCase()) } : d;
         }),
       );
 
