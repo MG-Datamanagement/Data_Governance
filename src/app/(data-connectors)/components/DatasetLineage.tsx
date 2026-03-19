@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   ZoomIn, ZoomOut, RotateCcw, Maximize2, Search,
   ChevronDown, ChevronUp, MoreHorizontal, X,
@@ -11,6 +11,7 @@ import {
   dashboardApiServices,
   LineageVisualResponse,
   LineageApiNode,
+  LineageApiQueryExecution,
 } from "@/services/dashboardApiServices";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ type QualityStatus = "healthy" | "warning" | "error";
 interface InternalColumn {
   id: string; name: string; data_type: string;
   is_primary_key: boolean; is_nullable: boolean;
+  query_expression: string | null;
 }
 interface InternalTag { id: string; name: string; color: string | null; }
 interface InternalNode {
@@ -34,6 +36,7 @@ interface InternalNode {
 interface InternalEdge {
   from: string; to: string; isSecondary?: boolean;
   transformationQuery: string | null; fromLabel: string; toLabel: string;
+  queryExecution?: LineageApiQueryExecution | null;
 }
 interface NodeRect { x: number; y: number; w: number; h: number; }
 
@@ -64,6 +67,7 @@ function mapNode(n: LineageApiNode, x: number, y: number, isCenter = false): Int
     columns: (n.columns ?? []).map((c) => ({
       id: c.id, name: c.name, data_type: c.data_type,
       is_primary_key: c.is_primary_key, is_nullable: c.is_nullable,
+      query_expression: c?.query_expression ?? null,
     })),
     columnCount: n.columns?.length ?? 0,
     tags: (n.tags ?? []).map((t) => ({ id: t.id, name: t.name, color: t.color })),
@@ -101,6 +105,7 @@ function buildGraph(data: LineageVisualResponse): { nodes: InternalNode[]; edges
   ups.forEach((n) => edges.push({
     from: n.id, to: rootId, isSecondary: false,
     transformationQuery: apiById[n.id]?.transformation_query ?? null,
+    queryExecution: apiById[n.id]?.query_execution ?? null,
     fromLabel: n.table_name, toLabel: data.root.table_name,
   }));
   downs.forEach((n) => {
@@ -108,12 +113,14 @@ function buildGraph(data: LineageVisualResponse): { nodes: InternalNode[]; edges
     edges.push({
       from: rootId, to: n.id, isSecondary: !isView,
       transformationQuery: apiById[n.id]?.transformation_query ?? null,
+      queryExecution: apiById[n.id]?.query_execution ?? null,
       fromLabel: data.root.table_name, toLabel: n.table_name,
     });
     if (!isView && dsViews.length > 0)
       dsViews.forEach((v) => edges.push({
         from: v.id, to: n.id, isSecondary: false,
         transformationQuery: apiById[n.id]?.transformation_query ?? null,
+        queryExecution: apiById[n.id]?.query_execution ?? null,
         fromLabel: v.table_name, toLabel: n.table_name,
       }));
   });
@@ -268,7 +275,7 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white" fillOpacity="0.9" className="flex-shrink-0">
               <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-5.26L4 11l5.91-1.74z" />
             </svg>
-            <span className="text-[12px] font-bold text-white tracking-wide">AI Summary</span>
+            <span className="text-[12px] font-bold text-white tracking-wide">Insights</span>
           </div>
           {/* Right: node badge + close */}
           <div className="flex items-center gap-1.5">
@@ -309,7 +316,7 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
           </span>
           </div>
 
-          <div className="flex items-start gap-2">
+          {/* <div className="flex items-start gap-2">
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
             Quality
           </span>
@@ -324,7 +331,7 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
               )}
               <span className="text-[12px] text-gray-600 leading-snug">{qualityLine}</span>
             </div>
-          </div>
+          </div> */}
 
           {/* Tags row (compact, only if present) */}
           {node.tags.length > 0 && (
@@ -393,61 +400,201 @@ function TransformationPopup({
           onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={{ boxShadow: "0 12px 48px rgba(99,102,241,0.18)" }}>
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-950 border-b border-gray-800">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                <GitBranch size={13} className="text-indigo-400" />
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                <GitBranch size={13} className="text-indigo-500" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-0.5">Transformation</p>
-                <p className="text-[11px] font-semibold text-gray-200 truncate max-w-[240px]">
-                  <span className="text-indigo-400">{edge.fromLabel}</span>
-                  <span className="text-gray-600 mx-1.5">→</span>
-                  <span className="text-violet-400">{edge.toLabel}</span>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">Transformation</p>
+                <p className="text-[11px] font-semibold text-gray-900 truncate max-w-[200px]">
+                  <span title={edge.fromLabel} className="text-indigo-600">{edge.fromLabel}</span>
+                  <span className="text-gray-400 mx-1.5">→</span>
+                  <span title={edge.toLabel} className="text-violet-600">{edge.toLabel}</span>
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-[10px] font-semibold text-gray-400 hover:text-gray-200 transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-[10px] font-semibold text-gray-500 hover:text-gray-700 transition-all shadow-sm"
               >
                 <Code2 size={11} />{copied ? "Copied!" : "Copy"}
               </button>
               <button
                   onClick={onClose}
-                  className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-200 transition-all"
+                  className="w-7 h-7 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all shadow-sm"
               >
                 <X size={12} />
               </button>
             </div>
           </div>
           {edge.transformationQuery ? (
-              <div className="bg-gray-950 max-h-64 overflow-y-auto">
-            <pre className="px-4 py-4 text-[11px] leading-relaxed font-mono text-gray-300 whitespace-pre-wrap break-words">
+              <div className="bg-white max-h-52 overflow-y-auto">
+            <pre className="px-4 py-4 text-[11px] leading-relaxed font-mono text-gray-700 whitespace-pre-wrap break-words">
               {edge.transformationQuery
                   .split(new RegExp(`\\b(${keywords.join("|")})\\b`, "gi"))
                   .map((part, idx) => {
                     if (keywords.includes(part.toUpperCase()))
-                      return <span key={idx} className="text-violet-400 font-semibold">{part}</span>;
+                      return <span key={idx} className="text-violet-600 font-bold">{part}</span>;
                     if (/^'.*'$/.test(part))
-                      return <span key={idx} className="text-amber-400">{part}</span>;
+                      return <span key={idx} className="text-amber-600 font-medium italic">{part}</span>;
                     if (/^\d+$/.test(part.trim()))
-                      return <span key={idx} className="text-blue-400">{part}</span>;
+                      return <span key={idx} className="text-blue-600 font-semibold">{part}</span>;
                     return <span key={idx}>{part}</span>;
                   })}
             </pre>
               </div>
           ) : (
-              <div className="bg-gray-950 px-4 py-8 flex flex-col items-center gap-2">
-                <Code2 size={24} className="text-gray-700" />
-                <p className="text-[12px] text-gray-600 font-medium">No transformation query defined</p>
-                <p className="text-[11px] text-gray-700">This edge represents a direct data flow.</p>
+              <div className="bg-gray-50/50 px-4 py-8 flex flex-col items-center gap-2">
+                <Code2 size={24} className="text-gray-300" />
+                <p className="text-[12px] text-gray-400 font-medium">No transformation query defined</p>
+                <p className="text-[11px] text-gray-300">This edge represents a direct data flow.</p>
               </div>
           )}
-          <div className="px-4 py-2.5 bg-gray-900 border-t border-gray-800 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-            <span className="text-[10px] text-gray-600">{edge.isSecondary ? "Secondary" : "Primary"} data flow</span>
+          <div className="bg-gray-50 border-t border-gray-100 flex flex-col">
+            {edge.queryExecution && (
+              <div className="px-4 py-2.5 border-b border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-gray-400 font-medium">Status</span>
+                  <span className={`font-bold ${edge.queryExecution.query_status === 'SUCCEEDED' ? 'text-green-600' : 'text-yellow-600'}`}>{edge.queryExecution.query_status}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-gray-400 font-medium">Runtime</span>
+                  <span className="text-gray-700 font-medium">{edge.queryExecution.query_runtime_ms} ms</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-gray-400 font-medium">Scanned</span>
+                  <span className="text-gray-700 font-medium">{(edge.queryExecution.data_scanned_bytes / 1024).toFixed(2)} KB</span>
+                </div>
+                {edge.queryExecution.engine_version && (
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-gray-400 font-medium">Engine</span>
+                  <span className="text-gray-700 font-medium truncate max-w-[80px]" title={edge.queryExecution.engine_version}>{edge.queryExecution.engine_version}</span>
+                </div>
+                )}
+                {edge.queryExecution.query_execution_id && (
+                <div className="col-span-2 flex justify-between items-center text-[10px] mt-0.5">
+                  <span className="text-gray-400 font-medium">Execution ID</span>
+                  <span className="text-gray-500 font-mono text-[9px] truncate max-w-[200px]" title={edge.queryExecution.query_execution_id}>{edge.queryExecution.query_execution_id}</span>
+                </div>
+                )}
+                {edge.queryExecution.s3_output_location && (
+                  <div className="col-span-2 flex justify-between items-center text-[10px]">
+                    <span className="text-gray-400 font-medium">Output</span>
+                    <span className="text-gray-500 font-mono text-[9px] truncate max-w-[200px]" title={edge.queryExecution.s3_output_location}>
+                      {edge.queryExecution.s3_output_location.split('/').pop() || edge.queryExecution.s3_output_location}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* <div className="px-4 py-2 flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${edge.isSecondary ? "bg-gray-400" : "bg-indigo-500"}`} />
+              <span className="text-[10px] text-gray-500 font-medium">{edge.isSecondary ? "Secondary" : "Primary"} data flow</span>
+            </div> */}
+          </div>
+        </div>
+      </div>
+  );
+}
+
+// ─── Column Query Popup ───────────────────────────────────────────────────────
+
+function ColumnQueryPopup({
+  col, screenX, screenY, onClose, nodeLabel
+}: {
+  col: InternalColumn; screenX: number; screenY: number; onClose: () => void; nodeLabel: string;
+}) {
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) onClose();
+    };
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
+    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+  }, [onClose]);
+
+  const handleCopy = () => {
+    if (col.query_expression) {
+      navigator.clipboard.writeText(col.query_expression);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const W = 380, H = 280;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const left = Math.min(Math.max(screenX - W / 2, 12), vw - W - 12);
+  const top = screenY + 16 + H > vh ? screenY - H - 16 : screenY + 16;
+
+  const keywords = ["SELECT","FROM","WHERE","JOIN","LEFT","RIGHT","INNER","OUTER","ON","GROUP BY","ORDER BY","HAVING","WITH","AS","AND","OR","NOT","IN","LIMIT","UNION","INSERT","UPDATE","DELETE","SET","CREATE","TABLE","VIEW","DISTINCT","COUNT","SUM","AVG","MAX","MIN","CASE","WHEN","THEN","ELSE","END","NULL","IS","LIKE","BETWEEN","EXISTS"];
+
+  return (
+      <div
+          ref={popupRef}
+          className="fixed z-50"
+          style={{ left, top, width: W, animation: "aiPopIn 0.15s cubic-bezier(.22,.68,0,1.2) both" }}
+          onClick={(e) => e.stopPropagation()}
+      >
+        <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={{ boxShadow: "0 12px 48px rgba(99,102,241,0.18)" }}>
+          <div className="flex items-center justify-between px-2 py-2 bg-gray-50 border-b border-gray-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                <Code2 size={13} className="text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">Column Expression</p>
+                <p className="text-[11px] font-semibold text-gray-900 truncate max-w-[200px]">
+                  <span title={nodeLabel} className="text-indigo-600">{nodeLabel}</span>
+                  <span className="text-gray-400 mx-1.5">.</span>
+                  <span title={col.name} className="text-violet-600">{col.name}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-[10px] font-semibold text-gray-500 hover:text-gray-700 transition-all shadow-sm"
+              >
+                <Code2 size={11} />{copied ? "Copied!" : "Copy"}
+              </button>
+              <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all shadow-sm"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+          {col.query_expression ? (
+              <div className="bg-white max-h-52 overflow-y-auto">
+            <pre className="px-4 py-4 text-[11px] leading-relaxed font-mono text-gray-700 whitespace-pre-wrap break-words">
+              {col.query_expression
+                  .split(new RegExp(`\\b(${keywords.join("|")})\\b`, "gi"))
+                  .map((part, idx) => {
+                    if (keywords.includes(part.toUpperCase()))
+                      return <span key={idx} className="text-violet-600 font-bold">{part}</span>;
+                    if (/^'.*'$/.test(part))
+                      return <span key={idx} className="text-amber-600 font-medium italic">{part}</span>;
+                    if (/^\d+$/.test(part.trim()))
+                      return <span key={idx} className="text-blue-600 font-semibold">{part}</span>;
+                    return <span key={idx}>{part}</span>;
+                  })}
+            </pre>
+              </div>
+          ) : (
+              <div className="bg-gray-50/50 px-4 py-8 flex flex-col items-center gap-2">
+                <Code2 size={24} className="text-gray-300" />
+                <p className="text-[12px] text-gray-400 font-medium">No expression defined</p>
+                <p className="text-[11px] text-gray-300">This column is read directly without transformation.</p>
+              </div>
+          )}
+          <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center gap-2">
+            <span className="text-[10px] text-gray-500">Data Type: {parseDataType(col.data_type)}</span>
           </div>
         </div>
       </div>
@@ -462,9 +609,10 @@ interface NodeCardProps {
   popoverOpen: boolean;
   onClick: (rect: DOMRect) => void;
   onHeightChange: (id: string, h: number) => void;
+  onColumnClick: (col: InternalColumn, nodeLabel: string, sx: number, sy: number) => void;
 }
 
-function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange }: NodeCardProps) {
+function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onColumnClick }: NodeCardProps) {
   const [expanded, setExpanded] = useState(!!node.isCenter);
   const [colSearch, setColSearch] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -596,7 +744,14 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange }: No
                     <li className="px-3 py-2 text-[11px] text-gray-300 italic">No columns</li>
                 ) : (
                     filteredCols.map((col) => (
-                        <li key={col.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-indigo-50/60 transition-colors">
+                        <li 
+                            key={col.id} 
+                            className="flex items-center gap-2 px-3 py-1.5 hover:bg-indigo-50/60 transition-colors lng-col cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onColumnClick(col, node.label, e.clientX, e.clientY);
+                            }}
+                        >
                           <span className="w-5 text-center flex-shrink-0">{colTypeIcon(col.data_type)}</span>
                           <span className="text-[11px] text-gray-700 truncate flex-1">{col.name}</span>
                           <span className="text-[9px] text-gray-300 flex-shrink-0 font-mono">{parseDataType(col.data_type)}</span>
@@ -739,8 +894,15 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const [search, setSearch] = useState("");
   const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
 
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number, y: number }>>({});
+  const [draggingNode, setDraggingNode] = useState<string | null>(null);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const nodeStartPos = useRef({ x: 0, y: 0 });
+  const hasDragged = useRef(false);
+
   const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor | null>(null);
   const [clickedEdge, setClickedEdge] = useState<ClickedEdge | null>(null);
+  const [clickedColumn, setClickedColumn] = useState<{ col: InternalColumn, nodeLabel: string, screenX: number, screenY: number } | null>(null);
 
   const handleHeightChange = useCallback((id: string, h: number) => {
     setNodeHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }));
@@ -748,7 +910,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
 
   const fetchData = useCallback(() => {
     if (!datasetId) return;
-    setIsLoading(true); setError(null); setNodeHeights({});
+    setIsLoading(true); setError(null); setNodeHeights({}); setNodePositions({});
     dashboardApiServices.fetchLineageVisual(datasetId, depth, direction)
         .then((data) => { setApiData(data); })
         .catch(() => setError("Failed to load lineage data."))
@@ -756,8 +918,13 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   }, [datasetId, depth, direction]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const { nodes, edges } = apiData ? buildGraph(apiData) : { nodes: [], edges: [] };
+  console.log(apiData, "apiData")
+  const { nodes: defaultNodes, edges } = useMemo(() => apiData ? buildGraph(apiData) : { nodes: [], edges: [] }, [apiData]);
+  const nodes = useMemo(() => defaultNodes.map(n => ({
+    ...n,
+    x: nodePositions[n.id]?.x ?? n.x,
+    y: nodePositions[n.id]?.y ?? n.y
+  })), [defaultNodes, nodePositions]);
   const visibleNodes = search.trim()
       ? nodes.filter((n) =>
           n.label.toLowerCase().includes(search.toLowerCase()) ||
@@ -774,15 +941,36 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const popoverNode = popoverAnchor ? nodes.find((n) => n.id === popoverAnchor.nodeId) ?? null : null;
 
   const handleNodeClick = useCallback((nodeId: string, rect: DOMRect) => {
+    if (hasDragged.current) return;
     setClickedEdge(null);
+    setClickedColumn(null);
     setPopoverAnchor((prev) => prev?.nodeId === nodeId ? null : { nodeId, rect });
   }, []);
 
   const handleEdgeClick = useCallback((edge: InternalEdge, sx: number, sy: number) => {
     setPopoverAnchor(null);
+    setClickedColumn(null);
     setClickedEdge((prev) =>
         prev?.edge.from === edge.from && prev?.edge.to === edge.to ? null : { edge, screenX: sx, screenY: sy }
     );
+  }, []);
+
+  const handleColumnClick = useCallback((col: InternalColumn, nodeLabel: string, sx: number, sy: number) => {
+    if (hasDragged.current) return;
+    setPopoverAnchor(null);
+    setClickedEdge(null);
+    setClickedColumn((prev) =>
+        prev?.col.id === col.id ? null : { col, nodeLabel, screenX: sx, screenY: sy }
+    );
+  }, []);
+
+  const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string, currentX: number, currentY: number) => {
+    if ((e.target as HTMLElement).closest("button") || (e.target as HTMLElement).closest("input") || (e.target as HTMLElement).closest(".lng-col") || (e.target as HTMLElement).closest(".nodrag")) return;
+    setDraggingNode(nodeId);
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    nodeStartPos.current = { x: currentX, y: currentY };
+    hasDragged.current = false;
+    e.stopPropagation();
   }, []);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -793,14 +981,31 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   }, [pan]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (draggingNode) {
+      hasDragged.current = true;
+      const dx = (e.clientX - dragStartPos.current.x) / scale;
+      const dy = (e.clientY - dragStartPos.current.y) / scale;
+      setNodePositions((prev) => ({
+        ...prev,
+        [draggingNode]: {
+          x: nodeStartPos.current.x + dx,
+          y: nodeStartPos.current.y + dy,
+        },
+      }));
+      return;
+    }
     if (!isPanning) return;
     setPan({
       x: panOrigin.current.x + (e.clientX - panStart.current.x),
       y: panOrigin.current.y + (e.clientY - panStart.current.y),
     });
-  }, [isPanning]);
+  }, [isPanning, draggingNode, scale]);
 
-  const onMouseUp = useCallback(() => setIsPanning(false), []);
+  const onMouseUp = useCallback(() => {
+    setIsPanning(false);
+    setDraggingNode(null);
+    setTimeout(() => { hasDragged.current = false; }, 50);
+  }, []);
 
   const onWheel = useCallback((e: React.WheelEvent) => {
     if ((e.target as HTMLElement).closest(".lng-node")) return;
@@ -808,7 +1013,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
     setScale((s) => Math.min(2, Math.max(0.25, s - e.deltaY * 0.001)));
   }, []);
 
-  const resetView = () => { setScale(0.85); setPan({ x: 60, y: 40 }); };
+  const resetView = () => { setScale(0.85); setPan({ x: 60, y: 40 }); setNodePositions({}); };
 
   return (
       <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#f8f9fb] rounded-xl">
@@ -857,9 +1062,10 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
             onMouseLeave={onMouseUp}
             onWheel={onWheel}
             onClick={(e) => {
-              if (!(e.target as HTMLElement).closest(".lng-node")) {
+              if (!(e.target as HTMLElement).closest(".lng-node") && !(e.target as HTMLElement).closest(".lng-col")) {
                 setPopoverAnchor(null);
                 setClickedEdge(null);
+                setClickedColumn(null);
               }
             }}
         >
@@ -912,11 +1118,15 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                     <div
                         key={node.id}
                         className="lng-node"
+                        onMouseDown={(e) => handleNodeMouseDown(e, node.id, node.x, node.y)}
                         style={{
                           position: "absolute",
                           left: node.x,
                           top: node.y,
                           width: node.isCenter ? CENTER_W : CARD_W,
+                          cursor: draggingNode === node.id ? "grabbing" : draggingNode ? "default" : "grab",
+                          userSelect: draggingNode === node.id ? "none" : "auto",
+                          zIndex: draggingNode === node.id ? 50 : 1,
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -926,6 +1136,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                           popoverOpen={popoverAnchor?.nodeId === node.id}
                           onClick={(rect) => handleNodeClick(node.id, rect)}
                           onHeightChange={handleHeightChange}
+                          onColumnClick={handleColumnClick}
                       />
                     </div>
                 ))}
@@ -933,27 +1144,27 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
           )}
 
           {/* Legend */}
-          <div className="absolute bottom-14 left-4 bg-white border border-gray-200 rounded-xl shadow-sm px-4 py-3 text-[11px] text-gray-500 pointer-events-none z-10 min-w-[172px]">
-            <p className="font-bold text-gray-700 mb-2 uppercase tracking-wide text-[10px]">Legend</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2"><span className="text-gray-500">{typeIcon("table")}</span> Table</div>
-              <div className="flex items-center gap-2"><span className="text-gray-500">{typeIcon("view")}</span> View</div>
-              <div className="flex items-center gap-2"><span className="text-gray-500">{typeIcon("dashboard")}</span> Dashboard</div>
-              <div className="flex items-center gap-2"><span className="w-8 h-0.5 bg-indigo-500 rounded inline-block" /> Data flow</div>
-              <div className="flex items-center gap-2"><span className="w-8 border-t border-dashed border-gray-400 inline-block" /> Secondary flow</div>
-              <div className="flex items-center gap-2"><span className="text-gray-400 text-[11px]">✦</span> Has AI summary</div>
-              <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-white border border-indigo-400 flex items-center justify-center flex-shrink-0">
-                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+          <div className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-xl shadow-sm p-2 text-[10px] text-gray-500 pointer-events-none z-10 min-w-[140px]">
+            <p className="font-semibold text-gray-700 mb-1.5 uppercase tracking-wide text-[10px]">Legend</p>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("table")}</span> Table</div>
+              <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("view")}</span> View</div>
+              <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("dashboard")}</span> Dashboard</div>
+              <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-indigo-500 rounded inline-block" /> Data flow</div>
+              <div className="flex items-center gap-1"><span className="w-8 border-t border-dashed border-gray-400 inline-block" /> Secondary flow</div>
+              <div className="flex items-center gap-1"><span className="text-gray-400 text-[10px]">✦</span> Has AI summary</div>
+              <div className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-white border border-indigo-400 flex items-center justify-center flex-shrink-0">
+                <span className="w-[5px] h-[5px] rounded-full bg-indigo-500" />
               </span>
                 Transformation query
               </div>
             </div>
-            <p className="font-bold text-gray-700 mt-3 mb-1.5 uppercase tracking-wide text-[10px]">Controls</p>
+            <p className="font-semibold text-gray-700 my-1.5 uppercase tracking-wide text-[10px]">Controls</p>
             <div className="space-y-1">
-              {[["Scroll","Zoom"],["Drag","Pan"],["Click node","AI summary"],["Click arrow","Transformation"]].map(([k, l]) => (
-                  <div key={k} className="flex items-center gap-2">
-                    <kbd className="bg-gray-100 border border-gray-200 rounded px-1 py-0.5 text-[9px] font-mono">{k}</kbd>
+              {[["Scroll","Zoom"],["Drag","Pan"],["Click Node","AI Summary"],["Click Arrow","Transformation"]].map(([k, l]) => (
+                  <div key={k} className="flex items-center gap-1">
+                    <kbd className="bg-gray-100 border border-gray-200 rounded p-0.5 text-[8px] font-mono">{k}</kbd>
                     <span>{l}</span>
                   </div>
               ))}
@@ -961,7 +1172,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
           </div>
 
           {/* Zoom controls */}
-          <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-10">
+          <div className="absolute bottom-2 right-2 flex flex-col gap-1 z-10">
             {([
               [<ZoomIn size={14} />, () => setScale((s) => Math.min(2, s + 0.1))],
               [<ZoomOut size={14} />, () => setScale((s) => Math.max(0.25, s - 0.1))],
@@ -996,6 +1207,17 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 screenX={clickedEdge.screenX}
                 screenY={clickedEdge.screenY}
                 onClose={() => setClickedEdge(null)}
+            />
+        )}
+
+        {/* ── Column Query Popup ── */}
+        {clickedColumn && (
+            <ColumnQueryPopup
+                col={clickedColumn.col}
+                nodeLabel={clickedColumn.nodeLabel}
+                screenX={clickedColumn.screenX}
+                screenY={clickedColumn.screenY}
+                onClose={() => setClickedColumn(null)}
             />
         )}
       </div>

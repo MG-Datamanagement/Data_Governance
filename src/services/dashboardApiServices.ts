@@ -312,34 +312,45 @@ export const dashboardApiServices = {
     );
 
     const dashboardStats: DashboardStats = {
-      totalAssets: response?.total_assets || 0,
-      classified: response?.total_tags || 0,
-      activeDomains: response?.total_domains || 0,
-      activeTables: response?.total_datasets || 0,
-      pendingReview: response?.pending_review || 0,
-      openIssues: response?.open_issues || 0,
-      governanceScore: response?.governance_score || 0,
-      aiRiskDomains: response?.at_risk_domains || 0,
+      totalAssets: response?.total_assets?.value || 0,
+      totalAssetsInfo: response?.total_assets?.info || "",
+      classified: response?.total_tags?.value || 0,
+      classifiedInfo: response?.total_tags?.info || "",
+      activeDomains: response?.total_domains?.value || 0,
+      activeDomainsInfo: response?.total_domains?.info || "",
+      activeTables: response?.total_datasets?.value || 0,
+      activeTablesInfo: response?.total_datasets?.info || "",
+      pendingReview: response?.pending_review?.value || 0,
+      pendingReviewInfo: response?.pending_review?.info || "",
+      openIssues: response?.open_issues?.value || 0,
+      openIssuesInfo: response?.open_issues?.info || "",
+      governanceScore: response?.governance_score?.value || 0,
+      governanceScoreInfo: response?.governance_score?.info || "",
+      aiRiskDomains: response?.at_risk_domains?.value || 0,
+      aiRiskDomainsInfo: response?.at_risk_domains?.info || "",
     };
     return dashboardStats;
   },
 
   async getPendingReviewCount() {
-    return dashboardApiClient.get<{ pending_review: number }>(
-      "/api/dashboard/pending-review",
-    );
+    // return dashboardApiClient.get<{ pending_review: number }>(
+    //   "/api/dashboard/pending-review",
+    // );
+    return { pending_review: { value: 0, info: "" } };
   },
 
   async getOpenIssues() {
-    return dashboardApiClient.get<{ open_issues: number }>(
-      "/api/dashboard/open-issues",
-    );
+    // return dashboardApiClient.get<{ open_issues: number }>(
+    //   "/api/dashboard/open-issues",
+    // );
+    return { open_issues: { value: 0, info: "" } };
   },
 
   async getGovernanceScore() {
-    return dashboardApiClient.get<{ governance_score: number }>(
-      "/api/dashboard/governance-score",
-    );
+    // return dashboardApiClient.get<{ governance_score: number }>(
+    //   "/api/dashboard/governance-score",
+    // );
+    return { governance_score: { value: 0, info: "" } };
   },
 
   async getComplianceOverview() {
@@ -350,14 +361,15 @@ export const dashboardApiServices = {
   },
 
   async getDomainAssets() {
-    const response: TopDomainsWithCountsResponse[] = await dashboardApiClient.get(
-      "/api/v1/domains/dataset-count",
-    );
-    return response?.map((domain: TopDomainsWithCountsResponse) => ({
-      domain: domain?.name,
-      count: domain?.dataset_count,
-      urn: domain?.id,
-    }));
+    // const response: TopDomainsWithCountsResponse[] = await dashboardApiClient.get(
+    //   "/api/v1/domains/dataset-count",
+    // );
+    // return response?.map((domain: TopDomainsWithCountsResponse) => ({
+    //   domain: domain?.name,
+    //   count: domain?.dataset_count,
+    //   urn: domain?.id,
+    // }));
+    return [];
   },
 
   async getPlatformUsage() {
@@ -393,6 +405,9 @@ export const dashboardApiServices = {
         } else if (platform.includes("mongo")) {
           icon = SiMongodb;
           iconColor = "text-green-600";
+        } else if (platform.includes("redshift")) {
+          icon = Database; // Or a specific Redshift icon if available
+          iconColor = "text-red-700";
         }
 
         const tag = (item.tag || "").toLowerCase();
@@ -421,10 +436,10 @@ export const dashboardApiServices = {
   },
 
   async getRecentActivity(userUrn: string) {
-    const response: NewRecentActivity[] = await dashboardApiClient.get(
+    const response = await dashboardApiClient.get<{ info: string, activities: NewRecentActivity[] }>(
       `/api/v1/recent-activity`,
     );
-    return response.map((activity: NewRecentActivity, index: number) => ({
+    return response.activities.map((activity: NewRecentActivity, index: number) => ({
       id: `${activity.t}-${index}`,
       name: activity.msg || "",
       type: "",
@@ -451,12 +466,13 @@ export const dashboardApiServices = {
   },
 
   async createDataSource(
-    type: "postgres" | "mongodb" | "postgresql" | "athena",
+    type: "postgres" | "mongodb" | "postgresql" | "athena" | "redshift",
     payload: any,
   ): Promise<{ id?: string; source_id?: string }> {
     const endpoint =
       type === "athena" ? "athena" :
-        (type === "postgres" || type === "postgresql" ? "postgres" : "mongodb");
+        type === "redshift" ? "redshift" :
+          (type === "postgres" || type === "postgresql" ? "postgres" : "mongodb");
     return dashboardApiClient.post(`/api/v1/sources/${endpoint}`, payload);
   },
 
@@ -638,6 +654,7 @@ export interface LineageApiColumn {
   is_primary_key: boolean;
   is_foreign_key: boolean;
   is_nullable: boolean;
+  query_expression?: string | null;
 }
 
 export interface LineageApiTag {
@@ -651,6 +668,17 @@ export interface LineageApiSource {
   id: string;
   name: string;
   source_type: string;
+}
+
+export interface LineageApiQueryExecution {
+  query_execution_id: string;
+  query_start_time: string;
+  query_end_time: string;
+  query_runtime_ms: number;
+  data_scanned_bytes: number;
+  query_status: string;
+  engine_version: string;
+  s3_output_location: string;
 }
 
 export interface LineageApiColumnMapping {
@@ -671,6 +699,7 @@ export interface LineageApiNode {
   tags: LineageApiTag[];
   lineage_id: string | null;
   transformation_query: string | null;
+  query_execution?: LineageApiQueryExecution | null;
   column_mappings: LineageApiColumnMapping[];
   depth: number;
   ai_summary: string;

@@ -14,7 +14,7 @@ import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
 const TABS = [
   "DataCard",
@@ -36,6 +36,7 @@ interface DatasetDetailPageProps {
 
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { ReclassificationActionWithAiRequest } from "@/services/mock";
+import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
 
 const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   sourceId,
@@ -53,6 +54,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const [reclassifyAiScanPhase, setReclassifyAiScanPhase] =
     useState<ClassifyScanPhase>("never");
   const [aiResults, setAiResults] = useState<any>({});
+  const [complianceData, setComplianceData] = useState<ComplianceApiResponse | null>(null);
+  const [isComplianceLoading, setIsComplianceLoading] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -74,13 +77,28 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       }
     };
 
-    const handleFetchClassifyApi = async() => {
+    const handleFetchClassifyApi = async () => {
       // await handleReclassificationActionWithAI();
       await fetchAll();
     }
-    
+
     handleFetchClassifyApi()
   }, [datasetId]);
+
+  const handleViewCompliance = async () => {
+    setShowCompliance(true);
+    // if (complianceData) return;
+    setIsComplianceLoading(true);
+    try {
+      const res = await datasourceApiServices.fetchDatasetComplianceReport(datasetId);
+      setComplianceData(res);
+    } catch (err) {
+      console.error("Failed to fetch compliance report", err);
+      setIsComplianceLoading(false);
+    } finally {
+      setIsComplianceLoading(false);
+    }
+  };
 
   const detail = useMemo(() => {
     if (!catalogData) return null;
@@ -95,7 +113,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       name: catalogData.table_name,
       type: catalogData.source_type
         ? catalogData.source_type.charAt(0).toUpperCase() +
-          catalogData.source_type.slice(1)
+        catalogData.source_type.slice(1)
         : "Dataset",
       overview:
         catalogData.description ||
@@ -121,11 +139,11 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
 
   const handleReclassificationActionWithAI = async () => {
-      setIsReclassifyAiLoading(true);
-      setReclassifyAiScanPhase("scanning");
+    setIsReclassifyAiLoading(true);
+    setReclassifyAiScanPhase("scanning");
 
     try {
-      const payload:ReclassificationActionWithAiRequest = {
+      const payload: ReclassificationActionWithAiRequest = {
         catalog_id: datasetId,
         save_to_db: CONSTANTS.saveToDb,
         assigned_by: CONSTANTS.assignedBy,
@@ -270,6 +288,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         <ComplianceReportModal
           datasetName={detail.name}
           onClose={() => setShowCompliance(false)}
+          complianceData={complianceData}
         />
       )}
 
@@ -445,7 +464,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowCompliance(true)}
+                onClick={handleViewCompliance}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg
@@ -483,20 +502,19 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               <button
                 key={name}
                 onClick={() => setActiveTab(name as Tab)}
-                className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
-                  activeTab === name
+                className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
                     ? "border-indigo-600 text-indigo-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
+                {name === "DataCard" && <SparkleIcon className={cn(activeTab === name ? "text-indigo-600 fill-indigo-600" : "text-gray-500 fill-gray-500")} strokeWidth={1} size={14} />}
                 {name}
                 {count !== undefined && name !== "Properties" && (
                   <span
-                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${
-                      activeTab === name
+                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === name
                         ? "bg-indigo-100 text-indigo-600"
                         : "bg-gray-100 text-gray-500"
-                    }`}
+                      }`}
                   >
                     {count}
                   </span>
@@ -627,7 +645,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               </div>
 
               {/* Documentation */}
-              <div className="p-4 border-b border-gray-100">
+              {/* <div className="p-4 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
                     <svg
@@ -662,7 +680,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">No documentation yet.</p>
-              </div>
+              </div> */}
 
               {/* Lineage */}
               <div className="p-4 border-b border-gray-100">
@@ -922,9 +940,9 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                     <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       Classification
                     </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {/* <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       Terms
-                    </th>
+                    </th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -1036,9 +1054,9 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                           <span className="text-[10px] text-gray-300">—</span>
                         </div>
                       </td> */}
-                        <td className="py-2 px-6">
+                        {/* <td className="py-2 px-6">
                           <div className="flex flex-wrap gap-1">
-                            {/* {ai ? (
+                            {ai ? (
                               <span className="px-2 py-0.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
                                 {ai.tag_name}
                               </span>
@@ -1051,25 +1069,25 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                                   {tag.name}
                                 </span>
                               ))
-                            ) : ( */}
+                            ) : (
                             <span className="text-[10px] text-gray-300">—</span>
-                            {/* )} */}
+                            )}
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     );
                   })}
                   {(!catalogData?.columns ||
                     catalogData.columns.length === 0) && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-12 text-center text-sm text-gray-400 italic"
-                      >
-                        No columns found for this dataset.
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="py-12 text-center text-sm text-gray-400 italic"
+                        >
+                          No columns found for this dataset.
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </table>
             </div>
