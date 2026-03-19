@@ -200,13 +200,13 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
     <div className="overflow-hidden lg:col-span-3">
       {/* Tab Header */}
       <div className="px-2 py-0">
-        <div className="flex justify-between items-center border-b border-gray-200">
+        <div className="flex justify-center items-center border-b border-gray-200">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActivityTab(id)}
               className={cn(
-                "px-1 py-2 text-[10px] font-medium border-b-2 transition-colors flex items-center gap-1 outline-none",
+                "flex-1 py-2 text-[10px] font-medium border-b-2 transition-colors flex items-center justify-center gap-1 outline-none",
                 activeTab === id
                   ? "text-primary border-primary"
                   : "text-gray-500 border-transparent hover:text-gray-700",
