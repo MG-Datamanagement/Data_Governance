@@ -609,6 +609,14 @@ export const dashboardApiServices = {
     );
   },
 
+  async getIngestionLoadingSteps(): Promise<{ ingestion_loads: string[] }> {
+    return dashboardApiClient.get("/api/v1/sources/ingestion/loading");
+  },
+
+  async getPostIngestionLoadingSteps(): Promise<{ reasoning_loads: string[] }> {
+    return dashboardApiClient.get("/api/v1/sources/post-ingestion/loading");
+  },
+
   // ─── Lineage Visual Types ─────────────────────────────────────────────────────
 
   async fetchLineageVisual(

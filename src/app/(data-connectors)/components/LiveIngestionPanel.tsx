@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Loader2, Check, Zap, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Loader2, Check, Zap, X, CheckCircle2, Circle, Tag, ArrowDown } from 'lucide-react';
+import { dashboardApiServices } from '@/services/dashboardApiServices';
 
 interface IngestionLog {
     timestamp: string;
@@ -31,14 +32,57 @@ interface LiveIngestionPanelProps {
 
 const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId, sourceName, onClose, onNotFound }) => {
     const [isScanning, setIsScanning] = useState(false);
-    const [steps, setSteps] = useState<Step[]>([
-        { label: "Establishing connection", status: 'active' },
-        { label: "Schema Discovery", status: 'pending' },
-        { label: "Ingestion started", status: 'pending' },
-        { label: "Ingestion completed", status: 'pending' },
-        { label: "PII Detection Scan", status: 'pending' },
-        { label: "Metadata Execution Summary", status: 'pending' },
-    ]);
+    const [steps, setSteps] = useState<Step[]>([]);
+    const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const advanceStep = useCallback((idx: number, stepList: Step[]) => {
+        if (idx >= stepList.length) return;
+
+        setSteps(prev => prev.map((s, i) => i === idx ? { ...s, status: 'active' } : s));
+
+        stepTimerRef.current = setTimeout(() => {
+            setSteps(prev => prev.map((s, i) => i === idx ? { ...s, status: 'completed' } : s));
+            
+            const nextIdx = idx + 1;
+            if (nextIdx < stepList.length) {
+                advanceStep(nextIdx, stepList);
+            }
+        }, 1800);
+    }, []);
+
+    const fetchInitialSteps = async () => {
+        try {
+            const res = await dashboardApiServices.getIngestionLoadingSteps();
+            const initialSteps = res.ingestion_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            setSteps(initialSteps);
+            advanceStep(0, initialSteps);
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    const appendPostIngestionSteps = async () => {
+        try {
+            const res = await dashboardApiServices.getPostIngestionLoadingSteps();
+            const newSteps = res.reasoning_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            setSteps(prev => {
+                const updated = prev.map(s => ({ ...s, status: 'completed' as const }));
+                const combined = [...updated, ...newSteps];
+                if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+                advanceStep(updated.length, combined);
+                return combined;
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        fetchInitialSteps();
+        return () => {
+            if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+        };
+    }, []);
 
     const [datasets, setDatasets] = useState<IngestingDataset[]>([]);
     const [logs, setLogs] = useState<IngestionLog[]>([]);
@@ -108,41 +152,25 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
 
         const msg = log.message;
 
-        // Parse Step transitions
-        if (msg.includes("Job started")) {
-            updateStep("Establishing connection", 'completed');
-            updateStep("Schema Discovery", 'active');
-        } else if (msg.includes("Found") && msg.includes("total tables")) {
+        if (msg.includes("Found") && msg.includes("total tables")) {
             const match = msg.match(/Found (\d+) total tables/);
             if (match) setTotalTables(parseInt(match[1]));
-            updateStep("Schema Discovery", 'completed');
-        } else if (msg.includes("PostgresSink connected")) {
-            updateStep("Ingestion started", 'active');
         } else if (msg.includes("PostgresSink closed")) {
             const recordsMatch = msg.match(/Total records written: (\d+)/);
             if (recordsMatch) {
                 setCompletedTables(prev => prev + 1);
             }
-        } else if (msg.includes("Metadata ingestion complete")) {
-            updateStep("Ingestion started", 'completed');
-            updateStep("Ingestion completed", 'completed');
-            updateStep("PII Detection Scan", 'active');
         } else if (msg.includes("Ingestion job completed")) {
             setIsComplete(true);
-            updateStep("PII Detection Scan", 'completed');
-            updateStep("Metadata Execution Summary", 'completed');
             setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
         } else if (msg.includes("Duplicate key")) {
             console.warn("Ingestion warning:", msg);
         }
     };
 
-    const updateStep = (label: string, status: Step['status']) => {
-        setSteps(prev => prev.map(s => s.label === label ? { ...s, status } : s));
-    };
-
     const handlePiiScan = async () => {
         setIsScanning(true);
+        appendPostIngestionSteps();
         try {
             const response = await fetch('http://172.188.2.173:8005/api/v1/scan/source', {
                 method: 'POST',
@@ -167,156 +195,135 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
         }
     };
 
-    const progressPercent = useMemo(() => {
-        if (!totalTables) return 0;
-        return Math.round((completedTables / totalTables) * 100);
-    }, [completedTables, totalTables]);
+    const totalSteps = Math.max(12, steps.length);
+    const progress = steps.filter(s => s.status === 'completed').length + (isComplete ? 2 : 1);
 
     return (
-        <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-            {/* Header / Progress Bar Area */}
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${isComplete ? 'bg-green-500' : 'bg-indigo-600 animate-pulse'}`} />
-                        <h3 className={`text-sm font-semibold ${isComplete ? 'text-green-700' : 'text-indigo-700'}`}>
-                            {isComplete ? 'Ingestion complete — all datasets recorded' : 'Live ingestion in progress — updates happening in real time'}
-                        </h3>
-                    </div>
-                    <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                        {completedTables}/{totalTables || '?'} steps
-                    </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                        className={`${isComplete ? 'bg-green-500' : 'bg-indigo-600'} h-full transition-all duration-500 ease-out`}
-                        style={{ width: `${isComplete ? 100 : (progressPercent || 5)}%` }}
-                    />
-                </div>
-            </div>
-
-            <div className="p-6">
-                <div className="grid grid-cols-12 gap-8">
-                    {/* Left Column: AI Pipeline */}
-                    <div className="col-span-4 border-r border-gray-100 pr-8">
-                        <div className="flex items-center gap-3 mb-6 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
-                            <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
-                                <Zap className="w-6 h-6 text-indigo-600 fill-indigo-100" />
+        <>
+            {/* Pipeline Progress */}
+            <div className="bg-white border flex-1 border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+                <div className="p-5 bg-white shrink-0">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-widest">Pipeline Progress</h3>
+                        <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-indigo-600">{progress}/{totalSteps} steps</span>
+                                    <button onClick={onClose} className="rounded-full bg-gray-100 p-1 hover:bg-gray-200 transition-colors">
+                                        <X className="w-4 h-4 text-gray-500" />
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm font-bold text-gray-900">AI Pipeline: {sourceName}</p>
-                                <p className={`text-[11px] font-medium ${isComplete ? 'text-green-600' : 'text-indigo-600'}`}>
-                                    {isComplete ? 'Ready' : 'Ingesting...'}
-                                </p>
+                            <div className="w-full bg-gray-100 rounded-full h-[6px] mb-4 overflow-hidden">
+                                <div
+                                    className="bg-indigo-500 h-full transition-all duration-1000 ease-in-out"
+                                    style={{ width: `${Math.min(100, (progress / totalSteps) * 100)}%` }}
+                                />
+                            </div>
+                            
+                            {/* Phase Badge */}
+                            <div className="flex items-center gap-3 mt-4">
+                                {(() => {
+                                    const activeStep = steps.find(s => s.status === 'active');
+                                    const isActiveReasoning = activeStep && (activeStep.label.toLowerCase().includes('classif') || activeStep.label.toLowerCase().includes('tag') || activeStep.label.toLowerCase().includes('scan') || activeStep.label.toLowerCase().includes('summary') || activeStep.label.toLowerCase().includes('reasoning'));
+                                    return (
+                                        <>
+                                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${isActiveReasoning ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                                                {isActiveReasoning ? (
+                                                    <Tag className="w-4 h-4 fill-current" />
+                                                ) : (
+                                                    <div className="w-5 h-5 rounded-sm bg-indigo-500 flex items-center justify-center">
+                                                        <ArrowDown className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                                    </div>
+                                                )}
+                                                {isActiveReasoning ? 'Classifying' : 'Ingesting'}
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-600 truncate">
+                                                {activeStep ? activeStep.label : (isComplete ? 'Execution Complete' : 'Preparing...')}
+                                            </span>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 
-                        <div className="space-y-5">
-                            {steps.map((step, idx) => (
-                                <div key={idx} className="flex items-start gap-3 group">
-                                    <div className="mt-1 flex-shrink-0">
-                                        {step.status === 'completed' ? (
-                                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                                <Check className="w-3.5 h-3.5 text-green-600 stroke-[3]" />
+                        {/* Scrollable list */}
+                        <div className="flex-1 overflow-y-auto px-2 pb-4 custom-scrollbar-thick border-t border-gray-50 pt-3">
+                            {steps.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-300" />
+                                    <span className="text-sm font-medium">Initializing ingestion pipeline...</span>
+                                </div>
+                            ) : steps.map((step, idx) => {
+                                const isReasoningStep = step.label.toLowerCase().includes('classif') || step.label.toLowerCase().includes('tag') || step.label.toLowerCase().includes('scan') || step.label.toLowerCase().includes('summary') || step.label.toLowerCase().includes('reasoning');
+                                return (
+                                    <div key={idx} className={`flex items-center justify-between p-3.5 mx-2 mb-1.5 rounded-xl transition-colors ${step.status === 'active' ? 'bg-indigo-50/60' : 'bg-white'}`}>
+                                        <div className="flex items-start gap-4">
+                                            <div className="mt-0.5 shrink-0">
+                                                {step.status === 'completed' ? (
+                                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                                ) : step.status === 'active' ? (
+                                                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                                                ) : (
+                                                    <Circle className="w-5 h-5 text-gray-200" />
+                                                )}
                                             </div>
-                                        ) : step.status === 'active' ? (
-                                            <div className="w-5 h-5 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
-                                        ) : (
-                                            <div className="w-5 h-5 rounded-full bg-gray-50 border border-gray-200" />
+                                            <div>
+                                                <p className={`text-[14px] font-medium transition-colors ${step.status === 'active' ? 'text-indigo-600' : step.status === 'completed' ? 'text-gray-700' : 'text-gray-400'}`}>
+                                                    {step.label}
+                                                </p>
+                                                {step.status === 'completed' && step.label.toLowerCase().includes('found tables') && (
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <div className="bg-green-500 rounded flex shrink-0 items-center justify-center" style={{ width: '16px', height: '16px'}}>
+                                                            <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                                        </div>
+                                                        <span className="text-xs text-gray-500 font-medium">Found schemas</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {isReasoningStep && (
+                                            <div className={`shrink-0 ml-4 ${step.status === 'completed' ? 'text-gray-300' : step.status === 'active' ? 'text-orange-400' : 'text-orange-200'}`}>
+                                                <Tag className="w-4 h-4 fill-current" />
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex-1">
-                                        <p className={`text-[12px] font-bold tracking-tight ${step.status === 'completed' ? 'text-gray-500 line-through' :
-                                            step.status === 'active' ? 'text-indigo-600 font-extrabold' : 'text-gray-300'
-                                            }`}>
-                                            {step.label}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
-
-                        <div className="mt-10 pt-6 border-t border-gray-50">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Force Complete</p>
-                            <div className="space-y-2">
-                                <button
-                                    onClick={handlePiiScan}
-                                    disabled={isScanning}
-                                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white text-[11px] font-bold py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isScanning ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                    )}
-                                    {isScanning ? 'Triggering Scan...' : 'Complete with PII scan'}
-                                </button>
-                                <button className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-500 text-[11px] font-bold py-2 px-4 rounded-xl hover:bg-gray-50 transition-all active:scale-95">
-                                    <Zap className="w-3.5 h-3.5" />
-                                    Complete, skip PII
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Live Ingestion Log */}
-                    <div className="col-span-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold text-gray-800">Live Execution Log</h3>
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-tighter">
-                                <div className={`w-1.5 h-1.5 rounded-full bg-green-500 ${isComplete ? '' : 'animate-pulse'}`} />
-                                {completedTables}/{totalTables || 0} ready
-                            </div>
-                        </div>
-
-                        <div
-                            ref={scrollRef}
-                            className="bg-gray-900 rounded-xl p-5 font-mono text-[10px] leading-relaxed h-[420px] overflow-y-auto custom-scrollbar-dark shadow-inner border border-gray-800"
-                        >
-                            {logs.length === 0 ? (
-                                <div className="text-gray-600 flex items-center gap-2 italic">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Waiting for live event stream...
-                                </div>
-                            ) : (
-                                logs.map((log, i) => (
-                                    <div key={i} className="mb-1.5 flex gap-4 group">
-                                        <span className="text-gray-600 shrink-0 select-none w-16">
-                                            {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                        </span>
-                                        <span className={`shrink-0 font-bold uppercase w-12 ${log.level === 'error' ? 'text-red-400' :
-                                            log.level === 'warning' ? 'text-orange-400' :
-                                                'text-green-400'
-                                            }`}>
-                                            [{log.level}]
-                                        </span>
-                                        <span className="text-gray-300 break-all group-hover:text-white transition-colors">
-                                            {log.message}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
+                        
+                        {/* Footer Force Actions */}
+                        <div className="p-5 border-t border-gray-100 shrink-0 bg-gray-50 flex gap-3">
+                            <button
+                                onClick={handlePiiScan}
+                                disabled={isScanning || isComplete}
+                                className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white text-xs font-bold py-3 px-4 rounded-xl hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
+                                {isScanning ? 'Triggering Scan...' : 'Complete with PII scan'}
+                            </button>
+                            <button onClick={onClose} className="flex-1 flex items-center justify-center gap-2 border border-gray-200 bg-white text-gray-600 text-xs font-bold py-3 px-4 rounded-xl hover:bg-gray-50 transition-all">
+                                <Zap className="w-4 h-4" />
+                                Complete, skip PII
+                            </button>
             </div>
-
+            </div>
+            
             <style jsx>{`
-                .custom-scrollbar-dark::-webkit-scrollbar {
-                    width: 4px;
+                .custom-scrollbar-thick::-webkit-scrollbar {
+                    width: 6px;
                 }
-                .custom-scrollbar-dark::-webkit-scrollbar-track {
-                    background: #111827;
+                .custom-scrollbar-thick::-webkit-scrollbar-track {
+                    background: transparent;
                 }
-                .custom-scrollbar-dark::-webkit-scrollbar-thumb {
-                    background: #374151;
+                .custom-scrollbar-thick::-webkit-scrollbar-thumb {
+                    background: #d1d5db;
                     border-radius: 10px;
                 }
-                .custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
-                    background: #4b5563;
+                .custom-scrollbar-thick::-webkit-scrollbar-thumb:hover {
+                    background: #9ca3af;
                 }
             `}</style>
-        </div>
+        </>
     );
 };
 

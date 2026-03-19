@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Bell, History, Check, Loader2, Database, Shield, Zap, Search, AlertCircle, ShieldCheckIcon, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { X, Bell, History, Check, Loader2, Database, Shield, Zap, Search, AlertCircle, ShieldCheckIcon, ArrowRight, CheckCircle2, Circle, Tag, ArrowDown } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { Button } from '@/components/ui/Button';
 import { CONSTANTS } from '@/lib/constants';
@@ -28,14 +28,52 @@ interface IngestionSidebarProps {
 }
 
 const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, isOpen, onClose }) => {
-    const [steps, setSteps] = useState<Step[]>([
-        { label: "Establishing connection", status: 'active' },
-        { label: "Schema Discovery", status: 'pending' },
-        { label: "Ingestion started", status: 'pending' },
-        { label: "Ingestion completed", status: 'pending' },
-        { label: "PII Detection Scan", status: 'pending' },
-        { label: "Metadata Execution Summary", status: 'pending' },
-    ]);
+    const [steps, setSteps] = useState<Step[]>([]);
+    const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const advanceStep = useCallback((idx: number, stepList: Step[]) => {
+        if (idx >= stepList.length) return;
+
+        setSteps(prev => prev.map((s, i) => i === idx ? { ...s, status: 'active' } : s));
+
+        stepTimerRef.current = setTimeout(() => {
+            setSteps(prev => prev.map((s, i) => i === idx ? { ...s, status: 'completed' } : s));
+            
+            const nextIdx = idx + 1;
+            if (nextIdx < stepList.length) {
+                advanceStep(nextIdx, stepList);
+            }
+        }, 1800);
+    }, []);
+
+    const fetchInitialSteps = async () => {
+        try {
+            const res = await dashboardApiServices.getIngestionLoadingSteps();
+            const initialSteps = res.ingestion_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            setSteps(initialSteps);
+            advanceStep(0, initialSteps);
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    const appendPostIngestionSteps = async () => {
+        setIsThinking(true);
+        setIsComplete(false);
+        try {
+            const res = await dashboardApiServices.getPostIngestionLoadingSteps();
+            const newSteps = res.reasoning_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            setSteps(prev => {
+                const updated = prev.map(s => ({ ...s, status: 'completed' as const }));
+                const combined = [...updated, ...newSteps];
+                if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+                advanceStep(updated.length, combined);
+                return combined;
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    };
 
     const [isThinking, setIsThinking] = useState(true);
     const [progress, setProgress] = useState(1);
@@ -63,8 +101,12 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
 
     useEffect(() => {
         if (isOpen) {
+            fetchInitialSteps();
             const timer = setTimeout(() => setShowNotification(false), 5000);
             return () => clearTimeout(timer);
+        } else {
+            if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
+            setSteps([]);
         }
     }, [isOpen]);
 
@@ -107,6 +149,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
             es.close();
 
             if (addDsConfig && !addDsConfig.piiApproval) {
+                appendPostIngestionSteps();
                 handleBatchApis();
             }
         });
@@ -130,7 +173,11 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
          handleColumnClassification(),
          handleGenerateBulkDataCards(),
          handleFetchIngestionSourceAiSummary(),
-        ])
+        ]);
+        setIsSourceAiSummaryLoading(false);
+        setIsComplete(true);
+        setIsThinking(false);
+        setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
        } catch (error) {
          console.error("Error during classification and Ai summary:", error);
          setIsSourceAiSummaryLoading(false);
@@ -200,34 +247,21 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         const msg = log.message;
 
         if (msg.includes("Job started")) {
-            updateStep("Establishing connection", 'completed');
-            updateStep("Schema Discovery", 'active');
             setProgress(2);
         } else if (msg.includes("Found") && msg.includes("total tables")) {
-            updateStep("Schema Discovery", 'completed');
             setProgress(3);
         } else if (msg.includes("PostgresSink connected")) {
-            updateStep("Ingestion started", 'active');
             setProgress(4);
         } else if (msg.includes("PostgresSink closed")) {
             setProgress(p => Math.min(p + 1, totalSteps - 2));
         } else if (msg.includes("Metadata ingestion complete")) {
-            updateStep("Ingestion started", 'completed');
-            updateStep("Ingestion completed", 'completed');
-            updateStep("PII Detection Scan", 'active');
             setProgress(totalSteps - 1);
         } else if (msg.includes("Ingestion job completed")) {
             setIsComplete(true);
             setIsThinking(false);
-            updateStep("PII Detection Scan", 'completed');
-            updateStep("Metadata Execution Summary", 'completed');
             setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
             setProgress(totalSteps);
         }
-    };
-
-    const updateStep = (label: string, status: Step['status']) => {
-        setSteps(prev => prev.map(s => s.label === label ? { ...s, status } : s));
     };
 
     const onCloseReset = (viewIngestedDataset: boolean = false) => {
@@ -352,55 +386,84 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                     </div>
 
                     {/* Pipeline Progress */}
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Pipeline Progress</h3>
-                            <span className="text-[10px] font-bold text-indigo-600">{progress}/{totalSteps} steps</span>
-                        </div>
-                        <div className="p-4">
-                            <div className="w-full bg-gray-200 rounded-full h-2 mb-4 overflow-hidden">
+                    <div className="bg-white mx-1 border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[400px]">
+                        <div className="p-4 bg-white shrink-0">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-[13px] font-semibold text-gray-800">Pipeline Progress</h3>
+                                <span className="text-[11px] font-bold text-indigo-600">{progress}/{totalSteps} steps</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-[6px] mb-4 overflow-hidden">
                                 <div
-                                    className="bg-indigo-600 h-full transition-all duration-1000 ease-in-out"
+                                    className="bg-indigo-500 h-full transition-all duration-1000 ease-in-out"
                                     style={{ width: `${(progress / totalSteps) * 100}%` }}
                                 />
                             </div>
-
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${isComplete ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                                    {isComplete ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-                                    {isComplete ? 'Execution Complete' : 'Live Activity'}
-                                </div>
-                                <span className="text-xs font-bold text-gray-700">
-                                    {isComplete ? 'All processes finished' : 'Streaming raw logs...'}
-                                </span>
+                            
+                            {/* Phase Badge */}
+                            <div className="flex items-center gap-3">
+                                {(() => {
+                                    const activeStep = steps.find(s => s.status === 'active');
+                                    const isActiveReasoning = activeStep && (activeStep.label.toLowerCase().includes('classif') || activeStep.label.toLowerCase().includes('tag') || activeStep.label.toLowerCase().includes('scan') || activeStep.label.toLowerCase().includes('summary') || activeStep.label.toLowerCase().includes('reasoning'));
+                                    return (
+                                        <>
+                                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-bold ${isActiveReasoning ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                                                {isActiveReasoning ? (
+                                                    <Tag className="w-3.5 h-3.5 fill-current" />
+                                                ) : (
+                                                    <div className="w-4 h-4 rounded-sm bg-indigo-500 flex items-center justify-center">
+                                                        <ArrowDown className="w-3 h-3 text-white" strokeWidth={3} />
+                                                    </div>
+                                                )}
+                                                {isActiveReasoning ? 'Classifying' : 'Ingesting'}
+                                            </div>
+                                            <span className="text-[12px] font-medium text-gray-500 truncate">
+                                                {activeStep ? activeStep.label : (isComplete ? 'Execution Complete' : 'Preparing...')}
+                                            </span>
+                                        </>
+                                    );
+                                })()}
                             </div>
+                        </div>
 
-                            {/* Raw Log Viewer */}
-                            <div
-                                ref={scrollRef}
-                                className="bg-gray-900 rounded-xl p-4 font-mono text-[10px] leading-relaxed h-[350px] overflow-y-auto custom-scrollbar-dark shadow-inner border border-gray-800"
-                            >
-                                {logs.length === 0 ? (
-                                    <div className="text-gray-500 italic">Waiting for connection...</div>
-                                ) : (
-                                    logs.map((log, i) => (
-                                        <div key={i} className="mb-1.5 flex gap-3 group">
-                                            <span className="text-gray-600 shrink-0 select-none">
-                                                {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                            </span>
-                                            <span className={`shrink-0 font-bold uppercase w-12 ${log.level === 'error' ? 'text-red-400' :
-                                                    log.level === 'warning' ? 'text-orange-400' :
-                                                        'text-green-400'
-                                                }`}>
-                                                [{log.level}]
-                                            </span>
-                                            <span className="text-gray-300 break-all group-hover:text-white transition-colors">
-                                                {log.message}
-                                            </span>
+                        {/* Scrollable list */}
+                        <div className="flex-1 overflow-y-auto px-1 pb-2 custom-scrollbar-thick border-t border-gray-50 pt-2">
+                            {steps.map((step, idx) => {
+                                const isReasoningStep = step.label.toLowerCase().includes('classif') || step.label.toLowerCase().includes('tag') || step.label.toLowerCase().includes('scan') || step.label.toLowerCase().includes('summary') || step.label.toLowerCase().includes('reasoning');
+                                return (
+                                    <div key={idx} className={`flex items-center justify-between p-3 mx-2 mb-1 rounded-xl transition-colors ${step.status === 'active' ? 'bg-indigo-50/60' : 'bg-white'}`}>
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 shrink-0">
+                                                {step.status === 'completed' ? (
+                                                    <CheckCircle2 className="w-[18px] h-[18px] text-green-500" />
+                                                ) : step.status === 'active' ? (
+                                                    <Loader2 className="w-[18px] h-[18px] text-indigo-500 animate-spin" />
+                                                ) : (
+                                                    <Circle className="w-[18px] h-[18px] text-gray-200" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className={`text-[13px] font-medium transition-colors ${step.status === 'active' ? 'text-indigo-600' : step.status === 'completed' ? 'text-gray-700' : 'text-gray-400'}`}>
+                                                    {step.label}
+                                                </p>
+                                                {step.status === 'completed' && step.label.toLowerCase().includes('found tables') && (
+                                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                                        <div className="bg-green-500 rounded-sm w-3.5 h-3.5 flex items-center justify-center">
+                                                            <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                                                        </div>
+                                                        <span className="text-[11px] text-gray-400 font-medium">Found schemas</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    ))
-                                )}
-                            </div>
+                                        
+                                        {isReasoningStep && (
+                                            <div className={`shrink-0 ml-4 ${step.status === 'completed' ? 'text-gray-300' : step.status === 'active' ? 'text-orange-400' : 'text-orange-200'}`}>
+                                                <Tag className="w-3.5 h-3.5 fill-current" />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -413,7 +476,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                             </Button>
                        </div>
                        <div>
-                            <Button onClick={handleBatchApis} className='disabled:opacity-50'>
+                            <Button onClick={() => { appendPostIngestionSteps(); handleBatchApis(); }} className='disabled:opacity-50'>
                                 <ShieldCheckIcon />
                                 Complete with PII Scan
                             </Button>
