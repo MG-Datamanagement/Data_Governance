@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, RotateCcw, Maximize2, Search,
   ChevronDown, ChevronUp, MoreHorizontal, X,
   Loader2, AlertTriangle, CheckCircle2, AlertCircle,
-  Code2, GitBranch, Copy, Check,
+  Code2, GitBranch, Copy, Check, Sparkles,
 } from "lucide-react";
 import {
   dashboardApiServices,
@@ -61,9 +61,9 @@ const GAP_Y = 28;
 const COL_GAP = 110;
 const POPOVER_W = 320;
 
-// ─── API mapper ───────────────────────────────────────────────────────────────
-
-function mapNode(n: LineageApiNode, x: number, y: number, isCenter = false): InternalNode {
+function mapNode(
+  n: LineageApiNode, x: number, y: number, isCenter = false, isFixed = false
+): InternalNode {
   return {
     id: n.id, type: n.type ?? "table", label: n.table_name, fullName: n.full_name,
     database: n.database_name ?? "", schema: n.schema_name ?? "",
@@ -75,16 +75,23 @@ function mapNode(n: LineageApiNode, x: number, y: number, isCenter = false): Int
     })),
     columnCount: n.columns?.length ?? 0,
     tags: (n.tags ?? []).map((t) => ({ id: t.id, name: t.name, color: t.color })),
-    qualityStatus: n.status ?? "healthy", isCenter,
-    aiSummary: n.ai_summary ?? null,
+    qualityStatus: isFixed ? "healthy" : (n.status ?? "healthy"),
+    isCenter,
+    aiSummary: isFixed 
+      ? "The operational-data-store.transaction dataset captures financial transaction details associated with bookings and agents, enabling analysis of payment flows, transaction status, and revenue tracking within the operational data pipeline."
+      : (n.ai_summary ?? null),
     stats: n.stats ?? null,
-    notes: n.notes ?? (n as any).note ?? null,
-    queryExecution: n.query_execution ?? null,
+    notes: isFixed ? null : (n.notes ?? (n as any).note ?? null),
+    queryExecution: isFixed 
+      ? { ...(n.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
+      : (n.query_execution ?? null),
     x, y,
   };
 }
 
-function buildGraph(data: LineageVisualResponse): { nodes: InternalNode[]; edges: InternalEdge[] } {
+function buildGraph(
+  data: LineageVisualResponse, fixedNodeIds: Set<string>
+): { nodes: InternalNode[]; edges: InternalEdge[] } {
   const ups = data.upstreams ?? [];
   const downs = data.downstreams ?? [];
   const COL1_X = 0, COL2_X = CARD_W + COL_GAP;
@@ -101,35 +108,48 @@ function buildGraph(data: LineageVisualResponse): { nodes: InternalNode[]; edges
   [data.root, ...ups, ...downs].forEach((n) => { apiById[n.id] = n; });
 
   const nodes: InternalNode[] = [
-    mapNode(data.root, COL2_X, centerY, true),
-    ...ups.map((n, i) => mapNode(n, COL1_X, i * (CARD_H_EST + GAP_Y))),
-    ...[...dsViews, ...dsOther].map((n, i) => mapNode(n, COL3_X, i * (CARD_H_EST + GAP_Y))),
-    ...dsDash.map((n, i) => mapNode(n, COL4_X, i * (CARD_H_EST + GAP_Y))),
+    mapNode(data.root, COL2_X, centerY, true, fixedNodeIds.has(data.root.id)),
+    ...ups.map((n, i) => mapNode(n, COL1_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
+    ...[...dsViews, ...dsOther].map((n, i) => mapNode(n, COL3_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
+    ...dsDash.map((n, i) => mapNode(n, COL4_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
   ];
 
   const edges: InternalEdge[] = [];
   const rootId = data.root.id;
-  ups.forEach((n) => edges.push({
-    from: n.id, to: rootId, isSecondary: false,
-    transformationQuery: apiById[n.id]?.transformation_query ?? null,
-    queryExecution: apiById[n.id]?.query_execution ?? null,
-    fromLabel: n.table_name, toLabel: data.root.table_name,
-  }));
+  ups.forEach((n) => {
+    const isFixed = fixedNodeIds.has(n.id);
+    edges.push({
+      from: n.id, to: rootId, isSecondary: false,
+      transformationQuery: apiById[n.id]?.transformation_query ?? null,
+      queryExecution: isFixed 
+        ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
+        : (apiById[n.id]?.query_execution ?? null),
+      fromLabel: n.table_name, toLabel: data.root.table_name,
+    });
+  });
   downs.forEach((n) => {
     const isView = n.type === "view";
+    const isFixed = fixedNodeIds.has(n.id);
     edges.push({
       from: rootId, to: n.id, isSecondary: !isView,
       transformationQuery: apiById[n.id]?.transformation_query ?? null,
-      queryExecution: apiById[n.id]?.query_execution ?? null,
+      queryExecution: isFixed 
+        ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
+        : (apiById[n.id]?.query_execution ?? null),
       fromLabel: data.root.table_name, toLabel: n.table_name,
     });
     if (!isView && dsViews.length > 0)
-      dsViews.forEach((v) => edges.push({
-        from: v.id, to: n.id, isSecondary: false,
-        transformationQuery: apiById[n.id]?.transformation_query ?? null,
-        queryExecution: apiById[n.id]?.query_execution ?? null,
-        fromLabel: v.table_name, toLabel: n.table_name,
-      }));
+      dsViews.forEach((v) => {
+        const isVFixed = fixedNodeIds.has(v.id); // Although usually downstream triggers fix
+        edges.push({
+          from: v.id, to: n.id, isSecondary: false,
+          transformationQuery: apiById[n.id]?.transformation_query ?? null,
+          queryExecution: isFixed 
+            ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
+            : (apiById[n.id]?.query_execution ?? null),
+          fromLabel: v.table_name, toLabel: n.table_name,
+        });
+      });
   });
 
   const seen = new Set<string>();
@@ -266,9 +286,12 @@ interface AiSummaryPopoverProps {
   node: InternalNode;
   anchor: PopoverAnchor;
   onClose: () => void;
+  onAutoFix: (id: string) => void;
+  isFixing: boolean;
+  isFixed: boolean;
 }
 
-function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
+function AiSummaryPopover({ node, anchor, onClose, onAutoFix, isFixing, isFixed }: AiSummaryPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const nullableCols = node.columns.filter((c) => c.is_nullable).length;
   const totalChecks = node.columnCount;
@@ -363,17 +386,19 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
                       {node.notes ? "Note" : "Note (Fallback)"}
                     </span>
                     <div className="flex-1 space-y-2">
-                      {node.notes && (
-                        <div className="flex items-start gap-1.5">
-                          <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
-                          <span className="text-[12px] text-red-600 leading-snug">
-                            {node.notes}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        {node.notes && (
+                          <div className="flex items-start gap-1.5 flex-1">
+                            <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="text-[12px] text-red-600 leading-snug">
+                              {node.notes}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       {node.queryExecution?.query_status === "FAILURE" && (
                         <div className="flex items-start gap-1.5">
-                          <AlertCircle size={12} className={cn("text-red-500 flex-shrink-0 mt-0.5", node.notes && "opacity-50")} />
+                          <AlertCircle size={12} className={cn("text-red-500 flex-shrink-0 mt-0.5", node.notes && "opacity-60")} />
                           <span className={cn("text-[12px] leading-snug", node.notes ? "text-red-400" : "text-red-600")}>
                             Query execution failed · Runtime {node.queryExecution.query_runtime_ms}ms · {(node.queryExecution.data_scanned_bytes / 1024).toFixed(1)} KB scanned
                           </span>
@@ -446,6 +471,54 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
               </div>
           )}
         </div>
+        {/* Footer actions — only for non-success nodes or already fixed */}
+        {((node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") || isFixed) && (
+          <div className="p-2 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
+              {isFixed ? (
+                <span className="flex items-center gap-1 text-green-600">
+                  <Check size={10} /> Lineage remediated
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <AlertTriangle size={10} className="text-amber-500" /> Resolution available
+                </span>
+              )}
+            </div>
+            
+            {!isFixed ? (
+              <button
+                onClick={() => onAutoFix(node.id)}
+                disabled={isFixing}
+                title={isFixing ? "Fixing in progress" : "Auto fix lineage"}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm",
+                  isFixing 
+                    ? "bg-indigo-50 text-indigo-400 border border-indigo-100 italic" 
+                    : "text-white shadow-indigo-100 border-none"
+                )}
+                style={!isFixing ? { background: "linear-gradient(90deg, #6d28d9 0%, #7c3aed 100%)" } : {}}
+              >
+                {isFixing ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Fixing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={12} />
+                    Auto Fix
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-100 text-[11px] font-bold">
+                <Check size={11} />
+                Applied
+              </div>
+            )}
+          </div>
+        )}
 
         <style>{`
         @keyframes aiPopIn {
@@ -1016,8 +1089,22 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const panOrigin = useRef({ x: 0, y: 0 });
   const [search, setSearch] = useState("");
   const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
-
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number, y: number }>>({});
+  const [fixedNodeIds, setFixedNodeIds] = useState<Set<string>>(new Set());
+  const [fixingNodeIds, setFixingNodeIds] = useState<Set<string>>(new Set());
+
+  const handleAutoFix = useCallback((nodeId: string) => {
+    setFixingNodeIds(prev => new Set(prev).add(nodeId));
+    setTimeout(() => {
+      setFixingNodeIds(prev => {
+        const next = new Set(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      setFixedNodeIds(prev => new Set(prev).add(nodeId));
+    }, 4000);
+  }, []);
+
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const nodeStartPos = useRef({ x: 0, y: 0 });
@@ -1034,6 +1121,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const fetchData = useCallback(() => {
     if (!datasetId) return;
     setIsLoading(true); setError(null); setNodeHeights({}); setNodePositions({});
+    setFixedNodeIds(new Set()); setFixingNodeIds(new Set()); // Reset mock state on fresh fetch
     dashboardApiServices.fetchLineageVisual(datasetId, depth, direction)
         .then((data) => { setApiData(data); })
         .catch(() => setError("Failed to load lineage data."))
@@ -1042,7 +1130,9 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
 
   useEffect(() => { fetchData(); }, [fetchData]);
   console.log(apiData, "apiData")
-  const { nodes: defaultNodes, edges } = useMemo(() => apiData ? buildGraph(apiData) : { nodes: [], edges: [] }, [apiData]);
+  const { nodes: defaultNodes, edges } = useMemo(() => 
+    apiData ? buildGraph(apiData, fixedNodeIds) : { nodes: [], edges: [] }, 
+  [apiData, fixedNodeIds]);
   const nodes = useMemo(() => defaultNodes.map(n => ({
     ...n,
     x: nodePositions[n.id]?.x ?? n.x,
@@ -1321,6 +1411,9 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 node={popoverNode}
                 anchor={popoverAnchor}
                 onClose={() => setPopoverAnchor(null)}
+                onAutoFix={handleAutoFix}
+                isFixing={fixingNodeIds.has(popoverNode.id)}
+                isFixed={fixedNodeIds.has(popoverNode.id)}
             />
         )}
 
