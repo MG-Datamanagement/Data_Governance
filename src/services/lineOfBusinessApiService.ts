@@ -47,6 +47,29 @@ export interface ApiOwner {
   updated_at: string;
 }
 
+export interface Catalog {
+  id: string;
+  database_name?: string | null;
+  schema_name?: string;
+  table_name?: string;
+  full_name?: string;
+  description?: string | null;
+  source_name?: string;
+  source_type?: string;
+  columns?: any[];
+  properties?: Record<string, any>;
+  column_count?: number;
+  row_count?: number;
+  owner_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CatalogListResponse {
+  data?: Catalog[];
+  results?: Catalog[];
+}
+
 const config: AxiosRequestConfig = {
   headers: {
     "Content-Type": "application/json",
@@ -183,6 +206,32 @@ export const lineOfBusinessApiService = {
       return domains.filter(d => d.id && d.name);
     } catch (error) {
       console.error("Failed to fetch domains for parent selection:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch all catalogs
+   * @returns List of all catalogs
+   */
+  async fetchAllCatalogs(): Promise<Catalog[]> {
+    try {
+      const response = await dashboardApiClient.get<Catalog[] | CatalogListResponse>(
+        "/api/v1/catalogs/list",
+        config,
+      );
+
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      if (response && typeof response === 'object') {
+        return (response as any).data || (response as any).results || [];
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch catalogs:", error);
       return [];
     }
   },
