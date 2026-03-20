@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, RotateCcw, Maximize2, Search,
   ChevronDown, ChevronUp, MoreHorizontal, X,
   Loader2, AlertTriangle, CheckCircle2, AlertCircle,
-  Code2, GitBranch,
+  Code2, GitBranch, Copy, Check,
 } from "lucide-react";
 import {
   dashboardApiServices,
@@ -13,6 +13,8 @@ import {
   LineageApiNode,
   LineageApiQueryExecution,
 } from "@/services/dashboardApiServices";
+import { cn } from "@/lib/utils";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ interface InternalNode {
   columns: InternalColumn[]; columnCount: number; tags: InternalTag[];
   qualityStatus: QualityStatus; isCenter?: boolean; aiSummary: string | null;
   stats: string | null;
+  notes: string | null;
   queryExecution?: LineageApiQueryExecution | null;
   x: number; y: number;
 }
@@ -75,6 +78,7 @@ function mapNode(n: LineageApiNode, x: number, y: number, isCenter = false): Int
     qualityStatus: n.status ?? "healthy", isCenter,
     aiSummary: n.ai_summary ?? null,
     stats: n.stats ?? null,
+    notes: n.notes ?? (n as any).note ?? null,
     queryExecution: n.query_execution ?? null,
     x, y,
   };
@@ -346,42 +350,52 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
                 : `${node.label} is a ${node.type} in ${node.database || node.sourceName}${node.schema ? `.${node.schema}` : ""} containing ${node.columnCount} column${node.columnCount !== 1 ? "s" : ""} of business data.`}
           </p>
 
-          
-
-         
-
-          {/* Note — query execution failure / unhealthy status */}
-          {(node.queryExecution?.query_status === "FAILURE" || node.qualityStatus === "unhealthy" || node.qualityStatus === "error") && (
+          {/* Note section — only for non-success nodes (failures/unhealthy/error/warning) */}
+          {(node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") && (
             <>
-              <div className="h-px bg-gray-100" />
-              <div className="flex items-start gap-2">
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
-                  Note
-                </span>
-                <div className="flex-1 space-y-1">
-                  {node.queryExecution?.query_status === "FAILURE" && (
-                    <div className="flex items-start gap-1.5">
-                      <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-[12px] text-red-600 leading-snug">
-                        Query execution failed · Runtime {node.queryExecution.query_runtime_ms}ms · {(node.queryExecution.data_scanned_bytes / 1024).toFixed(1)} KB scanned
-                      </span>
+              {/* Only show this section if we have notes OR a failure to report */}
+              {(node.notes || node.queryExecution?.query_status === "FAILURE" || 
+                node.qualityStatus === "unhealthy" || node.qualityStatus === "error" || node.qualityStatus === "warning") && (
+                <>
+                  <div className="h-px bg-gray-100" />
+                  <div className="flex items-start gap-2">
+                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
+                      {node.notes ? "Note" : "Note (Fallback)"}
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      {node.notes && (
+                        <div className="flex items-start gap-1.5">
+                          <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-[12px] text-red-600 leading-snug">
+                            {node.notes}
+                          </span>
+                        </div>
+                      )}
+                      {node.queryExecution?.query_status === "FAILURE" && (
+                        <div className="flex items-start gap-1.5">
+                          <AlertCircle size={12} className={cn("text-red-500 flex-shrink-0 mt-0.5", node.notes && "opacity-50")} />
+                          <span className={cn("text-[12px] leading-snug", node.notes ? "text-red-400" : "text-red-600")}>
+                            Query execution failed · Runtime {node.queryExecution.query_runtime_ms}ms · {(node.queryExecution.data_scanned_bytes / 1024).toFixed(1)} KB scanned
+                          </span>
+                        </div>
+                      )}
+                      {(node.qualityStatus === "unhealthy" || node.qualityStatus === "error" || node.qualityStatus === "warning") && !node.queryExecution?.query_status && !node.notes && (
+                        <div className="flex items-start gap-1.5">
+                          <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-[12px] text-red-600 leading-snug">
+                            {node.qualityStatus === "warning" ? "Caution: Some data quality issues detected." : "Data quality issues detected — this dataset requires attention."}
+                          </span>
+                        </div>
+                      )}
+                      {node.queryExecution?.query_status === "FAILURE" && node.queryExecution.s3_output_location && (
+                        <p className="text-[10px] text-gray-400 pl-4 truncate" title={node.queryExecution.s3_output_location}>
+                          Output: {node.queryExecution.s3_output_location.split('/').slice(-2).join('/')}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  {(node.qualityStatus === "unhealthy" || node.qualityStatus === "error") && !node.queryExecution?.query_status && (
-                    <div className="flex items-start gap-1.5">
-                      <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-[12px] text-red-600 leading-snug">
-                        Data quality issues detected — this dataset requires attention.
-                      </span>
-                    </div>
-                  )}
-                  {node.queryExecution?.query_status === "FAILURE" && node.queryExecution.s3_output_location && (
-                    <p className="text-[10px] text-gray-400 pl-5 truncate" title={node.queryExecution.s3_output_location}>
-                      Output: {node.queryExecution.s3_output_location.split('/').slice(-2).join('/')}
-                    </p>
-                  )}
-                </div>
-              </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -499,9 +513,15 @@ function TransformationPopup({
             <div className="flex items-center gap-1.5">
               <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-[10px] font-semibold text-gray-500 hover:text-gray-700 transition-all shadow-sm"
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all shadow-sm text-[10px] font-semibold",
+                    copied 
+                      ? "bg-green-50 border-green-200 text-green-700" 
+                      : "bg-white hover:bg-gray-50 border-gray-200 text-gray-500 hover:text-gray-700"
+                  )}
               >
-                <Code2 size={11} />{copied ? "Copied!" : "Copy"}
+                {copied ? <Check size={11} className="text-green-600" /> : <Copy size={11} />}
+                {copied ? "Copied" : "Copy"}
               </button>
               <button
                   onClick={onClose}
@@ -539,7 +559,7 @@ function TransformationPopup({
               <div className="px-4 py-2.5 border-b border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-gray-400 font-medium">Status</span>
-                  <span className={`font-bold ${edge.queryExecution.query_status === 'SUCCEEDED' ? 'text-green-600' : 'text-yellow-600'}`}>{edge.queryExecution.query_status}</span>
+                  <span className={`font-bold ${edge.queryExecution.query_status === 'SUCCEEDED' ? 'text-green-600' : 'text-red-600'}`}>{edge.queryExecution.query_status}</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-gray-400 font-medium">Runtime</span>
@@ -637,9 +657,15 @@ function ColumnQueryPopup({
             <div className="flex items-center gap-1.5">
               <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-[10px] font-semibold text-gray-500 hover:text-gray-700 transition-all shadow-sm"
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all shadow-sm text-[10px] font-semibold",
+                    copied 
+                      ? "bg-green-50 border-green-200 text-green-700" 
+                      : "bg-white hover:bg-gray-50 border-gray-200 text-gray-500 hover:text-gray-700"
+                  )}
               >
-                <Code2 size={11} />{copied ? "Copied!" : "Copy"}
+                {copied ? <Check size={11} className="text-green-600" /> : <Copy size={11} />}
+                {copied ? "Copied" : "Copy"}
               </button>
               <button
                   onClick={onClose}
