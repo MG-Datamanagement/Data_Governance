@@ -714,6 +714,7 @@ export interface LineageApiNode {
   depth: number;
   ai_summary: string;
   stats: string;
+  notes: string | null;
 }
 
 export interface LineageVisualResponse {
