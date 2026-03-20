@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Menu, Database } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { LuSlidersHorizontal } from "react-icons/lu";
 import { RiRobot2Line } from "react-icons/ri";
 import { LuCircleHelp } from "react-icons/lu";
@@ -30,7 +30,11 @@ export function Header({ userName }: HeaderProps) {
     useState<boolean>(false);
   const [markAllAsRead, setMarkAllAsRead] = useState<boolean>(false);
 
-  const greeting = useMemo(() => getGreeting(), []);
+  const [greeting, setGreeting] = useState<string>("Welcome");
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   const router = useRouter();
 
