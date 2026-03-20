@@ -14,7 +14,6 @@ export const chatApiServices = {
     agentNames: string,
     datasetNames: string,
   ): Promise<ChatResponse> {
-    console.log(request, agentNames, datasetNames);
     return chatApiClient.post<ChatResponse>(
       `/chat/${agentNames}/${datasetNames}`,
       request,

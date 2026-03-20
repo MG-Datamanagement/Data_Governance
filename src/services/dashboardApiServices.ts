@@ -655,7 +655,40 @@ export const dashboardApiServices = {
       { params: { depth, direction } },
     );
   },
+  generateDescriptions(catalogId: string): Promise<GenerateDescriptionsResponse> {
+    return dashboardApiClient.post<GenerateDescriptionsResponse>(
+      `/api/v1/catalog/${catalogId}/columns/generate-descriptions`,
+      {}
+    );
+  },
+  getIngestionLoadingStages(): Promise<IngestionLoadingResponse> {
+    return dashboardApiClient.get<IngestionLoadingResponse>(
+      "/api/v1/sources/ingestion/loading"
+    );
+  },
+  getPostIngestionLoadingStages(): Promise<PostIngestionLoadingResponse> {
+    return dashboardApiClient.get<PostIngestionLoadingResponse>(
+      "/api/v1/sources/post-ingestion/loading"
+    );
+  },
 };
+
+export interface IngestionLoadingResponse {
+  ingestion_loads: string[];
+}
+
+export interface PostIngestionLoadingResponse {
+  reasoning_loads: string[];
+}
+
+export interface GenerateDescriptionsResponse {
+  catalog_id: string;
+  table_name: string;
+  total_null_columns: number;
+  updated: number;
+  failed: any[];
+  message: string;
+}
 
 export interface LineageApiColumn {
   id: string;

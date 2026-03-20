@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { dashboardApiServices } from "@/services/dashboardApiServices";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface RuleViolation {
@@ -70,10 +71,18 @@ const CompliantRule: React.FC<{ rule: NewComplianceRule }> = ({ rule }) => (
     </div>
 );
 
-const ViolationRule: React.FC<{ rule: NewComplianceRule; onRemediate: (ruleId: string, text: string) => void }> = ({ rule, onRemediate }) => {
+const ViolationRule: React.FC<{ rule: NewComplianceRule; onRemediate: (ruleId: string, text: string) => Promise<void> }> = ({ rule, onRemediate }) => {
     const isDescriptionRule = rule.description.toLowerCase().includes("description");
     const [remediatingIndex, setRemediatingIndex] = useState<number | null>(null);
     const [inputText, setInputText] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleApply = async (ruleId: string, text: string) => {
+        setIsSubmitting(true);
+        await onRemediate(ruleId, text);
+        setIsSubmitting(false);
+        setRemediatingIndex(null);
+    };
 
     return (
         <div className="border border-red-200 rounded-xl overflow-hidden">
@@ -136,13 +145,20 @@ const ViolationRule: React.FC<{ rule: NewComplianceRule; onRemediate: (ruleId: s
                                                 value={inputText}
                                                 onChange={e => setInputText(e.target.value)}
                                                 autoFocus
+                                                disabled={isSubmitting}
                                             />
                                             <div className="flex justify-end gap-2 mt-2">
                                                 <button onClick={() => setRemediatingIndex(null)} className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 rounded-md transition-colors">
                                                     Cancel
                                                 </button>
-                                                <button disabled={!inputText} onClick={() => onRemediate(rule.rule_id, inputText)} className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
-                                                    Apply
+                                                <button disabled={!inputText || isSubmitting} onClick={() => handleApply(rule.rule_id, inputText)} className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                                                    {isSubmitting && (
+                                                        <svg className="animate-spin h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    )}
+                                                    {isSubmitting ? "Applying..." : "Apply"}
                                                 </button>
                                             </div>
                                         </div>
@@ -199,32 +215,51 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
         }
     }, [complianceData]);
 
-    const handleRemediate = (ruleId: string, text: string) => {
-        setLocalRules(prev => prev.map(r => {
-            if (r.rule_id === ruleId) {
-                return {
-                    ...r,
-                    status: "COMPLIANT",
-                    severity: "PASS",
-                    violations: []
-                    // Added description logic is mocked locally!
-                } as NewComplianceRule;
-            }
-            return r;
-        }));
+    const [isRemediating, setIsRemediating] = useState(false);
+    const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-        setLocalSummary(prev => {
-            if (!prev) return prev;
-            const isCritical = localRules.find(r => r.rule_id === ruleId)?.severity === "CRITICAL";
+    const handleRemediate = async (ruleId: string, text: string) => {
+        if (!complianceData?.dataset?.catalog_id) return;
+        
+        setIsRemediating(true);
+        try {
+            const delayPromise = new Promise(resolve => setTimeout(resolve, 5000));
+            const apiPromise = dashboardApiServices.generateDescriptions(complianceData.dataset.catalog_id);
             
-            return {
-                ...prev,
-                violated_rules: Math.max(0, prev.violated_rules - 1),
-                compliant_rules: prev.compliant_rules + 1,
-                critical_violations: isCritical ? Math.max(0, prev.critical_violations - 1) : prev.critical_violations,
-                compliance_score: Math.min(100, prev.compliance_score + (100 / prev.policies_checked))
-            };
-        });
+            const [res] = await Promise.all([apiPromise, delayPromise]);
+            
+            setSuccessMsg(res.message || "Successfully remediated!");
+            // setTimeout(() => setSuccessMsg(null), 5000);
+
+            setLocalRules(prev => prev.map(r => {
+                if (r.rule_id === ruleId) {
+                    return {
+                        ...r,
+                        status: "COMPLIANT",
+                        severity: "PASS",
+                        violations: []
+                    } as NewComplianceRule;
+                }
+                return r;
+            }));
+
+            setLocalSummary(prev => {
+                if (!prev) return prev;
+                const isCritical = localRules.find(r => r.rule_id === ruleId)?.severity === "CRITICAL";
+                
+                return {
+                    ...prev,
+                    violated_rules: Math.max(0, prev.violated_rules - 1),
+                    compliant_rules: prev.compliant_rules + 1,
+                    critical_violations: isCritical ? Math.max(0, prev.critical_violations - 1) : prev.critical_violations,
+                    compliance_score: Math.min(100, prev.compliance_score + (100 / prev.policies_checked))
+                };
+            });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsRemediating(false);
+        }
     };
 
     const dataset = complianceData?.dataset;
@@ -283,6 +318,27 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                             Remediate Violations
                         </button>
                     </div>
+
+                    {successMsg && (
+                        <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-green-800">Remediation Successful</p>
+                                    <p className="text-xs text-green-600">{successMsg}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSuccessMsg(null)} className="text-green-800 hover:bg-green-100 p-1 rounded transition-colors">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Scrollable body */}

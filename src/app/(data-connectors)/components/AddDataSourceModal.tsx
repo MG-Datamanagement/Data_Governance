@@ -921,17 +921,17 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
           s3_staging_dir: config.s3_staging_dir,
         };
       } else if (selectedId === 'redshift') {
-        payload.connection_details = {
-          username: RedshiftConfig.username,
-          password: RedshiftConfig.password,
-          aws_region: RedshiftConfig.aws_region,
-          work_group: RedshiftConfig.work_group,
-          s3_staging_dir: RedshiftConfig.s3_staging_dir,
-        };
-        payload.include_views = true;
-        payload.include_tables = true;
-        payload.schema_pattern = [".*"];
-        payload.table_pattern = [".*"];
+        // payload.connection_details = {
+        //   username: RedshiftConfig.username,
+        //   password: RedshiftConfig.password,
+        //   aws_region: RedshiftConfig.aws_region,
+        //   work_group: RedshiftConfig.work_group,
+        //   s3_staging_dir: RedshiftConfig.s3_staging_dir,
+        // };
+        // payload.include_views = true;
+        // payload.include_tables = true;
+        // payload.schema_pattern = [".*"];
+        // payload.table_pattern = [".*"];
 
         // if (config.processing_engine === 'glue') {
         //   payload.processing_engine = {
@@ -967,7 +967,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
       }
 
       const { dashboardApiServices } = await import("@/services/dashboardApiServices");
-      const createdSource = await dashboardApiServices.createDataSource(selectedId === "redshift" ? "athena" : selectedId as any, payload);
+      const createdSource = await dashboardApiServices.createDataSource(selectedId as any, payload);
 
       // Trigger ingestion after creation
       let jobId = "";

@@ -1129,7 +1129,6 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   }, [datasetId, depth, direction]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  console.log(apiData, "apiData")
   const { nodes: defaultNodes, edges } = useMemo(() => 
     apiData ? buildGraph(apiData, fixedNodeIds) : { nodes: [], edges: [] }, 
   [apiData, fixedNodeIds]);
