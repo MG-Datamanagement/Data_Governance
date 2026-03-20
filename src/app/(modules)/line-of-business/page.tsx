@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     FiHome,
     FiChevronRight,
@@ -23,6 +23,7 @@ import {
     FiMoreVertical,
 } from "react-icons/fi";
 import { LuLayoutDashboard } from "react-icons/lu";
+import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -74,70 +75,6 @@ interface EditForm {
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const INITIAL_DOMAINS: Domain[] = [
-    {
-        id: "platform-engineering",
-        name: "Platform Engineering",
-        description: "Infrastructure, data pipelines, and platform tooling.",
-        owner: "eng-lead@company.com",
-        color: "#4F63F7",
-        assets: 312,
-        createdAt: "2024-01-15",
-        externalLinks: [{ label: "Confluence: Domain Docs", url: "#" }],
-        subdomains: [
-            { id: "data-infra", name: "Data Infrastructure", assets: 198, owner: "data-infra@company.com", description: "Core data storage and processing systems.", externalLinks: [] },
-            { id: "mlops", name: "MLOps", assets: 114, owner: "mlops-team@company.com", description: "Machine learning operations and model deployment.", externalLinks: [] },
-        ],
-    },
-    {
-        id: "finance",
-        name: "Finance",
-        description: "Financial reporting, revenue tracking, and compliance.",
-        owner: "finance-vp@company.com",
-        color: "#22C55E",
-        assets: 430,
-        createdAt: "2024-02-03",
-        externalLinks: [],
-        subdomains: [
-            { id: "revenue-ops", name: "Revenue Ops", assets: 287, owner: "revops@company.com", description: "Revenue operations and sales analytics.", externalLinks: [] },
-            { id: "compliance", name: "Compliance", assets: 143, owner: "compliance@company.com", description: "Regulatory compliance and audit trails.", externalLinks: [] },
-        ],
-    },
-    {
-        id: "social-marketing",
-        name: "Social Marketing",
-        description: "Social media campaigns and engagement metrics.",
-        owner: "marketing-lead@company.com",
-        color: "#EC4899",
-        assets: 187,
-        createdAt: "2024-03-10",
-        externalLinks: [],
-        subdomains: [],
-    },
-    {
-        id: "customer-analytics",
-        name: "Customer Analytics",
-        description: "Customer behavior, segmentation, and insights.",
-        owner: "analytics-team@company.com",
-        color: "#A855F7",
-        assets: 265,
-        createdAt: "2024-03-22",
-        externalLinks: [],
-        subdomains: [],
-    },
-    {
-        id: "security-operations",
-        name: "Security Operations",
-        description: "Security logs, threat intelligence, and access audits.",
-        owner: "secops@company.com",
-        color: "#EF4444",
-        assets: 391,
-        createdAt: "2024-04-01",
-        externalLinks: [],
-        subdomains: [],
-    },
-];
 
 const OWNERS = [
     "analytics-team@company.com",
@@ -643,34 +580,129 @@ function DetailsPanel({
 function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreate: (form: ModalForm) => void }) {
     const [form, setForm] = useState<ModalForm>({ name: "", description: "", owner: "", color: COLOR_OPTIONS[0], customId: "" });
     const [advancedOpen, setAdvancedOpen] = useState(false);
+    const [owners, setOwners] = useState<any[]>([]);
+    const [parentDomains, setParentDomains] = useState<any[]>([]);
+    const [loadingOwners, setLoadingOwners] = useState(true);
+    const [loadingDomains, setLoadingDomains] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleCreate = () => {
-        if (!form.name.trim()) return;
-        onCreate(form);
-        onClose();
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoadingOwners(true);
+                setLoadingDomains(true);
+
+                // Fetch owners
+                const ownersList = await lineOfBusinessApiService.fetchOwnersForLobSelection(100);
+                setOwners(ownersList);
+
+                // Fetch parent domains
+                const domains = await lineOfBusinessApiService.fetchDomainsForParentSelection();
+                setParentDomains(domains);
+            } catch (err) {
+                console.error("Failed to fetch data:", err);
+                setOwners([]);
+                setParentDomains([]);
+            } finally {
+                setLoadingOwners(false);
+                setLoadingDomains(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const handleCreate = async () => {
+        if (!form.name.trim()) {
+            setError("Name is required");
+            return;
+        }
+        if (!form.owner) {
+            setError("Owner is required");
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            // Find the selected owner to get their name
+            const selectedOwner = owners.find((o) => o.id === form.owner);
+            const ownerName = selectedOwner?.name || form.owner;
+
+            // Find the selected parent domain to get its name
+            const selectedParentDomain = parentDomains.find((d) => d.id === form.customId);
+            const parentDomainName = selectedParentDomain?.name || form.customId || undefined;
+
+            const payload = {
+                name: form.name,
+                description: form.description,
+                owner: ownerName,
+                color: form.color,
+                custom_domain_name: parentDomainName,
+            };
+
+            const created = await lineOfBusinessApiService.createLineOfBusiness(payload);
+
+            onCreate(form);
+            onClose();
+        } catch (err: any) {
+            console.error("Failed to create domain:", err);
+            setError(err.message || "Failed to create domain. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true" aria-label="New Domain">
             <div className="bg-white rounded-md shadow-2xl w-full max-w-md mx-4 px-4 py-2 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900">New Domain</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">New Line of Business</h2>
                     <button onClick={onClose} className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close modal">
                         <FiX className="w-5 h-5" />
                     </button>
                 </div>
+
+                {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 flex items-center gap-2">
+                        <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {error}
+                    </div>
+                )}
+
                 <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-800">Name <span className="text-red-500">*</span></label>
-                    <input type="text" placeholder="e.g. Platform Engineering" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
+                    <input type="text" placeholder="e.g. Platform Engineering" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(null); }} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
                 </div>
+
                 <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-800">Description</label>
                     <textarea rows={3} value={form.description} placeholder="Enter description" onChange={(e) => setForm({ ...form, description: e.target.value })} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
                 </div>
+
                 <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-800">Owner</label>
-                    <input type="text" placeholder="Search users or groups..." value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
+                    <label className="text-sm font-medium text-gray-800">Owner <span className="text-red-500">*</span></label>
+                    {loadingOwners ? (
+                        <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
+                            Loading owners...
+                        </div>
+                    ) : (
+                        <select
+                            value={form.owner}
+                            onChange={(e) => { setForm({ ...form, owner: e.target.value }); setError(null); }}
+                            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        >
+                            <option value="">Select an owner...</option>
+                            {owners.map((owner) => (
+                                <option key={owner.id} value={owner.id}>
+                                    {owner.name} ({owner.email})
+                                </option>
+                            ))}
+                        </select>
+                    )}
                 </div>
+
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-800">Color</label>
                     <div className="flex gap-2 flex-wrap">
@@ -679,6 +711,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                         ))}
                     </div>
                 </div>
+
                 <div className="flex flex-col gap-2">
                     <button onClick={() => setAdvancedOpen((v) => !v)} className="flex items-center gap-1.5 text-slate-500 text-sm font-medium focus:outline-none rounded-md w-fit" aria-expanded={advancedOpen}>
                         {advancedOpen ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
@@ -686,18 +719,39 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                     </button>
                     {advancedOpen && (
                         <div className="border-l-2 border-gray-200 px-4 py-1 flex flex-col gap-2 ml-2">
-                            <label className="text-sm font-medium text-gray-800">Custom Domain ID</label>
-                            <input type="text" placeholder="e.g. platform-engineering" value={form.customId} onChange={(e) => setForm({ ...form, customId: e.target.value })} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400 bg-white" />
-                            <p className="flex items-center gap-1.5 text-xs text-amber-600">
+                            <label className="text-sm font-medium text-gray-800">Parent Domain <span className="text-gray-400 text-xs">(Optional)</span></label>
+                            <p className="text-xs text-gray-500 mb-1.5">Choose an existing domain as parent for this sub-domain</p>
+                            {loadingDomains ? (
+                                <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
+                                    Loading domains...
+                                </div>
+                            ) : (
+                                <select
+                                    value={form.customId}
+                                    onChange={(e) => setForm({ ...form, customId: e.target.value })}
+                                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                >
+                                    <option value="">None (Top-level domain)</option>
+                                    {parentDomains.map((domain) => (
+                                        <option key={domain.id} value={domain.id}>
+                                            {domain.name} <span className="text-gray-500">({domain.owner})</span>
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <p className="flex items-center gap-1.5 text-xs text-gray-500">
                                 <FiAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                Once set, ID cannot be changed.
+                                Select a parent domain to create this as a sub-domain.
                             </p>
                         </div>
                     )}
                 </div>
+
                 <div className="flex justify-end gap-3 py-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">Cancel</button>
-                    <button onClick={handleCreate} disabled={!form.name.trim()} className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500">Create</button>
+                    <button onClick={onClose} disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">Cancel</button>
+                    <button onClick={handleCreate} disabled={!form.name.trim() || !form.owner || isSubmitting} className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        {isSubmitting ? "Creating..." : "Create"}
+                    </button>
                 </div>
             </div>
         </div>
@@ -739,16 +793,57 @@ function OwnerDropdown({ value, onChange }: { value: string; onChange: (v: strin
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LineOfBusiness() {
-    const [domains, setDomains] = useState<Domain[]>(INITIAL_DOMAINS);
+    const [domains, setDomains] = useState<Domain[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [ownerFilter, setOwnerFilter] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("list");
     const [expandedDomains, setExpandedDomains] = useState<Set<string>>(
-        new Set(INITIAL_DOMAINS.map((d) => d.id))
+        new Set()
     );
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch domains from API
+                const apiData = await lineOfBusinessApiService.fetchAllLineOfBusiness();
+                // Transform API response to Domain format
+                const transformedData = transformApiResponse(apiData);
+                setDomains(transformedData);
+                setExpandedDomains(new Set(transformedData.map((d) => d.id)));
+            } catch (err) {
+                console.error("Failed to fetch domains:", err);
+                setDomains([]);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // ─── Mock Data ────────────────────────────────────────────────────────────────
+
+    // Helper function to transform API response to Domain format
+    function transformApiResponse(apiData: any[]): Domain[] {
+        return apiData.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || "",
+            owner: item.owner || "",
+            color: item.color || COLOR_OPTIONS[0],
+            assets: item.assets || 0,
+            createdAt: item.created_at || new Date().toISOString().split("T")[0],
+            externalLinks: item.external_links || [],
+            subdomains: (item.child_domain || []).map((child: any) => ({
+                id: child.id,
+                name: child.name,
+                description: child.description || "",
+                owner: child.owner || "",
+                assets: child.assets || 0,
+                externalLinks: child.external_links || [],
+            })),
+        }));
+    }
 
     const filteredDomains = useMemo(() => {
         const q = searchQuery.toLowerCase();
