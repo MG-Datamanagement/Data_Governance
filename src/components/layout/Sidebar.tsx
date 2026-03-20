@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+// import { signOut, useSession } from "next-auth/react"; // disconnected — connect when auth is ready
 import {
   Home,
   Tag,
@@ -29,6 +29,7 @@ import { GiMicrochip } from "react-icons/gi";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { BrandLogo } from "../ui/BrandLogo";
+import { MOCK_USER } from "@/lib/mockData";
 
 const GOVERN_ITEMS = [
   { icon: Home, label: "Home", href: "/overview" },
@@ -56,7 +57,7 @@ const AI_ASSISTANT_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  // const { data: session } = useSession(); // disconnected — connect when auth is ready
   const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode } =
     useAppStore();
 
@@ -224,15 +225,6 @@ export function Sidebar() {
       <div className="border-t border-gray-200 p-3 space-y-1">
         <div>
           <button
-            className={cn("sidebar-link", sidebarCollapsed ? "" : "w-full")}
-            title={sidebarCollapsed ? "Profile" : ""}
-          >
-            <User size={16} />
-            {!sidebarCollapsed && <span>Profile</span>}
-          </button>
-        </div>
-        <div>
-          <button
             onClick={toggleDarkMode}
             className={cn("sidebar-link", sidebarCollapsed ? "" : "w-full")}
             title={sidebarCollapsed ? "Dark Theme" : ""}
@@ -252,11 +244,10 @@ export function Sidebar() {
         </div>
         <div>
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            // onClick={() => signOut({ callbackUrl: "/login" })} // disconnected — connect when auth is ready
             className={cn(
               "sidebar-link",
               sidebarCollapsed ? "" : "w-full",
-              // "text-red-600 hover:bg-red-50",
             )}
             title={sidebarCollapsed ? "Sign out" : ""}
           >
@@ -265,29 +256,33 @@ export function Sidebar() {
           </button>
         </div>
 
-        {/* User Info */}
-        {session?.user && (
-          <div className="p-2 border-t border-gray-200 hover:bg-gray-300">
-            <div
-              className={cn(
-                "flex items-center gap-2",
-                sidebarCollapsed ? "justify-center" : "px-1",
-              )}
-            >
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-600 hover:border hover:border-white">
-                <span className="text-sm font-medium text-gray-700">
-                  {getUserInitials(session.user.name || "User")}
+        {/* User Profile — using mock user (disconnect auth, connect later) */}
+        <div className="pt-2 border-t border-gray-200">
+          <div
+            className={cn(
+              "flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer",
+              sidebarCollapsed ? "justify-center" : "px-2",
+            )}
+          >
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-semibold text-indigo-700">
+                {getUserInitials(MOCK_USER.name)}
+              </span>
+            </div>
+            {!sidebarCollapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-gray-900 truncate">
+                  {MOCK_USER.name}
+                </span>
+                <span className="text-[10px] text-gray-500 truncate">
+                  {MOCK_USER.role}
                 </span>
               </div>
-              {!sidebarCollapsed && (
-                <span className="text-sm font-semibold text-gray-900 truncate">
-                  {session.user.name}
-                </span>
-              )}
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </aside>
   );
 }
+

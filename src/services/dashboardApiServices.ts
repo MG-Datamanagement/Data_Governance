@@ -39,6 +39,7 @@ import {
   ApiColumn,
   ApiComplianceRunResponse,
 } from "@/types";
+import { TopTagsResponse, TopTag } from "@/types/tagTypes";
 import { AxiosRequestConfig } from "axios";
 
 export interface ApiDataSource {
@@ -360,17 +361,26 @@ export const dashboardApiServices = {
     }>("/compliance-overview");
   },
 
-  async getDomainAssets() {
-    // const response: TopDomainsWithCountsResponse[] = await dashboardApiClient.get(
-    //   "/api/v1/domains/dataset-count",
-    // );
-    // return response?.map((domain: TopDomainsWithCountsResponse) => ({
-    //   domain: domain?.name,
-    //   count: domain?.dataset_count,
-    //   urn: domain?.id,
-    // }));
-    return [];
+  // ─── Top Tags (replaces Domains on overview) ────────────────────────────
+  async getTopTags(limit: number = 30): Promise<TopTag[]> {
+    const response: TopTagsResponse = await dashboardApiClient.get(
+      `/api/v1/tags/top`,
+      { params: { limit } },
+    );
+    return response?.tags ?? [];
   },
+
+  // async getDomainAssets() {
+  //   const response: TopDomainsWithCountsResponse[] = await dashboardApiClient.get(
+  //     "/api/v1/domains/dataset-count",
+  //   );
+  //   return response?.map((domain: TopDomainsWithCountsResponse) => ({
+  //     domain: domain?.name,
+  //     count: domain?.dataset_count,
+  //     urn: domain?.id,
+  //   }));
+  //   return [];
+  // },
 
   async getPlatformUsage() {
     const response: TopPlatformsWithCountsResponse = await dashboardApiClient.get(

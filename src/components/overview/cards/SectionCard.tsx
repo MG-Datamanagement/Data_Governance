@@ -8,16 +8,18 @@
  * This is the shared pattern to adopt across overview-style pages.
  */
 
+import Link from "next/link";
 import { LucideLoader2 } from "lucide-react";
 
 type Props = {
   title: string;
   icon: React.ReactNode;
   isLoading?: boolean;
+  viewAllHref?: string;
   children: React.ReactNode;
 };
 
-export function SectionCard({ title, icon, isLoading, children }: Props) {
+export function SectionCard({ title, icon, isLoading, viewAllHref, children }: Props) {
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-4">
@@ -26,12 +28,20 @@ export function SectionCard({ title, icon, isLoading, children }: Props) {
           {icon}
         </div>
 
-        <button
-          // disabled={isLoading || true}
-          className="text-primary text-xs font-medium hover:bg-gray-200 rounded-md p-2 disabled:text-gray-300 disabled:cursor-not-allowed"
-        >
-          View All
-        </button>
+        {viewAllHref ? (
+          <Link
+            href={viewAllHref}
+            className="text-primary text-xs font-medium hover:bg-gray-200 rounded-md p-2 transition-colors"
+          >
+            View All
+          </Link>
+        ) : (
+          <button
+            className="text-primary text-xs font-medium hover:bg-gray-200 rounded-md p-2 disabled:text-gray-300 disabled:cursor-not-allowed"
+          >
+            View All
+          </button>
+        )}
       </div>
 
       {children}

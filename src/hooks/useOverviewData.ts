@@ -13,7 +13,8 @@ import {
   useDashboardStats,
   useAISnapshot,
   useModelRiskTrends,
-  useDomainAssets,
+  // useDomainAssets,
+  useTopTags,
   usePlatformUsage,
   useRecentActivity,
   useComplianceFrameworks,
@@ -30,7 +31,8 @@ export function useOverviewData() {
   const stats = useDashboardStats();
   const aiSnapshot = useAISnapshot();
   const riskTrends = useModelRiskTrends();
-  const domains = useDomainAssets();
+  // const domains = useDomainAssets();
+  const topTags = useTopTags();
   const platforms = usePlatformUsage();
   const activity = useRecentActivity(USER_URN);
   const recentlyViewed = useRecentlyViewed(USER_URN);
@@ -44,7 +46,8 @@ export function useOverviewData() {
     stats,
     aiSnapshot,
     riskTrends,
-    domains,
+    // domains,
+    topTags,
     platforms,
     activity,
     recentlyViewed,

@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { ApiComplianceFramework } from "@/types";
 import { cn } from "@/lib/utils";
-import { Check, Clock, InfoIcon, AlertCircle, XCircle } from "lucide-react";
+import { Check, Clock, InfoIcon, AlertCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ComplianceFrameworkCardProps {
   framework: ApiComplianceFramework;
@@ -9,6 +10,8 @@ interface ComplianceFrameworkCardProps {
 export function ComplianceFrameworkCard({
   framework,
 }: ComplianceFrameworkCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const getStatusInfo = (status: string) => {
     switch (status.toLowerCase()) {
       case "excellent":
@@ -24,6 +27,10 @@ export function ComplianceFrameworkCard({
   };
 
   const status = getStatusInfo(framework.status);
+
+  const indicators = framework.indicators ?? [];
+  const visibleIndicators = expanded ? indicators : indicators.slice(0, 2);
+  const hasMore = indicators.length > 2;
 
   return (
     <div className="p-5 space-y-4 border-b border-gray-100 last:border-0">
@@ -72,9 +79,14 @@ export function ComplianceFrameworkCard({
       </div>
 
       {/* Indicators */}
-      {framework.indicators && framework.indicators.length > 0 && (
-        <div className="space-y-2">
-          {framework.indicators.slice(0, 2).map((indicator, idx) => (
+      {indicators.length > 0 && (
+        <div
+          className={cn(
+            "space-y-2 transition-all duration-200",
+            expanded && "max-h-28 overflow-y-auto pr-1"
+          )}
+        >
+          {visibleIndicators.map((indicator, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <div className={cn(
                 "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
@@ -86,43 +98,35 @@ export function ComplianceFrameworkCard({
                   <AlertCircle size={10} className="text-red-500" strokeWidth={3} />
                 )}
               </div>
-              <span className="text-[10px] font-medium text-gray-600 line-clamp-1">
+              <span title={indicator.text} className="text-[10px] font-medium text-gray-600 line-clamp-1">
                 {indicator.text}
               </span>
             </div>
           ))}
-          {framework.indicators.length > 2 && (
+          {!expanded && hasMore && (
             <div className="text-[10px] font-medium text-gray-400 pl-6">
-              +{framework.indicators.length - 2} more
+              +{indicators.length - 2} more
             </div>
           )}
         </div>
       )}
 
-      {/* Action Required Box (Mockup style for Warnings) */}
-      {/* {(framework.status === "warning" || framework.status === "needs_attention") && (
-        <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <AlertCircle size={14} className="text-orange-600" />
-            <span className="text-[10px] font-bold text-orange-800">Action Required:</span>
-          </div>
-          <p className="text-[10px] text-orange-700 leading-normal pl-5">
-            Review data classification policies for healthcare data. 4 datasets need proper PHI tagging.
-          </p>
-          <div className="flex justify-end pt-1">
-            <button className="text-[10px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
-              Fix Now <span>&rarr;</span>
-            </button>
-          </div>
+      {/* View More / View Less Toggle */}
+      {hasMore && (
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+          >
+            {expanded ? (
+              <>View Less <ChevronUp size={12} /></>
+            ) : (
+              <>View More <ChevronDown size={12} /></>
+            )}
+          </button>
         </div>
-      )} */}
-
-      {/* View Details Link */}
-      <div className="flex justify-end pt-1">
-        <button className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-          View Details <span>&rarr;</span>
-        </button>
-      </div>
+      )}
     </div>
   );
 }
+

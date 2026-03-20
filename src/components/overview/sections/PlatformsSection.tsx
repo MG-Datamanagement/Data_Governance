@@ -23,6 +23,7 @@ export function PlatformsSection({ query }: Props) {
       title="Top Platforms"
       icon={<Database size={16} className="text-blue-800" />}
       isLoading={isLoading}
+      viewAllHref="/data-sources"
     >
       {isLoading && (
         <InlineState type="loading" message="Loading platforms..." />

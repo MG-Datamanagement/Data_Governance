@@ -42,3 +42,20 @@ export interface TagsResponse {
   total: number
 }
 
+// ─── Top Tags (Overview) ─────────────────────────────────────────────────────
+
+export interface TopTag {
+  id: string
+  name: string
+  color: string
+  tag_type: string
+  catalog_count: number
+  column_count: number
+  total_assets: number
+}
+
+export interface TopTagsResponse {
+  info: string
+  tags: TopTag[]
+}
+

@@ -79,10 +79,17 @@ export const useComplianceOverview = () => {
   });
 };
 
-export const useDomainAssets = () => {
+// export const useDomainAssets = () => {
+//   return useQuery({
+//     queryKey: ['domain-assets'],
+//     queryFn: dashboardApiServices.getDomainAssets,
+//   });
+// };
+
+export const useTopTags = (limit: number = 30) => {
   return useQuery({
-    queryKey: ['domain-assets'],
-    queryFn: dashboardApiServices.getDomainAssets,
+    queryKey: ['top-tags', limit],
+    queryFn: () => dashboardApiServices.getTopTags(limit),
   });
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Menu, Database } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { LuSlidersHorizontal } from "react-icons/lu";
 import { RiRobot2Line } from "react-icons/ri";
 import { LuCircleHelp } from "react-icons/lu";
@@ -17,20 +17,31 @@ interface HeaderProps {
   userName: string;
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function Header({ userName }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isNotificationsOpen, setIsNotificationsOpen] =
     useState<boolean>(false);
   const [markAllAsRead, setMarkAllAsRead] = useState<boolean>(false);
 
-  const router = useRouter();
-  const activity = useRecentActivity(CONSTANTS.userUrn);
+  const greeting = useMemo(() => getGreeting(), []);
 
+  const router = useRouter();
+
+  // ── Lazy-load notifications: only fetch when the tray is first opened ──
+  // This prevents the /api/v1/recent-activity call from firing on every page.
+  // React Query caches the result, so subsequent opens won't re-fetch.
   const {
     data: notifications,
     isFetching: isNotificationsLoading,
     error: isNotificationsError,
-  } = activity;
+  } = useRecentActivity(isNotificationsOpen ? CONSTANTS.userUrn : "");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +54,7 @@ export function Header({ userName }: HeaderProps) {
       <div className="flex items-center justify-between gap-4 w-full">
         <div>
           <h1 className="text-lg font-semibold text-gray-900 hidden md:block">
-            Good evening, {userName}!
+            {greeting}, {userName}!
           </h1>
         </div>
 
