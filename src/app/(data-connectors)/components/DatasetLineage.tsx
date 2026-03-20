@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo, useLayoutEffect } from "react";
 import {
   ZoomIn, ZoomOut, RotateCcw, Maximize2, Search,
   ChevronDown, ChevronUp, MoreHorizontal, X,
@@ -17,7 +17,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type NodeType = "table" | "view" | "dashboard";
-type QualityStatus = "healthy" | "warning" | "error";
+type QualityStatus = "healthy" | "warning" | "error" | "unhealthy";
 
 interface InternalColumn {
   id: string; name: string; data_type: string;
@@ -31,6 +31,7 @@ interface InternalNode {
   columns: InternalColumn[]; columnCount: number; tags: InternalTag[];
   qualityStatus: QualityStatus; isCenter?: boolean; aiSummary: string | null;
   stats: string | null;
+  queryExecution?: LineageApiQueryExecution | null;
   x: number; y: number;
 }
 interface InternalEdge {
@@ -73,7 +74,9 @@ function mapNode(n: LineageApiNode, x: number, y: number, isCenter = false): Int
     tags: (n.tags ?? []).map((t) => ({ id: t.id, name: t.name, color: t.color })),
     qualityStatus: n.status ?? "healthy", isCenter,
     aiSummary: n.ai_summary ?? null,
-    stats: n.stats ?? null, x, y,
+    stats: n.stats ?? null,
+    queryExecution: n.query_execution ?? null,
+    x, y,
   };
 }
 
@@ -180,7 +183,7 @@ function qualityDot(status: QualityStatus) {
       <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
     </span>
   );
-  if (status === "error") return (
+  if (status === "error" || status === "unhealthy") return (
       <span className="w-4 h-4 rounded-full bg-red-100 border border-red-300 flex items-center justify-center text-red-500 text-[9px] font-black">!</span>
   );
   return (
@@ -200,6 +203,55 @@ function tagPillClass(name: string) {
   if (n === "financial" || n === "finance") return "bg-yellow-50 text-yellow-700 border-yellow-200";
   if (n === "gdpr" || n === "hipaa" || n === "sox") return "bg-blue-50 text-blue-700 border-blue-200";
   return "bg-gray-100 text-gray-600 border-gray-200";
+}
+
+// ─── Smart Popup Positioning ───────────────────────────────────────────────────
+// Measures the rendered popup and clamps it so it never clips the header or edges.
+
+function useSmartPosition(
+  ref: React.RefObject<HTMLDivElement>,
+  anchorX: number,
+  anchorY: number,
+) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const elW = ref.current.offsetWidth || 380;
+    const elH = ref.current.offsetHeight || 300;
+    const PAD = 12, TOP_SAFE = 68;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let left = Math.max(PAD, Math.min(anchorX - elW / 2, vw - elW - PAD));
+    const belowY = anchorY + 16;
+    let top = belowY + elH + PAD > vh ? Math.max(TOP_SAFE, anchorY - elH - 16) : belowY;
+    top = Math.max(TOP_SAFE, Math.min(top, vh - elH - PAD));
+    setPos({ left, top });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorX, anchorY, ref.current?.offsetHeight, ref.current?.offsetWidth]);
+  return pos;
+}
+
+function useSmartPositionFromRect(
+  ref: React.RefObject<HTMLDivElement>,
+  rect: DOMRect | null,
+  popoverW: number,
+) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!ref.current || !rect) return;
+    const elH = ref.current.offsetHeight || 300;
+    const PAD = 12, TOP_SAFE = 68;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const spaceRight = vw - rect.right - PAD;
+    const spaceLeft = rect.left - PAD;
+    let left = spaceRight >= popoverW || spaceRight >= spaceLeft
+      ? Math.min(rect.right + PAD, vw - popoverW - PAD)
+      : Math.max(PAD, rect.left - popoverW - PAD);
+    let top = Math.max(TOP_SAFE, rect.top);
+    if (top + elH + PAD > vh) top = Math.max(TOP_SAFE, vh - elH - PAD);
+    setPos({ left, top });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rect?.left, rect?.top, rect?.right, popoverW, ref.current?.offsetHeight]);
+  return pos;
 }
 
 // ─── AI Summary Popover — compact, matches reference screenshot ───────────────
@@ -229,19 +281,9 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
     return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
   }, [onClose]);
 
-  // Positioning: prefer right of card, flip left if not enough space
-  const MARGIN = 12;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1400;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 900;
-  const spaceRight = vw - anchor.rect.right - MARGIN;
-  const spaceLeft = anchor.rect.left - MARGIN;
-  const placeRight = spaceRight >= POPOVER_W || spaceRight >= spaceLeft;
-  const left = placeRight
-      ? anchor.rect.right + MARGIN
-      : anchor.rect.left - POPOVER_W - MARGIN;
-  const top = Math.min(Math.max(anchor.rect.top, MARGIN), vh - 280 - MARGIN);
+  const pos = useSmartPositionFromRect(popoverRef, anchor.rect, POPOVER_W);
 
-  // Quality text line — mirrors the reference "14/14 quality checks passing · RLS policies active on SSN"
+  // Quality text line
   const hasPii = node.tags.some((t) => ["pii","phi"].includes(t.name.toLowerCase()));
   const qualityLine =
       node.qualityStatus === "healthy"
@@ -255,12 +297,13 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
           ref={popoverRef}
           className="fixed z-50 rounded-xl overflow-hidden bg-white"
           style={{
-            left,
-            top,
+            left: pos?.left ?? -9999,
+            top: pos?.top ?? -9999,
             width: POPOVER_W,
+            visibility: pos ? "visible" : "hidden",
             boxShadow: "0 4px 20px rgba(109,40,217,0.12), 0 1px 6px rgba(0,0,0,0.07)",
             border: "1px solid #e5e7eb",
-            animation: "aiPopIn 0.14s cubic-bezier(.22,.68,0,1.2) both",
+            animation: pos ? "aiPopIn 0.14s cubic-bezier(.22,.68,0,1.2) both" : "none",
           }}
           onClick={(e) => e.stopPropagation()}
       >
@@ -303,18 +346,60 @@ function AiSummaryPopover({ node, anchor, onClose }: AiSummaryPopoverProps) {
                 : `${node.label} is a ${node.type} in ${node.database || node.sourceName}${node.schema ? `.${node.schema}` : ""} containing ${node.columnCount} column${node.columnCount !== 1 ? "s" : ""} of business data.`}
           </p>
 
+          
+
+         
+
+          {/* Note — query execution failure / unhealthy status */}
+          {(node.queryExecution?.query_status === "FAILURE" || node.qualityStatus === "unhealthy" || node.qualityStatus === "error") && (
+            <>
+              <div className="h-px bg-gray-100" />
+              <div className="flex items-start gap-2">
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
+                  Note
+                </span>
+                <div className="flex-1 space-y-1">
+                  {node.queryExecution?.query_status === "FAILURE" && (
+                    <div className="flex items-start gap-1.5">
+                      <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-[12px] text-red-600 leading-snug">
+                        Query execution failed · Runtime {node.queryExecution.query_runtime_ms}ms · {(node.queryExecution.data_scanned_bytes / 1024).toFixed(1)} KB scanned
+                      </span>
+                    </div>
+                  )}
+                  {(node.qualityStatus === "unhealthy" || node.qualityStatus === "error") && !node.queryExecution?.query_status && (
+                    <div className="flex items-start gap-1.5">
+                      <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-[12px] text-red-600 leading-snug">
+                        Data quality issues detected — this dataset requires attention.
+                      </span>
+                    </div>
+                  )}
+                  {node.queryExecution?.query_status === "FAILURE" && node.queryExecution.s3_output_location && (
+                    <p className="text-[10px] text-gray-400 pl-5 truncate" title={node.queryExecution.s3_output_location}>
+                      Output: {node.queryExecution.s3_output_location.split('/').slice(-2).join('/')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Divider */}
           <div className="h-px bg-gray-100" />
 
-          {/* STATS row */}
+           {/* STATS row */}
           <div className="flex items-baseline gap-2">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[46px] flex-shrink-0">
-            Stats
-          </span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[46px] flex-shrink-0">
+              Stats
+            </span>
             <span className="text-[12px] text-gray-600 leading-snug">
             {node.stats ?? `${node.columnCount} column${node.columnCount !== 1 ? "s" : ""}`}
-          </span>
+            </span>
           </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-100" />
 
           {/* <div className="flex items-start gap-2">
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider w-[46px] flex-shrink-0 pt-px">
@@ -384,11 +469,8 @@ function TransformationPopup({
     }
   };
 
-  const W = 380, H = 340;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-  const left = Math.min(Math.max(screenX - W / 2, 12), vw - W - 12);
-  const top = screenY + 16 + H > vh ? screenY - H - 16 : screenY + 16;
+  const W = 380;
+  const pos = useSmartPosition(popupRef, screenX, screenY);
 
   const keywords = ["SELECT","FROM","WHERE","JOIN","LEFT","RIGHT","INNER","OUTER","ON","GROUP BY","ORDER BY","HAVING","WITH","AS","AND","OR","NOT","IN","LIMIT","UNION","INSERT","UPDATE","DELETE","SET","CREATE","TABLE","VIEW","DISTINCT","COUNT","SUM","AVG","MAX","MIN","CASE","WHEN","THEN","ELSE","END","NULL","IS","LIKE","BETWEEN","EXISTS"];
 
@@ -396,7 +478,7 @@ function TransformationPopup({
       <div
           ref={popupRef}
           className="fixed z-50"
-          style={{ left, top, width: W, animation: "aiPopIn 0.15s cubic-bezier(.22,.68,0,1.2) both" }}
+          style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999, width: W, visibility: pos ? "visible" : "hidden", animation: pos ? "aiPopIn 0.15s cubic-bezier(.22,.68,0,1.2) both" : "none" }}
           onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={{ boxShadow: "0 12px 48px rgba(99,102,241,0.18)" }}>
@@ -525,11 +607,8 @@ function ColumnQueryPopup({
     }
   };
 
-  const W = 380, H = 280;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-  const left = Math.min(Math.max(screenX - W / 2, 12), vw - W - 12);
-  const top = screenY + 16 + H > vh ? screenY - H - 16 : screenY + 16;
+  const W = 380;
+  const pos = useSmartPosition(popupRef, screenX, screenY);
 
   const keywords = ["SELECT","FROM","WHERE","JOIN","LEFT","RIGHT","INNER","OUTER","ON","GROUP BY","ORDER BY","HAVING","WITH","AS","AND","OR","NOT","IN","LIMIT","UNION","INSERT","UPDATE","DELETE","SET","CREATE","TABLE","VIEW","DISTINCT","COUNT","SUM","AVG","MAX","MIN","CASE","WHEN","THEN","ELSE","END","NULL","IS","LIKE","BETWEEN","EXISTS"];
 
@@ -537,7 +616,7 @@ function ColumnQueryPopup({
       <div
           ref={popupRef}
           className="fixed z-50"
-          style={{ left, top, width: W, animation: "aiPopIn 0.15s cubic-bezier(.22,.68,0,1.2) both" }}
+          style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999, width: W, visibility: pos ? "visible" : "hidden", animation: pos ? "aiPopIn 0.15s cubic-bezier(.22,.68,0,1.2) both" : "none" }}
           onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl overflow-hidden bg-white border border-gray-200" style={{ boxShadow: "0 12px 48px rgba(99,102,241,0.18)" }}>
@@ -653,7 +732,9 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
                     ? "border-indigo-400 shadow-md ring-2 ring-indigo-400/50"
                     : isSelected
                         ? "border-indigo-200 shadow-sm ring-1 ring-indigo-200/40"
-                        : "border-gray-200 shadow-sm hover:border-indigo-200 hover:shadow-md",
+                        : (node.qualityStatus === "unhealthy" || node.qualityStatus === "error")
+                            ? "border-red-200 shadow-sm hover:border-red-400 hover:shadow-md hover:shadow-red-100"
+                            : "border-gray-200 shadow-sm hover:border-indigo-200 hover:shadow-md",
           ].join(" ")}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
@@ -707,9 +788,9 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
           )}
         </div>
 
-        {node.qualityStatus === "error" && (
+        {(node.qualityStatus === "error" || node.qualityStatus === "unhealthy") && (
             <div className="mx-3 mb-2 flex items-center gap-1 text-[10px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-2 py-1">
-              <X size={10} /> Data quality issue
+              <AlertCircle size={10} /> {node.qualityStatus === "unhealthy" ? "Unhealthy — execution failure" : "Data quality issue"}
             </div>
         )}
 
@@ -787,6 +868,12 @@ function EdgeLayer({
           <marker id="lng-arrow-s" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,6 L9,3 z" fill="#9ca3af" />
           </marker>
+          <marker id="lng-arrow-fail" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+          </marker>
+          <marker id="lng-arrow-fail-a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#dc2626" />
+          </marker>
         </defs>
         {edges.map((edge, i) => {
           const from = positions[edge.from], to = positions[edge.to];
@@ -797,7 +884,17 @@ function EdgeLayer({
           const d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
           const isActive = activeEdge?.from === edge.from && activeEdge?.to === edge.to;
           const hasQuery = !!edge.transformationQuery;
+          const isFailed = edge.queryExecution?.query_status === "FAILURE";
           const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
+
+          // Determine colors based on failure status
+          const edgeColor = isFailed
+            ? (isActive ? "#dc2626" : "#ef4444")
+            : (isActive ? "#7c3aed" : edge.isSecondary ? "#9ca3af" : "#6366f1");
+          const markerEnd = isFailed
+            ? (isActive ? "url(#lng-arrow-fail-a)" : "url(#lng-arrow-fail)")
+            : (isActive ? "url(#lng-arrow-pa)" : edge.isSecondary ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)");
+
           return (
               <g key={i}>
                 <path
@@ -807,10 +904,10 @@ function EdgeLayer({
                 />
                 <path
                     d={d} fill="none"
-                    stroke={isActive ? "#7c3aed" : edge.isSecondary ? "#9ca3af" : "#6366f1"}
+                    stroke={edgeColor}
                     strokeWidth={isActive ? 2.5 : edge.isSecondary ? 1.5 : 2}
                     strokeDasharray={edge.isSecondary && !isActive ? "6 4" : undefined}
-                    markerEnd={isActive ? "url(#lng-arrow-pa)" : edge.isSecondary ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)"}
+                    markerEnd={markerEnd}
                     opacity={isActive ? 1 : 0.85}
                     style={{ pointerEvents: "none" }}
                 />
@@ -819,8 +916,8 @@ function EdgeLayer({
                         style={{ cursor: "pointer" }}
                         onClick={(e) => { e.stopPropagation(); onEdgeClick(edge, e.clientX, e.clientY); }}
                     >
-                      <circle cx={midX} cy={midY} r={9} fill="white" stroke={isActive ? "#7c3aed" : "#6366f1"} strokeWidth={1.5} />
-                      <circle cx={midX} cy={midY} r={5} fill={isActive ? "#7c3aed" : "#6366f1"} />
+                      <circle cx={midX} cy={midY} r={9} fill="white" stroke={isFailed ? "#ef4444" : (isActive ? "#7c3aed" : "#6366f1")} strokeWidth={1.5} />
+                      <circle cx={midX} cy={midY} r={5} fill={isFailed ? "#ef4444" : (isActive ? "#7c3aed" : "#6366f1")} />
                       <text x={midX} y={midY + 3.5} textAnchor="middle" fontSize="7" fontFamily="monospace" fontWeight="bold" fill="white">{"{}"}</text>
                     </g>
                 )}
@@ -1151,6 +1248,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
               <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("view")}</span> View</div>
               <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("dashboard")}</span> Dashboard</div>
               <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-indigo-500 rounded inline-block" /> Data flow</div>
+              <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-red-500 rounded inline-block" /> Failed flow</div>
               <div className="flex items-center gap-1"><span className="w-8 border-t border-dashed border-gray-400 inline-block" /> Secondary flow</div>
               <div className="flex items-center gap-1"><span className="text-gray-400 text-[10px]">✦</span> Has AI summary</div>
               <div className="flex items-center gap-1">
