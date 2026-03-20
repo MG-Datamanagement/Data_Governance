@@ -9,6 +9,7 @@ export { OverviewHeader } from "./OverviewHeader";
 export { OverviewStatsGrid } from "./OverviewStatsGrid";
 export { ComplianceSection } from "./ComplianceSection";
 export { AIGovernanceSection } from "./AiGovernanceSection";
-export { DomainsSection } from "./DomainsSection";
+// export { DomainsSection } from "./DomainsSection";
+export { TopTagsSection } from "./TopTagsSection";
 export { PlatformsSection } from "./PlatformsSection";
 export { ActivitySection } from "./ActivitySection";

@@ -569,22 +569,22 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               )}
 
               {/* Data Quality */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <h2 className="text-base font-semibold text-gray-900 mb-3">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-2">
                   Data Quality
                 </h2>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     {
                       label: "FRESHNESS",
                       value: detail.freshness,
                       color: "text-green-600",
                     },
-                    // {
-                    //   label: "VOLUME",
-                    //   value: detail.volume,
-                    //   color: "text-green-600",
-                    // },
+                    {
+                      label: "VOLUME",
+                      value: detail.volume,
+                      color: "text-green-600",
+                    },
                     {
                       label: "QUALITY SCORE",
                       value: detail.qualityScore,
@@ -595,16 +595,10 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                       key={metric.label}
                       className="bg-green-50 border border-green-100 rounded-xl px-4 py-4 flex flex-col justify-center items-center"
                     >
-                      {/* <p className="text-[10px] font-semibold text-gray-400 tracking-wide uppercase mb-1">
+                      <p className="text-xs font-semibold text-gray-400 tracking-wide uppercase mb-1 text-center">
                         {metric.label}
                       </p>
-                      <p className={`text-3xl font-extrabold ${metric.color}`}>
-                        {metric.value}
-                      </p> */}
-                      <p className="text-sm font-semibold text-gray-400 tracking-wide uppercase mb-1 text-center">
-                        {metric.label}
-                      </p>
-                      <p className={cn(`text-4xl font-extrabold ${metric.color} text-center`)}>
+                      <p className={cn(`text-2xl font-extrabold ${metric.color} text-center`)}>
                         {metric.value}
                       </p>
                     </div>

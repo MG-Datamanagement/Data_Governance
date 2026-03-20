@@ -15,7 +15,8 @@ import {
   ActivitySection,
   AIGovernanceSection,
   ComplianceSection,
-  DomainsSection,
+  // DomainsSection,
+  TopTagsSection,
   OverviewHeader,
   OverviewStatsGrid,
   PlatformsSection,
@@ -30,7 +31,8 @@ function OverviewContent() {
     stats,
     aiSnapshot,
     riskTrends,
-    domains,
+    // domains,
+    topTags,
     platforms,
     activity,
     recentlyViewed,
@@ -66,7 +68,8 @@ function OverviewContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <DomainsSection query={domains} />
+          {/* <DomainsSection query={domains} /> */}
+          <TopTagsSection query={topTags} />
           <PlatformsSection query={platforms} />
         </div>
       </div>

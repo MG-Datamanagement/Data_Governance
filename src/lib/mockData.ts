@@ -17,12 +17,53 @@ import { FaRegSnowflake } from "react-icons/fa";
 import { SiMongodb } from "react-icons/si";
 import { BiLogoPostgresql } from "react-icons/bi";
 
-export const MOCK_USER = {
-  id: "1",
-  name: "Shivam",
-  email: "shivam@infinity.com",
-  avatar: null,
-};
+export interface MockUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string | null;
+}
+
+/**
+ * Professional mock users — switch ACTIVE_USER_INDEX to change who is "logged in".
+ * When auth is connected, replace this with the real session user.
+ */
+export const MOCK_USERS: MockUser[] = [
+  {
+    id: "usr-001",
+    name: "James Carter",
+    email: "james.carter@infinity.io",
+    role: "Data Governance Lead",
+    avatar: null,
+  },
+  {
+    id: "usr-002",
+    name: "Emily Richardson",
+    email: "emily.richardson@infinity.io",
+    role: "Chief Data Officer",
+    avatar: null,
+  },
+  {
+    id: "usr-003",
+    name: "Michael Torres",
+    email: "michael.torres@infinity.io",
+    role: "Privacy Engineer",
+    avatar: null,
+  },
+  {
+    id: "usr-004",
+    name: "Sarah Bennett",
+    email: "sarah.bennett@infinity.io",
+    role: "Compliance Analyst",
+    avatar: null,
+  },
+];
+
+/** Change this index to switch the active mock user (0-based) */
+export const ACTIVE_USER_INDEX = 0;
+
+export const MOCK_USER: MockUser = MOCK_USERS[ACTIVE_USER_INDEX];
 
 export const MOCK_COMPLIANCE_FRAMEWORKS: ComplianceFramework[] = [
   {
