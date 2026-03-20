@@ -512,7 +512,7 @@ function TransformationPopup({
             </div>
             <div className="flex items-center gap-1.5">
               <button
-                  onClick={handleCopy}
+                  // onClick={handleCopy}
                   className={cn(
                     "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all shadow-sm text-[10px] font-semibold",
                     copied 
