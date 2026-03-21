@@ -44,7 +44,7 @@ const GOVERN_ITEMS = [
 
 const ADMIN_ITEMS = [
   { icon: Database, label: "Data Connectors", href: "/data-connectors" },
-  { icon: BarChart3, label: "Analytics", href: "/analytics" },
+  // { icon: BarChart3, label: "Analytics", href: "/analytics" },
 ];
 
 const AI_ASSISTANT_ITEMS = [

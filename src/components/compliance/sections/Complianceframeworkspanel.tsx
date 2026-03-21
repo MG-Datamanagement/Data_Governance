@@ -4,6 +4,7 @@ import { ComplianceFrameworkCard } from "@/components/compliance/ComplianceFrame
 import { ComplianceData } from "@/hooks/useComplianceData";
 import { ApiComplianceFramework } from "@/types";
 import { InfoIcon } from "lucide-react";
+import { InfoIconTooltip } from "@/components/ui/InfoIconTooltip";
 
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
 export function ComplianceFrameworksPanel({ query }: Props) {
   const { data: runData, isLoading, error, refetch } = query;
   const frameworks = runData?.frameworks;
+    const frameworkInfographic = runData?.frameworks_infographic;
+
 
   return (
     <div className="border border-gray-200 rounded-3xl bg-white col-span-4 border-l-4 border-l-indigo-600 shadow-sm overflow-hidden flex flex-col h-full sticky top-6">
@@ -28,9 +31,7 @@ export function ComplianceFrameworksPanel({ query }: Props) {
             {frameworks?.length ?? 0} frameworks
           </p>
         </div>
-        <button className="text-gray-300">
-          <InfoIcon size={18} />
-        </button>
+        <InfoIconTooltip text={frameworkInfographic ?? ""} size={16} className="mt-1" />
       </div>
 
       <div className="grid grid-cols-1 gap-2 p-2 overflow-y-auto pr-1">

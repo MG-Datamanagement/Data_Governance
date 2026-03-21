@@ -34,7 +34,7 @@ export const MOCK_USERS: MockUser[] = [
     id: "usr-001",
     name: "James Carter",
     email: "james.carter@infinity.io",
-    role: "Data Governance Lead",
+    role: "Data Steward",
     avatar: null,
   },
   {

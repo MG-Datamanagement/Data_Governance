@@ -151,6 +151,7 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                             {[
                                 { label: "TOTAL TABLES", value: isLoading ? "..." : (stats?.totalTables.toLocaleString() || "0") },
                                 { label: "TOTAL COLUMNS", value: isLoading ? "..." : (formatNumber(stats?.totalColumns || 0)) },
+                                { label: "TOTAL ROWS", value: isLoading ? "..." : (stats?.totalRows.toLocaleString()+'k' || "0") },
 
                             ].map((stat) => (
                                 <div
@@ -342,7 +343,11 @@ const SourceRow: React.FC<{
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-const TABS = ["Sources", "Run History", "Secrets"] as const;
+const TABS = [
+    "Sources",
+    "Run History",
+    // "Secrets"
+] as const;
 type Tab = (typeof TABS)[number];
 
 const ManageDataSourcesPage: React.FC = () => {

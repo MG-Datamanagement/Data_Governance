@@ -87,9 +87,9 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
               <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 Due Date
               </th>
-              <th className="py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              {/* <th className="py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 Action
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -142,12 +142,12 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
                   <td className="py-4 px-2">
                     <div className="text-xs text-gray-500 font-medium">{issue.due_date}</div>
                   </td>
-                  <td className="py-4 text-right">
+                  {/* <td className="py-4 text-right">
                     <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 ml-auto">
                       View Details
                       <ExternalLink size={12} />
                     </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))
             )}

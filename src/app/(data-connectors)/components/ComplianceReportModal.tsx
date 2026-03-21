@@ -197,12 +197,14 @@ interface ComplianceReportModalProps {
     onClose: () => void;
     // We allow any so it's backwards-compatible if the API returns old/new formats
     complianceData?: NewComplianceResponse | any;
+    refetchCatalogDetails: () => void;
 }
 
 const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
     datasetName,
     onClose,
-    complianceData
+    complianceData,
+    refetchCatalogDetails
 }) => {
     // Local state for mock remediation
     const [localRules, setLocalRules] = useState<NewComplianceRule[]>([]);
@@ -255,6 +257,7 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                     compliance_score: Math.min(100, prev.compliance_score + (100 / prev.policies_checked))
                 };
             });
+            refetchCatalogDetails();
         } catch (err) {
             console.error(err);
         } finally {
@@ -299,12 +302,12 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 mt-4">
-                        <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        {/* <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             View History
-                        </button>
+                        </button> */}
                         <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

@@ -79,6 +79,8 @@ export interface ApiComplianceIssue {
 
 export interface ApiComplianceRunResponse {
   timestamp: string;
+  overall_score_infographic: string;
+  frameworks_infographic: string;
   overall_compliance: {
     score: number;
     change_from_last_month: number;

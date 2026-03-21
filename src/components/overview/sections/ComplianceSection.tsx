@@ -68,7 +68,7 @@ function ComplianceContent({ query, overviewQuery }: Props) {
       {!isLoading && !error && frameworks && frameworks.length > 0 && (
         <div className="space-y-5">
           {overview?.insight && (
-            <div className="p-3 bg-green-50 rounded-lg">
+            <div className="p-3 bg-green-50 rounded-lg max-h-[325px] overflow-y-auto pr-2 custom-scrollbar">
               <MarkdownRenderer content={overview.insight} />
             </div>
           )}

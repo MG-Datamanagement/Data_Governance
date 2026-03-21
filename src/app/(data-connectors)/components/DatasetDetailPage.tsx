@@ -78,12 +78,20 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
     };
 
     const handleFetchClassifyApi = async () => {
-      // await handleReclassificationActionWithAI();
       await fetchAll();
     }
 
     handleFetchClassifyApi()
   }, [datasetId]);
+
+  const fetchCatalogDetail = async () => {
+    try {
+      const res = await dashboardApiServices.fetchCatalogDetail(datasetId);
+      setCatalogData(res);
+    } catch (err) {
+      console.error("Failed to fetch catalog detail", err);
+    }
+  }
 
   const handleViewCompliance = async () => {
     setShowCompliance(true);
@@ -125,7 +133,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       freshness: formatIST(catalogData.updated_at),
       volume:
         catalogData.row_count !== null
-          ? catalogData.row_count.toLocaleString()
+          ? `${catalogData.row_count.toLocaleString()}K`
           : "—",
       qualityScore: "95%",
       columnCount: catalogData.column_count || 0,
@@ -289,6 +297,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           datasetName={detail.name}
           onClose={() => setShowCompliance(false)}
           complianceData={complianceData}
+          refetchCatalogDetails={fetchCatalogDetail}
         />
       )}
 
@@ -503,8 +512,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                 key={name}
                 onClick={() => setActiveTab(name as Tab)}
                 className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
               >
                 {name === "DataCard" && <SparkleIcon className={cn(activeTab === name ? "text-indigo-600 fill-indigo-600" : "text-gray-500 fill-gray-500")} strokeWidth={1} size={14} />}
@@ -512,8 +521,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                 {count !== undefined && name !== "Properties" && (
                   <span
                     className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === name
-                        ? "bg-indigo-100 text-indigo-600"
-                        : "bg-gray-100 text-gray-500"
+                      ? "bg-indigo-100 text-indigo-600"
+                      : "bg-gray-100 text-gray-500"
                       }`}
                   >
                     {count}

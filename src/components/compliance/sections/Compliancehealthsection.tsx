@@ -38,6 +38,7 @@ export function ComplianceHealthSection({ complianceRunQuery }: Props) {
   const trends = runData?.trends;
   const health = runData?.compliance_health;
   const insights = runData?.ai_insights;
+  const overallScoreInfographic = runData?.overall_score_infographic;
 
   return (
     <div className="p-6 border border-gray-200 rounded-3xl bg-white shadow-sm space-y-6">
@@ -67,6 +68,7 @@ export function ComplianceHealthSection({ complianceRunQuery }: Props) {
             <ComplianceScoreCard
               score={health?.score ?? 0}
               change={health?.trend_label ?? "No change"}
+              overall_score_infographic={overallScoreInfographic ?? ""}
             />
           </div>
 

@@ -41,7 +41,7 @@ export function ComplianceFrameworkCard({
             <h3 className="text-sm font-bold text-gray-900">
               {framework.name}
             </h3>
-            <InfoIcon size={14} className="text-gray-300" />
+            {/* <InfoIcon size={14} className="text-gray-300" /> */}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">

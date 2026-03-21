@@ -984,15 +984,16 @@ function EdgeLayer({
           const isActive = activeEdge?.from === edge.from && activeEdge?.to === edge.to;
           const hasQuery = !!edge.transformationQuery;
           const isFailed = edge.queryExecution?.query_status === "FAILURE";
+          const isInventory = edge.fromLabel.toLowerCase().includes("inventory_management") || edge.toLabel.toLowerCase().includes("inventory_management");
           const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
 
           // Determine colors based on failure status
           const edgeColor = isFailed
             ? (isActive ? "#dc2626" : "#ef4444")
-            : (isActive ? "#7c3aed" : edge.isSecondary ? "#9ca3af" : "#6366f1");
+            : (isActive ? "#7c3aed" : (edge.isSecondary || isInventory) ? "#9ca3af" : "#6366f1");
           const markerEnd = isFailed
             ? (isActive ? "url(#lng-arrow-fail-a)" : "url(#lng-arrow-fail)")
-            : (isActive ? "url(#lng-arrow-pa)" : edge.isSecondary ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)");
+            : (isActive ? "url(#lng-arrow-pa)" : (edge.isSecondary || isInventory) ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)");
 
           return (
               <g key={i}>
@@ -1015,8 +1016,8 @@ function EdgeLayer({
                         style={{ cursor: "pointer" }}
                         onClick={(e) => { e.stopPropagation(); onEdgeClick(edge, e.clientX, e.clientY); }}
                     >
-                      <circle cx={midX} cy={midY} r={9} fill="white" stroke={isFailed ? "#ef4444" : (isActive ? "#7c3aed" : "#6366f1")} strokeWidth={1.5} />
-                      <circle cx={midX} cy={midY} r={5} fill={isFailed ? "#ef4444" : (isActive ? "#7c3aed" : "#6366f1")} />
+                      <circle cx={midX} cy={midY} r={9} fill="white" stroke={edgeColor} strokeWidth={1.5} />
+                      <circle cx={midX} cy={midY} r={5} fill={edgeColor} />
                       <text x={midX} y={midY + 3.5} textAnchor="middle" fontSize="7" fontFamily="monospace" fontWeight="bold" fill="white">{"{}"}</text>
                     </g>
                 )}
@@ -1363,6 +1364,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
               <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("view")}</span> View</div>
               <div className="flex items-center gap-1"><span className="text-gray-500">{typeIcon("dashboard")}</span> Dashboard</div>
               <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-indigo-500 rounded inline-block" /> Data flow</div>
+              <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-gray-400 rounded inline-block" /> Inventory flow</div>
               <div className="flex items-center gap-1"><span className="w-8 h-0.5 bg-red-500 rounded inline-block" /> Failed flow</div>
               <div className="flex items-center gap-1"><span className="w-8 border-t border-dashed border-gray-400 inline-block" /> Secondary flow</div>
               <div className="flex items-center gap-1"><span className="text-gray-400 text-[10px]">✦</span> Has AI summary</div>
