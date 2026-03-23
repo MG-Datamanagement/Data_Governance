@@ -28,14 +28,26 @@ interface InternalColumn {
 }
 interface InternalTag { id: string; name: string; color: string | null; }
 interface InternalNode {
-  id: string; type: NodeType; label: string; fullName: string;
-  database: string; schema: string; sourceName: string; sourceType: string;
-  columns: InternalColumn[]; columnCount: number; tags: InternalTag[];
-  qualityStatus: QualityStatus; isCenter?: boolean; aiSummary: string | null;
+  id: string;
+  type: NodeType;
+  label: string;
+  fullName: string;
+  database: string;
+  schema: string;
+  sourceName: string;
+  sourceType: string;
+  columns: InternalColumn[];
+  columnCount: number;
+  tags: InternalTag[];
+  qualityStatus: QualityStatus;
+  isCenter?: boolean;
+  aiSummary: string | null;
   stats: string | null;
   notes: string | null;
+  transformationQuery: string | null;
   queryExecution?: LineageApiQueryExecution | null;
-  x: number; y: number;
+  x: number;
+  y: number;
 }
 interface InternalEdge {
   from: string; to: string; isSecondary?: boolean;
@@ -82,6 +94,7 @@ function mapNode(
       : (n.ai_summary ?? null),
     stats: n.stats ?? null,
     notes: isFixed ? null : (n.notes ?? (n as any).note ?? null),
+    transformationQuery: n.transformation_query ?? null,
     queryExecution: isFixed 
       ? { ...(n.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
       : (n.query_execution ?? null),
@@ -287,13 +300,19 @@ interface AiSummaryPopoverProps {
   anchor: PopoverAnchor;
   onClose: () => void;
   onAutoFix: (id: string) => void;
+  onOpenManualFix: (id: string) => void;
   isFixing: boolean;
   isFixed: boolean;
+  selectedFixMethod?: 'auto' | 'manual';
 }
 
-function AiSummaryPopover({ node, anchor, onClose, onAutoFix, isFixing, isFixed }: AiSummaryPopoverProps) {
+function AiSummaryPopover({ 
+  node, anchor, onClose, onAutoFix, onOpenManualFix, isFixing, isFixed, selectedFixMethod='auto' 
+}: AiSummaryPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [selectedFix, setSelectedFix] = useState<"auto" | "manual">("auto");
+  const [initialConfirmed, setInitialConfirmed] = useState(false);
+  const [initialDeclined, setInitialDeclined] = useState(false);
   const [showProceedConfirm, setShowProceedConfirm] = useState(false);
   const nullableCols = node.columns.filter((c) => c.is_nullable).length;
   const totalChecks = node.columnCount;
@@ -301,14 +320,6 @@ function AiSummaryPopover({ node, anchor, onClose, onAutoFix, isFixing, isFixed 
       node.qualityStatus === "healthy" ? totalChecks
           : node.qualityStatus === "warning" ? Math.floor(totalChecks * 0.85)
               : Math.floor(totalChecks * 0.5);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) onClose();
-    };
-    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
 
   const pos = useSmartPositionFromRect(popoverRef, anchor.rect, POPOVER_W);
 
@@ -433,114 +444,145 @@ function AiSummaryPopover({ node, anchor, onClose, onAutoFix, isFixing, isFixed 
           </div>
 
           {/* ── Fixed Footer Remediation ── */}
-          {((node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") || isFixed) && (
+          {((node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") || isFixed) && !initialDeclined && (
             <div className="flex-shrink-0 border-t border-gray-100 bg-slate-50/95 p-3 flex flex-col gap-2.5 shadow-[0_-8px_20px_rgba(0,0,0,0.04)] backdrop-blur-sm">
               {!isFixed ? (
                 <>
-                  {!showProceedConfirm ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Wrench size={11} className="text-indigo-500" />
-                          <span className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Fix Required Action</span>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setShowProceedConfirm(true);
-                          }}
-                          disabled={isFixing}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-[10px] font-bold text-white transition-all shadow-sm",
-                            isFixing 
-                              ? "bg-indigo-300 cursor-not-allowed" 
-                              : "bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-100"
-                          )}
-                        >
-                          {isFixing ? (
-                            <div className="flex items-center gap-1.5 italic"><Loader2 size={10} className="animate-spin" /> {selectedFix === 'auto' ? 'Fixing...' : 'Redirecting...'}</div>
-                          ) : "Apply Fix"}
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {[
-                          { id: "manual", title: "Manual Fix", desc: "Apply custom SQL fixes manually", icon: Code2 },
-                          { id: "auto", title: "AI Auto Fix", desc: "Intelligent automated recovery", icon: Sparkles, 
-                            // badge: "Recommended"
-                           }
-                        ].map((opt) => (
-                          <div 
-                            key={opt.id}
-                            onClick={() => !isFixing && setSelectedFix(opt.id as any)}
-                            className={cn(
-                              "flex flex-col items-start p-2 rounded-lg border transition-all cursor-pointer group",
-                              selectedFix === opt.id 
-                                ? "border-indigo-300 bg-white shadow-sm ring-1 ring-indigo-300/30" 
-                                : "border-gray-100 bg-white/50 hover:border-gray-200 hover:bg-white"
-                            )}
-                          >
-                            <div className="flex items-center justify-between w-full mb-0.5">
-                              <div className="flex items-center gap-1.5">
-                                <opt.icon size={11} className={selectedFix === opt.id ? "text-indigo-600" : "text-gray-400"} />
-                                <span className={cn("text-[11px] font-bold", selectedFix === opt.id ? "text-indigo-700" : "text-gray-700")}>{opt.title}</span>
-                                {opt.badge && <span className="text-[8px] bg-indigo-100 text-indigo-600 px-1 py-0.5 rounded font-bold uppercase tracking-tighter ml-1">{opt.badge}</span>}
-                              </div>
-                              <div className={cn(
-                                "w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all",
-                                selectedFix === opt.id ? "bg-indigo-500 border-indigo-500 scale-110" : "border-gray-300 bg-white"
-                              )}>
-                                {selectedFix === opt.id && <Check size={9} className="text-white" strokeWidth={3} />}
-                              </div>
-                            </div>
-                            <span className="text-[9px] text-gray-400 ml-[18px]">{opt.desc}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
+                  {!initialConfirmed ? (
                     <div className="flex flex-col gap-2.5 py-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                      <div className="flex items-start gap-2.5 px-1">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          {selectedFix === "auto" ? (
-                            <Sparkles size={16} className="text-indigo-600" />
-                          ) : (
-                            <Code2 size={16} className="text-indigo-600" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[11px] font-bold text-gray-800 leading-tight mb-1">
-                            {selectedFix === "auto" ? "Confirm AI Remediation" : "Manual Remediation"}
-                          </p>
-                          <p className="text-[10px] text-gray-500 leading-normal">
-                            {selectedFix === "auto" 
-                              ? "AI will attempt to fix the lineage gap or data quality issue automatically. This may take a few seconds."
-                              : "Apply direct SQL corrections to resolve lineage or quality gaps. We will provide a suggested remediation template in the SQL Editor."}
-                          </p>
-                        </div>
+                      <div className="flex items-center gap-2 px-1">
+                        <Wrench size={12} className="text-indigo-500" />
+                        <p className="text-xs font-semibold text-gray-800 leading-tight">
+                          Do you want to proceed with resolving the identified issue?
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2 justify-end mt-1">
+                      <div className="flex items-center gap-2 justify-end mt-0.5">
                         <button 
-                          onClick={() => setShowProceedConfirm(false)}
-                          className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 transition-all font-sans"
+                          onClick={() => setInitialDeclined(true)}
+                          className="px-3.5 py-1 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 transition-all font-sans"
                         >
-                          Cancel
+                          No
                         </button>
                         <button 
-                          onClick={() => {
-                            setShowProceedConfirm(false);
-                            if (selectedFix === "auto") {
-                              onAutoFix(node.id);
-                            } else {
-                              // Mock manual fix (simulation of redirect)
-                              onAutoFix(node.id); // Reusing the same prop for simplicity in this mock
-                            }
-                          }}
-                          className="px-4 py-1.5 rounded-lg text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100 active:scale-95 transition-all font-sans"
+                          onClick={() => setInitialConfirmed(true)}
+                          className="px-3.5 py-1 rounded-lg text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100 active:scale-95 transition-all font-sans"
                         >
-                          {selectedFix === "auto" ? "Confirm & Proceed" : "Open SQL Editor"}
+                          Yes
                         </button>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {!showProceedConfirm ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Wrench size={11} className="text-indigo-500" />
+                              <span className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Fix Required Action</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                setShowProceedConfirm(true);
+                              }}
+                              disabled={isFixing}
+                              className={cn(
+                                "px-3 py-1 rounded-lg text-[10px] font-bold text-white transition-all shadow-sm",
+                                isFixing 
+                                  ? "bg-indigo-300 cursor-not-allowed" 
+                                  : "bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-100"
+                              )}
+                            >
+                              {isFixing ? (
+                                <div className="flex items-center gap-1.5 italic"><Loader2 size={10} className="animate-spin" /> {selectedFix === 'auto' ? 'Fixing...' : 'Redirecting...'}</div>
+                              ) : "Apply Fix"}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {[
+                              { id: "manual", title: "Manual Fix", desc: "Apply custom SQL fixes manually", icon: Code2 },
+                              { id: "auto", title: "AI Driven Fix", desc: "Intelligent automated recovery", icon: Sparkles, 
+                                // badge: "Recommended"
+                               }
+                            ].map((opt) => (
+                              <div 
+                                key={opt.id}
+                                onClick={() => !isFixing && setSelectedFix(opt.id as any)}
+                                className={cn(
+                                  "flex flex-col items-start p-2 rounded-lg border transition-all cursor-pointer group",
+                                  selectedFix === opt.id 
+                                    ? "border-indigo-300 bg-white shadow-sm ring-1 ring-indigo-300/30" 
+                                    : "border-gray-100 bg-white/50 hover:border-gray-200 hover:bg-white"
+                                )}
+                              >
+                                <div className="flex items-center justify-between w-full mb-0.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <opt.icon size={11} className={selectedFix === opt.id ? "text-indigo-600" : "text-gray-400"} />
+                                    <span className={cn("text-[11px] font-bold", selectedFix === opt.id ? "text-indigo-700" : "text-gray-700")}>{opt.title}</span>
+                                    {/* {opt.badge && <span className="text-[8px] bg-indigo-100 text-indigo-600 px-1 py-0.5 rounded font-bold uppercase tracking-tighter ml-1">{opt.badge}</span>} */}
+                                  </div>
+                                  <div className={cn(
+                                    "w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all",
+                                    selectedFix === opt.id ? "bg-indigo-500 border-indigo-500 scale-110" : "border-gray-300 bg-white"
+                                  )}>
+                                    {selectedFix === opt.id && <Check size={9} className="text-white" strokeWidth={3} />}
+                                  </div>
+                                </div>
+                                <span className="text-[9px] text-gray-400 ml-[18px]">{opt.desc}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-2.5 py-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                          <div className="flex items-start gap-2.5 px-1">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {selectedFix === "auto" ? (
+                                <Sparkles size={16} className="text-indigo-600" />
+                              ) : (
+                                <Code2 size={16} className="text-indigo-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[11px] font-bold text-gray-800 leading-tight mb-1">
+                                {selectedFix === "auto" ? "Confirm AI Remediation" : "Manual Remediation"}
+                              </p>
+                              <p className="text-[10px] text-gray-500 leading-normal">
+                                {selectedFix === "auto" 
+                                  ? "AI will attempt to fix the lineage gap or data quality issue automatically. This may take a few seconds."
+                                  : "Apply direct SQL corrections to resolve lineage or quality gaps. We will provide a suggested remediation template in the SQL Editor."}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 justify-end mt-1">
+                            <button 
+                              onClick={() => setShowProceedConfirm(false)}
+                              disabled={isFixing}
+                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 transition-all font-sans disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (selectedFix === "auto") {
+                                  onAutoFix(node.id);
+                                } else {
+                                  onOpenManualFix(node.id);
+                                }
+                              }}
+                              disabled={isFixing}
+                              className="px-4 py-1.5 rounded-lg text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100 active:scale-95 transition-all font-sans disabled:bg-indigo-300"
+                            >
+                              {isFixing ? (
+                                <div className="flex items-center gap-1.5 italic"><Loader2 size={10} className="animate-spin" /> {selectedFix === 'auto' ? 'Fixing...' : 'Applying...'}</div>
+                              ) : (
+                                selectedFix === "auto" ? "Confirm & Proceed" : "Open SQL Editor"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               ) : (
@@ -549,7 +591,7 @@ function AiSummaryPopover({ node, anchor, onClose, onAutoFix, isFixing, isFixed 
                     <CheckCircle2 size={13} className="text-green-600" />
                     Lineage remediated successfully
                   </span>
-                  <span className="text-[8px] text-green-600/60 font-bold uppercase tracking-tight">Applied Auto fix</span>
+                  <span className="text-[8px] text-green-600/60 font-bold uppercase tracking-tight">Applied {selectedFixMethod === 'manual' ? 'Manual SQL' : 'AI Driven'} fix</span>
                 </div>
               )}
             </div>
@@ -576,13 +618,6 @@ function TransformationPopup({
   const popupRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) onClose();
-    };
-    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
 
   const handleCopy = () => {
     if (edge.transformationQuery) {
@@ -719,14 +754,6 @@ function ColumnQueryPopup({
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) onClose();
-    };
-    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
 
   const handleCopy = () => {
     if (col.query_expression) {
@@ -1111,6 +1138,111 @@ function DepthControl({
 
 interface DatasetLineageProps { datasetId: string; datasetName: string; }
 
+// ─── SQL Editor Sidebar ────────────────────────────────────────────────────────
+
+interface SqlEditorSidebarProps {
+  node: InternalNode | null;
+  edges: InternalEdge[];
+  isOpen: boolean;
+  onClose: () => void;
+  onApply: (nodeId: string) => void;
+  isFixing: boolean;
+}
+
+function SqlEditorSidebar({ node, edges, isOpen, onClose, onApply, isFixing }: SqlEditorSidebarProps) {
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (node) {
+      // Prioritize the node's own transformation query, then look at incoming edges
+      const incomingEdge = edges.find(e => e.to === node.id && e.transformationQuery);
+      const targetQuery = node.transformationQuery || incomingEdge?.transformationQuery;
+      
+      if (targetQuery) {
+        setQuery(targetQuery);
+      } else {
+        // Minimal fallback if no query is found at all
+        setQuery(`-- No existing transformation query found for ${node.fullName}\n-- Please enter the remediation SQL below:`);
+      }
+    }
+  }, [node, edges]);
+
+  if (!isOpen || !node) return null;
+
+  return (
+    <div 
+      className={cn(
+        "fixed inset-y-0 right-0 w-[450px] bg-white shadow-2xl z-50 transform transition-transform duration-300 border-l border-gray-200 flex flex-col",
+        isOpen ? "translate-x-0" : "translate-x-full"
+      )}
+    >
+      {/* Sidebar Header */}
+      <div className="flex items-center justify-between px-3 py-4 border-b border-gray-100 bg-slate-50/50">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+            <Code2 size={16} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 leading-none mb-1">SQL Editor</h3>
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Manual Remediation · {node.label}</p>
+          </div>
+        </div>
+        <button 
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-all"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Editor Body */}
+      <div className="flex-1 flex flex-col p-5 bg-[#1E1E1E]">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-2 py-1 rounded">Remediation Script</span>
+          <span className="text-[10px] text-gray-500 font-mono italic">sql-editor://{node.label.toLowerCase()}_fix.sql</span>
+        </div>
+        <textarea
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-1 w-full bg-transparent text-gray-300 font-mono text-[12px] leading-relaxed resize-none focus:outline-none custom-scrollbar"
+          spellCheck={false}
+        />
+      </div>
+
+      {/* Sidebar Footer */}
+      <div className="p-3 border-t border-gray-100 bg-white flex items-center justify-between">
+        <div className="flex items-center gap-2 text-indigo-500">
+          <AlertCircle size={12} />
+          <span className="text-[10px] font-medium">Changes will be validated after applying.</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onClose}
+            disabled={isFixing}
+            className="px-3 py-2 text-[10px] font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition-all"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={() => onApply(node.id)}
+            disabled={isFixing}
+            className="px-3 py-2 text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-lg shadow-indigo-100 active:scale-95 transition-all flex items-center gap-2"
+          >
+            {isFixing ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                Applying Changes...
+              </>
+            ) : (
+              "Apply Changes"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DatasetLineage({ datasetId, datasetName }: DatasetLineageProps) {
   const [apiData, setApiData] = useState<LineageVisualResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1128,6 +1260,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number, y: number }>>({});
   const [fixedNodeIds, setFixedNodeIds] = useState<Set<string>>(new Set());
+  const [fixedNodes, setFixedNodes] = useState<Record<string, 'auto' | 'manual'>>({});
   const [fixingNodeIds, setFixingNodeIds] = useState<Set<string>>(new Set());
 
   const handleAutoFix = useCallback((nodeId: string) => {
@@ -1138,6 +1271,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
         next.delete(nodeId);
         return next;
       });
+      setFixedNodes(prev => ({ ...prev, [nodeId]: 'auto' }));
       setFixedNodeIds(prev => new Set(prev).add(nodeId));
     }, 4000);
   }, []);
@@ -1148,6 +1282,24 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const hasDragged = useRef(false);
 
   const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor | null>(null);
+  const [showSqlSidebar, setShowSqlSidebar] = useState(false);
+  const [sidebarNodeId, setSidebarNodeId] = useState<string | null>(null);
+  const [manualFixingNodeId, setManualFixingNodeId] = useState<string | null>(null);
+
+  const handleOpenManualFix = useCallback((nodeId: string) => {
+    setSidebarNodeId(nodeId);
+    setShowSqlSidebar(true);
+  }, []);
+
+  const handleManualFixApply = useCallback((nodeId: string) => {
+    setManualFixingNodeId(nodeId);
+    setTimeout(() => {
+      setManualFixingNodeId(null);
+      setFixedNodes(prev => ({ ...prev, [nodeId]: 'manual' }));
+      setFixedNodeIds(prev => new Set(prev).add(nodeId));
+      setShowSqlSidebar(false);
+    }, 4000);
+  }, []);
   const [clickedEdge, setClickedEdge] = useState<ClickedEdge | null>(null);
   const [clickedColumn, setClickedColumn] = useState<{ col: InternalColumn, nodeLabel: string, screenX: number, screenY: number } | null>(null);
 
@@ -1158,7 +1310,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const fetchData = useCallback(() => {
     if (!datasetId) return;
     setIsLoading(true); setError(null); setNodeHeights({}); setNodePositions({});
-    setFixedNodeIds(new Set()); setFixingNodeIds(new Set()); // Reset mock state on fresh fetch
+    setFixedNodeIds(new Set()); setFixingNodeIds(new Set()); setFixedNodes({}); // Reset mock state on fresh fetch
     dashboardApiServices.fetchLineageVisual(datasetId, depth, direction)
         .then((data) => { setApiData(data); })
         .catch(() => setError("Failed to load lineage data."))
@@ -1449,10 +1601,21 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 anchor={popoverAnchor}
                 onClose={() => setPopoverAnchor(null)}
                 onAutoFix={handleAutoFix}
-                isFixing={fixingNodeIds.has(popoverNode.id)}
+                onOpenManualFix={handleOpenManualFix}
+                isFixing={fixingNodeIds.has(popoverNode.id) || manualFixingNodeId === popoverNode.id}
                 isFixed={fixedNodeIds.has(popoverNode.id)}
+                selectedFixMethod={fixedNodes[popoverNode.id] || (manualFixingNodeId === popoverNode.id ? 'manual' : 'auto')}
             />
         )}
+
+        <SqlEditorSidebar 
+            node={sidebarNodeId ? nodes.find(n => n.id === sidebarNodeId) ?? null : null}
+            edges={edges}
+            isOpen={showSqlSidebar}
+            onClose={() => setShowSqlSidebar(false)}
+            onApply={handleManualFixApply}
+            isFixing={!!manualFixingNodeId}
+        />
 
         {/* ── Transformation Query Popup ── */}
         {clickedEdge && (
