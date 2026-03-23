@@ -455,3 +455,27 @@ export interface ModelListItem {
   lastUpdated: string;
   tags: ModelTag[];
 }
+
+export interface ApiQuery {
+    id: string;
+    catalog_id: string;
+    title: string;
+    description: string;
+    sql_text: string;
+    created_by: User;
+    created_at: string;
+    tags: string[];
+}
+
+export interface CreateQueryRequest {
+    catalog_id: string;
+    title: string;
+    description: string;
+    sql_text: string;
+    tags: string[];
+}
+
+export interface DeleteQueryResponse {
+    success: boolean;
+    message?: string;
+}

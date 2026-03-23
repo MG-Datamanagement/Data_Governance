@@ -16,6 +16,7 @@ import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
+import DatasetQueriesTab from "./DatasetQueriesTab";
 const TABS = [
   "DataCard",
   "Columns",
@@ -1104,7 +1105,158 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           </div>
         )}
 
-        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && (
+        {activeTab === "Queries" && (
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
+            </div>
+
+            {/* Right sidebar */}
+            <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden self-start">
+              {/* Identity */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-4 h-4 text-green-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {detail.name}
+                    </p>
+                    <p className="text-[11px] text-gray-400">
+                      {detail.type} | {detail.sourceName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lineage */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  Lineage
+                </div>
+                {detail.lineageWarning ? (
+                  <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-2 text-xs text-red-600">
+                    <svg
+                      className="w-3.5 h-3.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    {detail.lineageWarning}
+                  </div>
+                ) : (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    All upstreams healthy
+                  </p>
+                )}
+              </div>
+
+              {/* Owners */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Owners
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    {detail.ownerInitials}
+                  </span>
+                  <span className="text-xs text-gray-700">{detail.owner}</span>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div className="p-4">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                  Tags
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {detail.tags.map((tag: ApiTag) => (
+                    <span
+                      key={tag.id}
+                      className="inline-block text-[11px] font-medium text-gray-600 bg-gray-100 rounded px-2 py-0.5"
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && activeTab !== "Queries" && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
             <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <svg

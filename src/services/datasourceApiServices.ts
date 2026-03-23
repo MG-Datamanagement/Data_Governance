@@ -1,4 +1,5 @@
 import { datasourceApiClient } from "@/lib/api-clients/datasourceApiClient";
+import { ApiQuery, CreateQueryRequest, DeleteQueryResponse } from "@/types/dashboardTypes";
 
 export type ComplianceStatus = "PASS" | "VIOLATION";
 
@@ -48,4 +49,26 @@ export const datasourceApiServices = {
             `/api/compliance/dataset/${catalogId}`,
         );
     },
-}
+
+    // Get list of queries for a dataset
+    async fetchDatasetQueries(catalogId: string) {
+        return datasourceApiClient.get<ApiQuery[]>(
+            `/api/v1/catalogs/${catalogId}/queries`,
+        );
+    },
+
+    // Create a new query for a dataset
+    async createDatasetQuery(catalogId: string, payload: CreateQueryRequest) {
+        return datasourceApiClient.post<ApiQuery>(
+            `/api/v1/catalogs/${catalogId}/queries`,
+            payload,
+        );
+    },
+
+    // Delete a query
+    async deleteDatasetQuery(queryId: string) {
+        return datasourceApiClient.delete<DeleteQueryResponse>(
+            `/api/v1/catalogs/queries/${queryId}`,
+        );
+    },
+};
