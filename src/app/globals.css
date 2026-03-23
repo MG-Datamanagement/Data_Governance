@@ -38,21 +38,23 @@
 /* Custom scrollbar styles */
 
 ::-webkit-scrollbar {
-  width: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  /* background: #d1d5db; */
-  border-radius: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  border: 1px solid #f8fafc;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #94a3b8;
 }
 
 /* Bounce animation for typing indicator */

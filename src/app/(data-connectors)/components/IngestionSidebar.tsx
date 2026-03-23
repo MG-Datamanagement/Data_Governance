@@ -658,7 +658,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                             ) : (sourceAiSummary?.ai_summary) && (
                                 <div className='space-y-3 flex flex-col items-center'>
                                     <p className='text-gray-600 leading-relaxed text-xs'>{sourceAiSummary?.ai_summary}</p>
-                                    <Button
+                                    {/* <Button
                                         variant="primary"
                                         className='text-white w-full gap-2 flex justify-center items-center'
                                         onClick={() => {
@@ -668,7 +668,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                                         <Database size={14} />
                                         View Ingested Dataset
                                         <ArrowRight size={14} />
-                                    </Button>
+                                    </Button> */}
                                 </div>
                             )}
                         </div>}
