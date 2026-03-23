@@ -14,6 +14,7 @@ import {
   LineageApiQueryExecution,
 } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
+import { manualFixSqlTemplate } from "@/lib/constants";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -451,7 +452,9 @@ function AiSummaryPopover({
                   {!initialConfirmed ? (
                     <div className="flex flex-col gap-2.5 py-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
                       <div className="flex items-center gap-2 px-1">
-                        <Wrench size={12} className="text-indigo-500" />
+                        <div>
+                          <Wrench size={12} className="text-indigo-500" />
+                        </div>
                         <p className="text-xs font-semibold text-gray-800 leading-tight">
                           Do you want to proceed with resolving the identified issue?
                         </p>
@@ -549,8 +552,8 @@ function AiSummaryPopover({
                               </p>
                               <p className="text-[10px] text-gray-500 leading-normal">
                                 {selectedFix === "auto" 
-                                  ? "AI will attempt to fix the lineage gap or data quality issue automatically. This may take a few seconds."
-                                  : "Apply direct SQL corrections to resolve lineage or quality gaps. We will provide a suggested remediation template in the SQL Editor."}
+                                  ? "AI will attempt to fix the issue automatically as mentioned in the description above. This may take a few seconds."
+                                  : "Apply direct SQL corrections to resolve issue. We will provide a suggested remediation template in the SQL Editor."}
                               </p>
                             </div>
                           </div>
@@ -1155,11 +1158,12 @@ function SqlEditorSidebar({ node, edges, isOpen, onClose, onApply, isFixing }: S
   useEffect(() => {
     if (node) {
       // Prioritize the node's own transformation query, then look at incoming edges
-      const incomingEdge = edges.find(e => e.to === node.id && e.transformationQuery);
-      const targetQuery = node.transformationQuery || incomingEdge?.transformationQuery;
-      
-      if (targetQuery) {
-        setQuery(targetQuery);
+      // const incomingEdge = edges.find(e => e.to === node.id && e.transformationQuery);
+      // const targetQuery = node.transformationQuery || incomingEdge?.transformationQuery;
+
+      const query = manualFixSqlTemplate
+      if (query) {
+        setQuery(query);
       } else {
         // Minimal fallback if no query is found at all
         setQuery(`-- No existing transformation query found for ${node.fullName}\n-- Please enter the remediation SQL below:`);

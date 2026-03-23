@@ -15,3 +15,26 @@ export const RedshiftConfig = {
     work_group: process.env.REDSHIFT_WORK_GROUP || process.env.NEXT_PUBLIC_REDSHIFT_WORK_GROUP || "primary",
     s3_staging_dir: process.env.REDSHIFT_S3_STAGING_DIR || process.env.NEXT_PUBLIC_REDSHIFT_S3_STAGING_DIR || "s3://athena-query-results-tmp-123/"
 }
+
+export const manualFixSqlTemplate = `
+CREATE TABLE booking_transaction_fixed
+WITH (
+  format = 'PARQUET',
+  external_location = 's3://infinity-gov-test/data/data-lineage/booking_transaction_fixed/'
+) AS
+SELECT
+    bookingid,
+    bookingtype,
+    bookingutc,
+    currencycode,
+ 
+    transactionid,
+    transactionamount,
+    transactiontype,
+    transactionstatus,
+    paymentmethod,
+ 
+    CAST(journey_time AS VARCHAR) AS journey_time
+ 
+FROM booking_transaction;
+`
