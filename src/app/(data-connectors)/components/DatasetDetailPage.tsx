@@ -17,6 +17,10 @@ import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
 import DatasetQueriesTab from "./DatasetQueriesTab";
+import { DatasetRightSidebar } from "./DatasetRightSidebar";
+import { Pagination } from "@/components/ui/Pagination";
+import { ApiCatalogPreview } from "@/services/dashboardApiServices";
+
 const TABS = [
   "DataCard",
   "Columns",
@@ -58,6 +62,15 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const [complianceData, setComplianceData] = useState<ComplianceApiResponse | null>(null);
   const [isComplianceLoading, setIsComplianceLoading] = useState(false);
 
+  const [previewData, setPreviewData] = useState<ApiCatalogPreview | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  
+  const [columnsPage, setColumnsPage] = useState(1);
+  const columnsPerPage = 5;
+  
+  const [previewPage, setPreviewPage] = useState(1);
+  const previewPerPage = 5;
+
   useEffect(() => {
     const fetchAll = async () => {
       setIsLoading(true);
@@ -84,6 +97,35 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
     handleFetchClassifyApi()
   }, [datasetId]);
+
+  useEffect(() => {
+    if (activeTab === "Columns" && datasetId) {
+      fetchPreviewData();
+    }
+  }, [activeTab, datasetId, previewPage]);
+
+  const fetchPreviewData = async () => {
+    setIsPreviewLoading(true);
+    try {
+      const res = await dashboardApiServices.fetchCatalogPreview(datasetId, previewPerPage, (previewPage - 1) * previewPerPage);
+      setPreviewData(res);
+    } catch (err) {
+      console.error("Failed to fetch preview data", err);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const paginatedColumns = useMemo(() => {
+    if (!catalogData?.columns) return [];
+    const start = (columnsPage - 1) * columnsPerPage;
+    return catalogData.columns.slice(start, start + columnsPerPage);
+  }, [catalogData?.columns, columnsPage]);
+
+  const previewHeaders = useMemo(() => {
+    if (!previewData?.rows?.length) return [];
+    return Object.keys(previewData.rows[0]);
+  }, [previewData]);
 
   const fetchCatalogDetail = async () => {
     try {
@@ -618,483 +660,233 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             </div>
 
             {/* Right sidebar */}
-            <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden self-start">
-              {/* Identity */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <svg
-                      className="w-4 h-4 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {detail.name}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {detail.type} | {detail.sourceName}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Documentation */}
-              {/* <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Documentation
-                  </div>
-                  <button className="text-gray-400 hover:text-indigo-600 transition-colors">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400">No documentation yet.</p>
-              </div> */}
-
-              {/* Lineage */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Lineage
-                </div>
-                {detail.lineageWarning ? (
-                  <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-2 text-xs text-red-600">
-                    <svg
-                      className="w-3.5 h-3.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                    {detail.lineageWarning}
-                  </div>
-                ) : (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    All upstreams healthy
-                  </p>
-                )}
-              </div>
-
-              {/* Owners */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  Owners
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                    {detail.ownerInitials}
-                  </span>
-                  <span className="text-xs text-gray-700">{detail.owner}</span>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="p-4">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                    />
-                  </svg>
-                  Tags
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {detail.tags.map((tag: ApiTag) => (
-                    <span
-                      key={tag.id}
-                      className="inline-block text-[11px] font-medium text-gray-600 bg-gray-100 rounded px-2 py-0.5"
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <DatasetRightSidebar detail={detail} />
           </div>
         )}
 
         {/* Columns tab body */}
         {activeTab === "Columns" && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-gray-900">
-                  Schema Definition
-                </h2>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-bold border border-indigo-100">
-                  {catalogData?.columns?.length || 0} Columns
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {reclassifyAiScanPhase === "never" && (
-                  <button
-                    onClick={handleReclassificationActionWithAI}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    Reclassify with AI
-                  </button>
-                )}
-                {reclassifyAiScanPhase === "scanning" && (
-                  <button
-                    disabled
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50"
-                  >
-                    <div>
-                      <Loader2
-                        className="text-indigo-400 animate-spin"
-                        size={16}
-                      />
-                    </div>
-                    Reclassifying...
-                  </button>
-                )}
-                {["re-scan", "complete"].includes(reclassifyAiScanPhase) && (
-                  <button
-                    onClick={() => {
-                      setReclassifyAiScanPhase("re-scan");
-                      handleReclassificationActionWithAI();
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
-                    <div>
-                      <CheckCircle2 size={16} className="text-green-400" />
-                    </div>
-                    Reclassified
-                  </button>
-                )}
-                <button className="p-1.5 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg bg-white transition-colors">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              {reclassifyAiScanPhase === "scanning" && (
-                <div
-                  className={cn(
-                    "p-4 flex items-center w-full gap-2",
-                    reclassifyAiScanPhase === "scanning" && "bg-indigo-50",
-                  )}
-                >
-                  <>
-                    <div>
-                      <Loader2
-                        className="text-indigo-400 animate-spin"
-                        size={16}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-sm text-indigo-600">
-                        AI Reclassification in progress...
-                      </h3>
-                      <p className="text-xs text-indigo-500">
-                        Analyzing column patterns, data types, and semantic
-                        context
-                      </p>
-                    </div>
-                  </>
-                </div>
-              )}
-
-              {["complete", "re-scan"].includes(reclassifyAiScanPhase) && (
-                <div
-                  className={cn(
-                    "p-4 flex items-center w-full gap-2 bg-green-50",
-                  )}
-                >
-                  <div>
-                    <CheckCircle2 size={16} className="text-green-400" />
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0 flex flex-col gap-5">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white text-gray-900">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-[15px] font-semibold text-gray-900">
+                      Schema Definition
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold">
+                      {catalogData?.columns?.length || 0} Columns
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-sm text-green-700">
-                      Reclassification complete — confidence scores updated.
-                      Review any changes below.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider w-16">
-                      #
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Column Name
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Classification
-                    </th>
-                    {/* <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Terms
-                    </th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {catalogData?.columns?.map((col: any, idx: number) => {
-                    const ai = aiResults[col.name];
-
-                    return (
-                      <tr
-                        key={col.name}
-                        className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors"
+                  <div className="flex items-center gap-2">
+                    {reclassifyAiScanPhase === "never" && (
+                      <button
+                        onClick={handleReclassificationActionWithAI}
+                        className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-semibold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors bg-white shadow-sm"
                       >
-                        <td className="py-4 px-6 text-xs text-gray-400">
-                          {idx + 1}
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800">
-                              {col.name}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-400 mt-0.5">
-                              {col.is_nullable ? "NULLABLE" : "NOT NULL"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200">
-                            {(
-                              col.type ||
-                              col.data_type ||
-                              "UNKNOWN"
-                            ).toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-500 italic">
-                          <div className="overflow-y-auto min-h-10 max-h-16">
-                            {col?.description || "No description yet."}
-                          </div>
-                        </td>
-                        {/* <td className="py-4 px-6 text-sm text-gray-600 font-medium">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            {col.is_primary_key && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
-                                Primary Key
-                                <span className="text-[8px] opacity-70">
-                                  ✦ AI
-                                </span>
-                              </span>
-                            )}
-                            {!col.is_primary_key && (
-                              <span className="text-[10px] text-gray-300">
-                                —
-                              </span>
-                            )}
-                          </div>
-
-                          {col.is_primary_key && (
-                            <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="w-[99%] h-full bg-green-500 rounded-full" />
-                            </div>
-                          )}
-                        </div>
-                      </td> */}
-                        <td className="py-2 px-6 text-sm text-gray-600 font-medium">
-                          <div className="flex flex-col justify-center items-start gap-1">
-                            {ai ? (
-                              <>
-                                <span className="gap-1 px-2 rounded-xl bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-200">
-                                  {ai?.tag_name ? ai?.tag_name?.toUpperCase() : ""}
-                                </span>
-
-                                <span className="items-center gap-1 px-2 rounded-xl bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 w-fit">
-                                  ✦ AI
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                      style={{
-                                        width: `${ai.confidence_score * 100}%`,
-                                      }}
-                                      className="h-full bg-green-500 rounded-full"
-                                    />
-                                  </div>
-
-                                  <span className="text-[10px] text-gray-500">
-                                    {Math.round(ai.confidence_score * 100)}%
-                                  </span>
-                                </div>
-                              </>
-                            ) : col.tags?.length ? (
-                              col.tags.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="px-2 py-0.5 rounded-xl bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200 capitalize"
-                                >
-                                  {tag?.name ? tag?.name?.toUpperCase() : ""}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[10px] text-gray-300">
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        {/* <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-[10px] text-gray-300">—</span>
-                        </div>
-                      </td> */}
-                        {/* <td className="py-2 px-6">
-                          <div className="flex flex-wrap gap-1">
-                            {ai ? (
-                              <span className="px-2 py-0.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
-                                {ai.tag_name}
-                              </span>
-                            ) : col.tags?.length ? (
-                              col.tags.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="px-2 py-0.5 rounded-xl bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200"
-                                >
-                                  {tag.name}
-                                </span>
-                              ))
-                            ) : (
-                            <span className="text-[10px] text-gray-300">—</span>
-                            )}
-                          </div>
-                        </td> */}
-                      </tr>
-                    );
-                  })}
-                  {(!catalogData?.columns ||
-                    catalogData.columns.length === 0) && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="py-12 text-center text-sm text-gray-400 italic"
-                        >
-                          No columns found for this dataset.
-                        </td>
-                      </tr>
+                        <SparkleIcon className="w-3.5 h-3.5" />
+                        Reclassify with AI
+                      </button>
                     )}
-                </tbody>
-              </table>
+                    {reclassifyAiScanPhase === "scanning" && (
+                      <button
+                        disabled
+                        className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-semibold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                      >
+                        <Loader2 className="text-indigo-400 animate-spin w-3.5 h-3.5" />
+                        Reclassifying...
+                      </button>
+                    )}
+                    {["re-scan", "complete"].includes(reclassifyAiScanPhase) && (
+                      <button
+                        onClick={() => {
+                          setReclassifyAiScanPhase("re-scan");
+                          handleReclassificationActionWithAI();
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-semibold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                        Reclassified
+                      </button>
+                    )}
+                    <button className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:text-gray-900 border border-gray-200 rounded-md bg-white transition-colors shadow-sm">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                      Filter
+                    </button>
+                    <button className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:text-gray-900 border border-gray-200 rounded-md bg-white transition-colors shadow-sm">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                      Export
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto overflow-y-auto max-h-[300px] border-b border-gray-100 relative">
+                  <table className="w-full text-left border-collapse min-w-[500px]">
+                    <thead className="sticky top-0 z-10 bg-white shadow-sm border-b border-gray-100">
+                      <tr>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Column Name</th>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Classification</th>
+                        <th className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Terms</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paginatedColumns.map((col: any, idx: number) => {
+                        const globalIdx = (columnsPage - 1) * columnsPerPage + idx;
+                        const ai = aiResults[col.name];
+                        return (
+                          <tr key={col.name} className="hover:bg-gray-50/50 transition-colors bg-white">
+                            <td className="py-2.5 px-3 text-[13px] text-gray-400">{globalIdx + 1}</td>
+                            <td className="py-2.5 px-3 align-top">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-bold text-gray-900">{col.name}</span>
+                                <span className="text-[10px] font-semibold text-gray-400 leading-none">
+                                  {col.is_nullable ? "NULLABLE" : "NOT NULL"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 align-top">
+                              <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 text-[11px] font-mono font-semibold border border-gray-200/60 leading-none inline-block">
+                                {(col.type || col.data_type || "UNKNOWN").toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-[13px] text-gray-500 whitespace-normal align-top leading-relaxed max-w-[200px]">
+                              {col?.description || "No description yet."}
+                            </td>
+                            <td className="py-2.5 px-3 align-top">
+                              <div className="flex flex-col gap-2 relative top-0.5">
+                                {ai ? (
+                                  <>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="px-2.5 py-0.5 rounded-full bg-[#fdf5d3] text-[#a97500] text-[11px] font-bold">
+                                        {ai?.tag_name ? ai?.tag_name?.toUpperCase() : ""}
+                                      </span>
+                                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500 text-[10px] font-semibold border border-indigo-100/50 w-fit">
+                                        <SparkleIcon className="w-3 h-3" /> AI
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div style={{ width: `${ai.confidence_score * 100}%` }} className="h-full bg-green-500 rounded-full" />
+                                      </div>
+                                      <span className="text-[10px] text-gray-500 font-medium">
+                                        {Math.round(ai.confidence_score * 100)}%
+                                      </span>
+                                    </div>
+                                  </>
+                                ) : col.tags?.length ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {col.tags.map((tag: any) => (
+                                      <span key={tag.id} className="px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[11px] font-semibold">
+                                        {tag?.name || ""}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-[12px] text-gray-300">—</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 align-top pb-[20px]">
+                               <div className="flex flex-col gap-1.5">
+                                 {/* Mock Terms matching Screenshot */}
+                                 {idx === 0 ? (
+                                   <div className="flex flex-col gap-1 items-start">
+                                      <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">Customer ID</span>
+                                      <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">UID</span>
+                                   </div>
+                                 ) : idx === 1 ? (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">Email</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">Contact Info</span>
+                                  </div>
+                                 ) : idx === 3 ? (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">SSN</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium border border-blue-100/50">Social Security</span>
+                                  </div>
+                                 ) : (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className="text-[12px] text-gray-300">—</span>
+                                  </div>
+                                 )}
+                               </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination Footer */}
+                <div className="border-t border-gray-100">
+                  <Pagination 
+                    currentPage={columnsPage} 
+                    totalPages={Math.ceil((catalogData?.columns?.length || 0) / columnsPerPage)} 
+                    onPageChange={setColumnsPage} 
+                    itemName="columns" 
+                    totalItems={catalogData?.columns?.length || 0} 
+                    itemsPerPage={columnsPerPage} 
+                  />
+                </div>
+              </div>
+
+              {/* Data Preview Card */}
+              <div className="bg-[#fbfcff] rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col mb-10">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="text-[16px] font-semibold text-gray-900 mb-1">Data Preview</h2>
+                  <p className="text-[13px] text-gray-500 font-medium">
+                    {previewData 
+                      ? `Showing ${previewData.showing} of ${previewData.total_row_count}K rows` 
+                      : isPreviewLoading ? "Loading preview..." : "No data available"}
+                  </p>
+                </div>
+                <div className="overflow-x-auto overflow-y-auto max-h-[400px] bg-[#fbfcff] relative min-h-[150px]">
+                  {isPreviewLoading ? (
+                    <div className="flex flex-col items-center justify-center py-10">
+                      <Loader2 className="animate-spin text-indigo-500 mb-2" size={24} />
+                      <span className="text-gray-500 text-sm font-semibold">Fetching Sample...</span>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-10 bg-[#fbfcff] shadow-sm">
+                        <tr className="border-b border-gray-200/60">
+                          {previewHeaders.map(header => (
+                            <th key={header} className="py-2.5 px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{header}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100/80 font-mono text-[12px] bg-white text-gray-600">
+                        {previewData?.rows?.map((row, i) => (
+                          <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                            {previewHeaders.map(header => (
+                              <td key={`${i}-${header}`} className="py-2.5 px-3">{row[header]}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div className="border-t border-gray-100 bg-[#fbfcff]">
+                  {previewData && (
+                    <Pagination 
+                      currentPage={previewPage} 
+                      totalPages={Math.ceil(previewData.total_row_count / previewPerPage)} 
+                      onPageChange={setPreviewPage} 
+                      itemName="rows" 
+                      totalItems={previewData.total_row_count} 
+                      itemsPerPage={previewPerPage} 
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+
+            <DatasetRightSidebar detail={detail} />
           </div>
         )}
 
@@ -1111,148 +903,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
             </div>
 
-            {/* Right sidebar */}
-            <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden self-start">
-              {/* Identity */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <svg
-                      className="w-4 h-4 text-green-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {detail.name}
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      {detail.type} | {detail.sourceName}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Lineage */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  Lineage
-                </div>
-                {detail.lineageWarning ? (
-                  <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-2 text-xs text-red-600">
-                    <svg
-                      className="w-3.5 h-3.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                    {detail.lineageWarning}
-                  </div>
-                ) : (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    All upstreams healthy
-                  </p>
-                )}
-              </div>
-
-              {/* Owners */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  Owners
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                    {detail.ownerInitials}
-                  </span>
-                  <span className="text-xs text-gray-700">{detail.owner}</span>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="p-4">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                    />
-                  </svg>
-                  Tags
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {detail.tags.map((tag: ApiTag) => (
-                    <span
-                      key={tag.id}
-                      className="inline-block text-[11px] font-medium text-gray-600 bg-gray-100 rounded px-2 py-0.5"
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <DatasetRightSidebar detail={detail} />
           </div>
         )}
 

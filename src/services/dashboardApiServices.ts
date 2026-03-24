@@ -113,6 +113,15 @@ export interface ApiCatalogDatacard {
   status: string;
 }
 
+export interface ApiCatalogPreview {
+  catalog_id: string;
+  table_name: string;
+  schema_name: string;
+  total_row_count: number;
+  showing: number;
+  rows: Record<string, any>[];
+}
+
 export interface DatacardBulkGenerationResult {
   catalog_id: string;
   table_name: string;
@@ -533,6 +542,13 @@ export const dashboardApiServices = {
   async fetchCatalogDatacard(catalogId: string) {
     return dashboardApiClient.get<ApiCatalogDatacard>(
       `/api/v1/catalogs/${catalogId}/datacard`,
+    );
+  },
+
+  async fetchCatalogPreview(catalogId: string, limit: number = 5, offset: number = 0) {
+    return dashboardApiClient.get<ApiCatalogPreview>(
+      `/api/v1/catalogs/${catalogId}/preview`,
+      { params: { limit, offset } }
     );
   },
 
