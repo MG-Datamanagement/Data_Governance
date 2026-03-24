@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2, Copy, Trash } from "lucide-react";
+import { Trash2, Eye } from "lucide-react";
 import { ApiQuery } from "@/types/dashboardTypes";
 import QuerySqlPreview from "./QuerySqlPreview";
 
@@ -38,6 +38,12 @@ const QueryGridView: React.FC<QueryGridViewProps> = ({
             </h3>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-y-[-4px] group-hover:translate-y-0">
               <button
+                className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                title="Preview Query"
+              >
+                <Eye size={16} />
+              </button>
+              <button
                 onClick={() => onDelete(query.id)}
                 className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                 title="Delete Query"
@@ -54,19 +60,11 @@ const QueryGridView: React.FC<QueryGridViewProps> = ({
 
           {/* User Info */}
           <div className="flex items-center gap-3">
-            {query.created_by.avatar ? (
-              <img 
-                src={query.created_by.avatar} 
-                alt={query.created_by.name} 
-                className="w-7 h-7 rounded-full border border-gray-100"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-600 uppercase border border-gray-200">
-                {query.created_by.name.substring(0, 2)}
-              </div>
-            )}
+            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-600 uppercase border border-gray-200">
+              {query.owner_name ? query.owner_name.substring(0, 2) : "U"}
+            </div>
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
-              <span>{query.created_by.name}</span>
+              <span>{query.owner_name}</span>
               <span className="w-1 h-1 bg-gray-300 rounded-full" />
               <span>{new Date(query.created_at).toLocaleDateString()}</span>
             </div>
@@ -75,8 +73,8 @@ const QueryGridView: React.FC<QueryGridViewProps> = ({
           {/* Embedded SQL Preview */}
           <div className="mt-auto">
             <QuerySqlPreview 
-               sql={query.sql_text} 
-               tags={query.tags.length > 0 ? query.tags : [datasetName]}
+               sql={query.query_text} 
+               tags={[datasetName]}
                maxHeight="200px" 
                className="border-none"
             />

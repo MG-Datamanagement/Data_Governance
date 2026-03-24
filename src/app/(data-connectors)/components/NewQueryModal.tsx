@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, Terminal, Info, Tag as TagIcon, Loader2 } from "lucide-react";
-import { CreateQueryRequest } from "@/types/dashboardTypes";
+import { X, Plus, Terminal, Info, User as UserIcon, Loader2 } from "lucide-react";
+import { CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 
 interface NewQueryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<CreateQueryRequest, "catalog_id">) => Promise<void>;
+  onSubmit: (data: CreateQueryRequest) => Promise<void>;
+  ownersList: QueryOwner[];
   isLoading?: boolean;
 }
 
@@ -15,47 +16,30 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  ownersList,
   isLoading = false,
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateQueryRequest>({
     title: "",
     description: "",
-    sql_text: "",
-    tags: [] as string[],
+    query_text: "",
+    owner_id: "",
   });
-  const [tagInput, setTagInput] = useState("");
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && tagInput.trim()) {
-      e.preventDefault();
-      if (!formData.tags.includes(tagInput.trim())) {
-        setFormData((prev) => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
-      }
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tagToRemove),
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.sql_text) return;
+    if (!formData.title || !formData.query_text || !formData.owner_id) return;
     await onSubmit(formData);
     onClose();
     // Reset form
-    setFormData({ title: "", description: "", sql_text: "", tags: [] });
+    setFormData({ title: "", description: "", query_text: "", owner_id: "" });
   };
 
   return (
@@ -85,7 +69,6 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
           {/* Title */}
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Info size={12} className="text-indigo-400" />
               Query Title
             </label>
             <input
@@ -102,7 +85,6 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
           {/* Description */}
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Info size={12} className="text-indigo-400" />
               Description
             </label>
             <textarea
@@ -118,13 +100,12 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
           {/* SQL Editor Placeholder */}
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Terminal size={12} className="text-indigo-400" />
               SQL Query
             </label>
             <div className="relative group">
               <textarea
-                name="sql_text"
-                value={formData.sql_text}
+                name="query_text"
+                value={formData.query_text}
                 onChange={handleChange}
                 placeholder="SELECT * FROM table WHERE condition..."
                 rows={6}
@@ -137,37 +118,25 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Owner */}
           <div className="space-y-1">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <TagIcon size={12} className="text-indigo-400" />
-              Tags
+              Owner
             </label>
-            <div className="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-lg min-h-[40px] bg-white group-focus-within:border-indigo-600 transition-all">
-              {formData.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-default"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="hover:text-red-500 transition-colors"
-                  >
-                    <X size={10} strokeWidth={3} />
-                  </button>
-                </span>
+            <select
+              name="owner_id"
+              value={formData.owner_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all font-medium text-gray-700"
+              required
+            >
+              <option value="" disabled>Select an owner</option>
+              {ownersList.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {owner.name} ({owner.role})
+                </option>
               ))}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-                placeholder={formData.tags.length === 0 ? "Add tags (press Enter)..." : ""}
-                className="flex-1 min-w-[120px] outline-none text-sm text-gray-600 bg-transparent py-0.5 placeholder:text-gray-400"
-              />
-            </div>
+            </select>
           </div>
         </form>
 
@@ -181,8 +150,8 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!formData.title || !formData.sql_text || isLoading}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-md shadow-indigo-200 flex items-center gap-2 active:scale-95"
+            disabled={!formData.title || !formData.query_text || !formData.owner_id || isLoading}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all flex items-center gap-2"
           >
             {isLoading && <Loader2 size={14} className="animate-spin" />}
             {isLoading ? "Saving..." : "Save Query"}

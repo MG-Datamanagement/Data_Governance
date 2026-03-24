@@ -374,6 +374,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Approved",
     owner: "Data Science Team",
     lastUpdated: "Mar 5, 2026",
+    description: "Predicts likelihood of retail banking customers churning within 90 days based on transaction history.",
     tags: [
       { name: "Finance", color: "blue" },
       { name: "Retail", color: "purple" },
@@ -388,6 +389,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Approved",
     owner: "Risk Analytics",
     lastUpdated: "Mar 1, 2026",
+    description: "Real-time transaction scoring for potential fraudulent activity.",
     tags: [
       { name: "Security", color: "red" },
       { name: "Real-time", color: "orange" },
@@ -402,6 +404,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Approved",
     owner: "Platform Team",
     lastUpdated: "Feb 28, 2026",
+    description: "Large language model open-sourced by Meta, fine-tuned for instruction following.",
     tags: [
       { name: "LLM", color: "blue" },
       { name: "Generative AI", color: "purple" },
@@ -416,6 +419,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Pending Review",
     owner: "Finance Analytics",
     lastUpdated: "Mar 6, 2026",
+    description: "Time-series forecasting model to predict Q3 and Q4 recurring revenue streams.",
     tags: [
       { name: "Finance", color: "blue" },
       { name: "Planning", color: "green" },
@@ -430,6 +434,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Approved",
     owner: "CX Team",
     lastUpdated: "Jan 15, 2026",
+    description: "Automatically routes incoming support tickets to the appropriate engineering or CX team.",
     tags: [
       { name: "Customer Success", color: "green" },
       { name: "NLP", color: "blue" },
@@ -444,6 +449,7 @@ export const MOCK_MODEL_LIST: ModelListItem[] = [
     status: "Deprecated",
     owner: "CX Team",
     lastUpdated: "Oct 10, 2025",
+    description: "Older model used to determine basic positive/negative sentiment from customer feedback.",
     tags: [
       { name: "Legacy", color: "orange" },
       { name: "NLP", color: "blue" },

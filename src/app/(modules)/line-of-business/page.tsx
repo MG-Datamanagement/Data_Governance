@@ -24,6 +24,7 @@ import {
 } from "react-icons/fi";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
+import { FolderTree } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -963,7 +964,7 @@ export default function LineOfBusiness() {
                 <div>
                     <Breadcrumb />
                     <div className="flex items-center gap-2.5">
-                        <LuLayoutDashboard className="w-6 h-6 text-indigo-600" />
+                        <FolderTree className="w-6 h-6 text-indigo-600" />
                         <h1 className="text-2xl font-semibold text-gray-900">Line of Business</h1>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">Organize data assets by business domains and sub-domains.</p>

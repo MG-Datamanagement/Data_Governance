@@ -1,7 +1,7 @@
 "use client";
 
 import { ModelListItem } from "@/types";
-import { Brain, Edit2, Trash2 } from "lucide-react";
+import { BrainCircuit, Edit2, Trash2 } from "lucide-react";
 
 interface ModelRegistryTableProps {
   models: ModelListItem[];
@@ -66,7 +66,7 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Brain className="w-5 h-5 text-indigo-600" />
+                      <BrainCircuit className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{model.name}</p>

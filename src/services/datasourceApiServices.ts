@@ -1,5 +1,5 @@
 import { datasourceApiClient } from "@/lib/api-clients/datasourceApiClient";
-import { ApiQuery, CreateQueryRequest, DeleteQueryResponse } from "@/types/dashboardTypes";
+import { ApiQuery, CreateQueryRequest, DeleteQueryResponse, QueryOwner, UpdateQueryRequest } from "@/types/dashboardTypes";
 
 export type ComplianceStatus = "PASS" | "VIOLATION";
 
@@ -52,7 +52,7 @@ export const datasourceApiServices = {
 
     // Get list of queries for a dataset
     async fetchDatasetQueries(catalogId: string) {
-        return datasourceApiClient.get<ApiQuery[]>(
+        return datasourceApiClient.get<{ catalog_id: string; user_queries: ApiQuery[] }>(
             `/api/v1/catalogs/${catalogId}/queries`,
         );
     },
@@ -66,9 +66,14 @@ export const datasourceApiServices = {
     },
 
     // Delete a query
-    async deleteDatasetQuery(queryId: string) {
-        return datasourceApiClient.delete<DeleteQueryResponse>(
-            `/api/v1/catalogs/queries/${queryId}`,
+    async deleteDatasetQuery(catalogId: string, queryId: string) {
+        return datasourceApiClient.delete<string>(
+            `/api/v1/catalogs/${catalogId}/queries/${queryId}`,
         );
+    },
+
+    // Get owners list
+    async fetchOwnersList() {
+        return datasourceApiClient.get<QueryOwner[]>(`/api/v1/owners-list`);
     },
 };

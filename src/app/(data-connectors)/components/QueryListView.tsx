@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2, User as UserIcon } from "lucide-react";
+import { Trash2, Eye } from "lucide-react";
 import { ApiQuery } from "@/types/dashboardTypes";
 import QuerySqlPreview from "./QuerySqlPreview";
 
@@ -56,8 +56,8 @@ const QueryListView: React.FC<QueryListViewProps> = ({
               {/* Embedded SQL Preview */}
               <td className="px-3 py-2 min-w-[400px] max-w-[400px] min-h-[150px] max-h-[150px]">
                 <QuerySqlPreview 
-                  sql={query.sql_text} 
-                  tags={query.tags.length > 0 ? query.tags : [datasetName]}
+                  sql={query.query_text} 
+                  tags={[datasetName]}
                   maxHeight="150px" 
                   showLineNumbers={true}
                   className="border border-gray-100"
@@ -67,19 +67,11 @@ const QueryListView: React.FC<QueryListViewProps> = ({
               {/* Created By */}
               <td className="px-3 py-2 align-top whitespace-nowrap">
                 <div className="flex items-center gap-3">
-                  {query.created_by.avatar ? (
-                    <img 
-                      src={query.created_by.avatar} 
-                      alt={query.created_by.name} 
-                      className="w-8 h-8 rounded-full border border-white shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-500 border border-indigo-100">
-                      {query.created_by.name.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-500 border border-indigo-100">
+                    {query.owner_name ? query.owner_name.substring(0, 2).toUpperCase() : "U"}
+                  </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-700">{query.created_by.name}</span>
+                    <span className="text-sm font-semibold text-gray-700">{query.owner_name}</span>
                     <span className="text-[10px] text-gray-400">{new Date(query.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -87,13 +79,21 @@ const QueryListView: React.FC<QueryListViewProps> = ({
 
               {/* Actions */}
               <td className="px-3 py-2 align-top text-right">
-                 <button
-                    onClick={() => onDelete(query.id)}
-                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                    title="Delete Query"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                   <button
+                      className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
+                      title="Preview Query"
+                    >
+                      <Eye size={16} />
+                    </button>
+                   <button
+                      onClick={() => onDelete(query.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                      title="Delete Query"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                 </div>
               </td>
             </tr>
           ))}

@@ -454,6 +454,7 @@ export interface ModelListItem {
   owner: string;
   lastUpdated: string;
   tags: ModelTag[];
+  description?: string;
 }
 
 export interface ApiQuery {
@@ -461,18 +462,34 @@ export interface ApiQuery {
     catalog_id: string;
     title: string;
     description: string;
-    sql_text: string;
-    created_by: User;
+    query_text: string;
+    owner_name: string;
     created_at: string;
-    tags: string[];
+    updated_at: string;
+    is_lineage_query: boolean;
 }
 
 export interface CreateQueryRequest {
-    catalog_id: string;
     title: string;
     description: string;
-    sql_text: string;
-    tags: string[];
+    query_text: string;
+    owner_id: string;
+}
+
+export interface QueryOwner {
+    id: string;
+    name: string;
+    role: string;
+    email: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UpdateQueryRequest {
+    title: string;
+    description: string;
+    query_text: string;
+    owner_id: string;
 }
 
 export interface DeleteQueryResponse {
