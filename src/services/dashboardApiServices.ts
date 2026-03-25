@@ -645,14 +645,13 @@ export const dashboardApiServices = {
 
   // ─── Lineage Visual Types ─────────────────────────────────────────────────────
 
-  async fetchLineageVisual(
+  async fetchLineageCentric(
     catalogId: string,
     depth: number = 2,
-    direction: "upstream" | "downstream" | "both" = "both",
-  ): Promise<LineageVisualResponse> {
-    return dashboardApiClient.get<LineageVisualResponse>(
-      `/api/v1/lineage-visual/${catalogId}`,
-      { params: { depth, direction } },
+  ): Promise<LineageCentricResponse> {
+    return dashboardApiClient.get<LineageCentricResponse>(
+      `/api/v1/lineage-centric/${catalogId}`,
+      { params: { depth } },
     );
   },
   generateDescriptions(catalogId: string): Promise<GenerateDescriptionsResponse> {
@@ -729,29 +728,28 @@ export interface LineageApiColumnMapping {
   target_column: string;
 }
 
-export interface LineageApiNode {
+export interface LineageApiNodeCentric {
   id: string;
   table_name: string;
   full_name: string;
   schema_name: string;
-  database_name: string;
-  type: "table" | "view" | "dashboard";
-  status: "healthy" | "warning" | "error";
+  database_name: string | null;
+  type: string;
+  status: string;
   source: LineageApiSource;
   columns: LineageApiColumn[];
   tags: LineageApiTag[];
   lineage_id: string | null;
   transformation_query: string | null;
   query_execution?: LineageApiQueryExecution | null;
-  column_mappings: LineageApiColumnMapping[];
   depth: number;
-  ai_summary: string;
+  ai_summary?: string | null;
   stats: string;
-  notes: string | null;
+  notes?: string | null;
+  upstream_nodes: LineageApiNodeCentric[];
+  downstream_nodes: LineageApiNodeCentric[];
 }
 
-export interface LineageVisualResponse {
-  root: LineageApiNode;
-  upstreams: LineageApiNode[];
-  downstreams: LineageApiNode[];
+export interface LineageCentricResponse {
+  base_node: LineageApiNodeCentric;
 }

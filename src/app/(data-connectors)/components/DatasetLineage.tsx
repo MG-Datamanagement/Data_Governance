@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import {
   dashboardApiServices,
-  LineageVisualResponse,
-  LineageApiNode,
+  LineageCentricResponse,
+  LineageApiNodeCentric,
   LineageApiQueryExecution,
 } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
@@ -75,10 +75,10 @@ const COL_GAP = 110;
 const POPOVER_W = 320;
 
 function mapNode(
-  n: LineageApiNode, x: number, y: number, isCenter = false, isFixed = false
+  n: LineageApiNodeCentric, x: number, y: number, isCenter = false, isFixed = false
 ): InternalNode {
   return {
-    id: n.id, type: n.type ?? "table", label: n.table_name, fullName: n.full_name,
+    id: n.id, type: (n.type as NodeType) ?? "table", label: n.table_name, fullName: n.full_name,
     database: n.database_name ?? "", schema: n.schema_name ?? "",
     sourceName: n.source?.name ?? "", sourceType: n.source?.source_type ?? "",
     columns: (n.columns ?? []).map((c) => ({
@@ -86,95 +86,137 @@ function mapNode(
       is_primary_key: c.is_primary_key, is_nullable: c.is_nullable,
       query_expression: c?.query_expression ?? null,
     })),
-    columnCount: n.columns?.length ?? 0,
+    columnCount: parseInt(n.stats?.match(/Columns:\s*(\d+)/)?.[1] || "0", 10) || (n.columns?.length ?? 0),
     tags: (n.tags ?? []).map((t) => ({ id: t.id, name: t.name, color: t.color })),
-    qualityStatus: isFixed ? "healthy" : (n.status ?? "healthy"),
+    qualityStatus: isFixed ? "healthy" : ((n.status as QualityStatus) ?? "healthy"),
     isCenter,
-    aiSummary: isFixed 
+    aiSummary: n.ai_summary ?? (isFixed 
       ? "The operational-data-store.transaction dataset captures financial transaction details associated with bookings and agents, enabling analysis of payment flows, transaction status, and revenue tracking within the operational data pipeline."
-      : (n.ai_summary ?? null),
+      : null),
     stats: n.stats ?? null,
     notes: isFixed ? null : (n.notes ?? (n as any).note ?? null),
     transformationQuery: n.transformation_query ?? null,
-    queryExecution: isFixed 
-      ? { ...(n.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
+    queryExecution: (isFixed && n.query_execution) 
+      ? { ...n.query_execution, query_status: "SUCCEEDED" } as LineageApiQueryExecution
       : (n.query_execution ?? null),
     x, y,
   };
 }
 
 function buildGraph(
-  data: LineageVisualResponse, fixedNodeIds: Set<string>
+  data: LineageCentricResponse, fixedNodeIds: Set<string>
 ): { nodes: InternalNode[]; edges: InternalEdge[] } {
-  const ups = data.upstreams ?? [];
-  const downs = data.downstreams ?? [];
-  const COL1_X = 0, COL2_X = CARD_W + COL_GAP;
-  const COL3_X = COL2_X + CENTER_W + COL_GAP;
-  const COL4_X = COL3_X + CARD_W + COL_GAP;
-  const upH = ups.length * (CARD_H_EST + GAP_Y);
-  const centerY = Math.max(0, upH / 2 - CARD_H_EST / 2);
+  if (!data?.base_node) return { nodes: [], edges: [] };
 
-  const dsViews = downs.filter((n) => n.type === "view");
-  const dsDash = downs.filter((n) => n.type !== "view" && n.type !== "table");
-  const dsOther = downs.filter((n) => n.type === "table" && n.id !== data.root.id);
+  const apiById: Record<string, LineageApiNodeCentric> = {};
+  const upstreams: LineageApiNodeCentric[] = [];
+  const downstreams: LineageApiNodeCentric[] = [];
+  
+  let maxUpDepth = 0;
+  let maxDownDepth = 0;
 
-  const apiById: Record<string, LineageApiNode> = {};
-  [data.root, ...ups, ...downs].forEach((n) => { apiById[n.id] = n; });
+  const traverseUp = (node: LineageApiNodeCentric, currentDepth: number) => {
+    apiById[node.id] = node;
+    maxUpDepth = Math.max(maxUpDepth, currentDepth);
+    if (node.id !== data.base_node.id) upstreams.push(node);
+    
+    (node.upstream_nodes || []).forEach(child => traverseUp(child, currentDepth + 1));
+  };
+  const traverseDown = (node: LineageApiNodeCentric, currentDepth: number) => {
+    apiById[node.id] = node;
+    maxDownDepth = Math.max(maxDownDepth, currentDepth);
+    if (node.id !== data.base_node.id) downstreams.push(node);
+    
+    (node.downstream_nodes || []).forEach(child => traverseDown(child, currentDepth + 1));
+  };
 
-  const nodes: InternalNode[] = [
-    mapNode(data.root, COL2_X, centerY, true, fixedNodeIds.has(data.root.id)),
-    ...ups.map((n, i) => mapNode(n, COL1_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
-    ...[...dsViews, ...dsOther].map((n, i) => mapNode(n, COL3_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
-    ...dsDash.map((n, i) => mapNode(n, COL4_X, i * (CARD_H_EST + GAP_Y), false, fixedNodeIds.has(n.id))),
-  ];
+  traverseUp(data.base_node, 0);
+  traverseDown(data.base_node, 0);
+
+  const cols = new Map<number, LineageApiNodeCentric[]>();
+  const addToCol = (cIndex: number, n: LineageApiNodeCentric) => {
+    if (!cols.has(cIndex)) cols.set(cIndex, []);
+    cols.get(cIndex)!.push(n);
+  };
+
+  addToCol(maxUpDepth, data.base_node);
+
+  const uniqueNodes = new Map<string, LineageApiNodeCentric>();
+  uniqueNodes.set(data.base_node.id, data.base_node);
+  
+  upstreams.forEach(n => !uniqueNodes.has(n.id) && uniqueNodes.set(n.id, n));
+  downstreams.forEach(n => !uniqueNodes.has(n.id) && uniqueNodes.set(n.id, n));
+
+  uniqueNodes.forEach((n) => {
+    if (n.id === data.base_node.id) return;
+    const isUp = upstreams.some(u => u.id === n.id);
+    const depthVal = n.depth || 1; 
+    let cIndex = maxUpDepth;
+    if (isUp) {
+      cIndex = maxUpDepth - depthVal;
+    } else {
+      cIndex = maxUpDepth + depthVal;
+    }
+    addToCol(cIndex, n);
+  });
+
+  const nodes: InternalNode[] = [];
+  let maxNodesInCol = 0;
+  cols.forEach(list => { maxNodesInCol = Math.max(maxNodesInCol, list.length); });
+  const centerY = Math.max(0, (maxNodesInCol * (CARD_H_EST + GAP_Y)) / 2 - CARD_H_EST / 2);
+
+  cols.forEach((list, cIndex) => {
+    const startY = centerY - ((list.length - 1) * (CARD_H_EST + GAP_Y)) / 2;
+    list.forEach((n, i) => {
+      const x = cIndex * (CARD_W + COL_GAP);
+      const y = startY + i * (CARD_H_EST + GAP_Y);
+      nodes.push(mapNode(n, x, y, n.id === data.base_node.id, fixedNodeIds.has(n.id)));
+    });
+  });
 
   const edges: InternalEdge[] = [];
-  const rootId = data.root.id;
-  ups.forEach((n) => {
-    const isFixed = fixedNodeIds.has(n.id);
+  const seenEdges = new Set<string>();
+  const addEdge = (fromId: string, toId: string, isFromUpstreamList: boolean) => {
+    const k = `${fromId}->${toId}`;
+    if (seenEdges.has(k)) return;
+    seenEdges.add(k);
+    
+    const toNode = apiById[toId];
+    const fromNode = apiById[fromId];
+    const isFixed = fixedNodeIds.has(toId) || fixedNodeIds.has(fromId);
+    
+    // In a lineage-centric tree, edge properties (query, status) are stored on the nested child node
+    const edgeDataNode = isFromUpstreamList ? fromNode : toNode;
+    
     edges.push({
-      from: n.id, to: rootId, isSecondary: false,
-      transformationQuery: apiById[n.id]?.transformation_query ?? null,
-      queryExecution: isFixed 
-        ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
-        : (apiById[n.id]?.query_execution ?? null),
-      fromLabel: n.table_name, toLabel: data.root.table_name,
+      from: fromId, to: toId, 
+      isSecondary: toNode?.type !== "view" && !isFromUpstreamList && toNode?.type === "table",
+      transformationQuery: edgeDataNode?.transformation_query ?? null,
+      queryExecution: isFixed && edgeDataNode?.query_execution
+        ? { ...edgeDataNode.query_execution, query_status: "SUCCEEDED" } as LineageApiQueryExecution
+        : (edgeDataNode?.query_execution ?? null),
+      fromLabel: fromNode?.table_name || fromId, 
+      toLabel: toNode?.table_name || toId,
     });
-  });
-  downs.forEach((n) => {
-    const isView = n.type === "view";
-    const isFixed = fixedNodeIds.has(n.id);
-    edges.push({
-      from: rootId, to: n.id, isSecondary: !isView,
-      transformationQuery: apiById[n.id]?.transformation_query ?? null,
-      queryExecution: isFixed 
-        ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
-        : (apiById[n.id]?.query_execution ?? null),
-      fromLabel: data.root.table_name, toLabel: n.table_name,
-    });
-    if (!isView && dsViews.length > 0)
-      dsViews.forEach((v) => {
-        const isVFixed = fixedNodeIds.has(v.id); // Although usually downstream triggers fix
-        edges.push({
-          from: v.id, to: n.id, isSecondary: false,
-          transformationQuery: apiById[n.id]?.transformation_query ?? null,
-          queryExecution: isFixed 
-            ? { ...(apiById[n.id]?.query_execution || {}), query_status: "SUCCEEDED" } as LineageApiQueryExecution
-            : (apiById[n.id]?.query_execution ?? null),
-          fromLabel: v.table_name, toLabel: n.table_name,
-        });
-      });
-  });
-
-  const seen = new Set<string>();
-  return {
-    nodes,
-    edges: edges.filter((e) => {
-      const k = `${e.from}->${e.to}`;
-      if (seen.has(k)) return false;
-      seen.add(k); return true;
-    }),
   };
+
+  const traverseEdgesUp = (node: LineageApiNodeCentric) => {
+    (node.upstream_nodes || []).forEach(child => {
+      addEdge(child.id, node.id, true);
+      traverseEdgesUp(child);
+    });
+  };
+  const traverseEdgesDown = (node: LineageApiNodeCentric) => {
+    (node.downstream_nodes || []).forEach(child => {
+      addEdge(node.id, child.id, false);
+      traverseEdgesDown(child);
+    });
+  };
+
+  traverseEdgesUp(data.base_node);
+  traverseEdgesDown(data.base_node);
+
+  return { nodes, edges };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1248,7 +1290,7 @@ function SqlEditorSidebar({ node, edges, isOpen, onClose, onApply, isFixing }: S
 }
 
 export default function DatasetLineage({ datasetId, datasetName }: DatasetLineageProps) {
-  const [apiData, setApiData] = useState<LineageVisualResponse | null>(null);
+  const [apiData, setApiData] = useState<LineageCentricResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState(2);
@@ -1315,11 +1357,11 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
     if (!datasetId) return;
     setIsLoading(true); setError(null); setNodeHeights({}); setNodePositions({});
     setFixedNodeIds(new Set()); setFixingNodeIds(new Set()); setFixedNodes({}); // Reset mock state on fresh fetch
-    dashboardApiServices.fetchLineageVisual(datasetId, depth, direction)
+    dashboardApiServices.fetchLineageCentric(datasetId, depth)
         .then((data) => { setApiData(data); })
         .catch(() => setError("Failed to load lineage data."))
         .finally(() => setIsLoading(false));
-  }, [datasetId, depth, direction]);
+  }, [datasetId, depth]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   const { nodes: defaultNodes, edges } = useMemo(() => 
