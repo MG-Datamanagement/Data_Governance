@@ -11,6 +11,7 @@ import { downloadFileFromResponse, formatDateTime } from "@/lib/utils";
 import { Check, CheckCircle2, Clock11, Loader2, XIcon } from "lucide-react";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { CONSTANTS } from "@/lib/constants";
+import { useGetSourceStats } from "@/hooks/useDashboardQueries";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: Dataset["status"] }> = ({ status }) => {
@@ -165,7 +166,6 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
 
   const [allDatasets, setAllDatasets] = useState<Dataset[]>([]);
   const [sourceName, setSourceName] = useState<string>(sourceId);
-  const [isLoading, setIsLoading] = useState(false);
   const [isExportListLoading, setIsExportListLoading] = useState(false);
   const [isPiiScanLoading, setIsPiiScanLoading] = useState(false);
   const [piiScanPhase, setPiiScanPhase] = useState<ClassifyScanPhase>("never");
@@ -174,51 +174,40 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
   >({});
   const [scanCount, setScanCount] = useState(0);
 
+  const { data: stats, isLoading: isStatsLoading } = useGetSourceStats(sourceId);
+
+  const isLoading = isStatsLoading;
+
   React.useEffect(() => {
-    const loadDatasets = async () => {
-      setIsLoading(true);
-      try {
-        const { dashboardApiServices } = await import("@/services/dashboardApiServices");
-        const stats: SourceCatalogResponse = await dashboardApiServices.fetchSourceStats(
-          sourceId,
-          // typeFilter?.toLowerCase(),
-          // statusFilter?.toLowerCase(),
-        );
-        if (stats) {
-          if (stats.source_name) setSourceName(stats.source_name);
-          if (stats.catalogs) {
-            const mapped: Dataset[] = stats.catalogs.map((cat) => {
-            // keep only pii & phi tags
-            const filteredTags =
-              cat.tags?.filter((tag) =>
-                ["pii", "phi", "financial","sensitive"].includes(tag.name.toLowerCase())
-              ) || [];
+      if (stats?.source_name) setSourceName(stats.source_name);
+  }, [stats?.source_name]);
 
-            return {
-              id: cat.catalog_id,
-              name: cat.table_name || cat.full_name,
-              hasPII: filteredTags.length > 0,
-              type: cat.type || "table",
-              rows: cat.row_count ? cat.row_count.toString() : null,
-              columns: cat.column_count || 0,
-              size: null,
-              lastSync: formatDateTime(cat.last_sync),
-              status: cat.status || "healthy",
-              tags: filteredTags
-            };
-          });
-
-            setAllDatasets(mapped);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching datasets:", err);
-      } finally {
-        setIsLoading(false);
+  React.useEffect(() => {
+      if (!stats?.catalogs) {
+          setAllDatasets([]);
+          return;
       }
-    };
-    loadDatasets();
-  }, [sourceId, typeFilter, statusFilter]);
+      const mapped = stats.catalogs.map((cat: any) => {
+          const filteredTags =
+            cat.tags?.filter((tag: any) =>
+              ["pii", "phi", "financial","sensitive"].includes(tag.name.toLowerCase())
+            ) || [];
+
+          return {
+            id: cat.catalog_id,
+            name: cat.table_name || cat.full_name,
+            hasPII: filteredTags.length > 0,
+            type: cat.type || "table",
+            rows: cat.row_count ? cat.row_count.toString() : null,
+            columns: cat.column_count || 0,
+            size: null,
+            lastSync: formatDateTime(cat.last_sync),
+            status: cat.status || "healthy",
+            tags: filteredTags
+          };
+      });
+      setAllDatasets(mapped);
+  }, [stats]);
 
   const exportList = async () => {
     setIsExportListLoading(true);
@@ -292,8 +281,8 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
       }
 
       // Update dataset PII flag
-      setAllDatasets((prev) =>
-        prev.map((d) => {
+      setAllDatasets((prev: Dataset[]) =>
+        prev.map((d: Dataset) => {
           const result = classificationMap[d.id];
           return result ? { ...d, hasPII: ["pii", "phi","financial","sensitive"].includes(result.toLowerCase()) } : d;
         }),
@@ -626,8 +615,8 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ sourceId }) => {
                       setPiiScanPhase("re-scan");
                       setScannedDatasets({});
                       setScanCount(0);
-                      setAllDatasets((prev) =>
-                        prev.map((d) => ({ ...d, hasPII: false })),
+                      setAllDatasets((prev: Dataset[]) =>
+                        prev.map((d: Dataset) => ({ ...d, hasPII: false })),
                       );
                     }}
                     className="flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 border border-indigo-300 bg-white hover:bg-indigo-50 rounded-lg font-medium whitespace-nowrap"

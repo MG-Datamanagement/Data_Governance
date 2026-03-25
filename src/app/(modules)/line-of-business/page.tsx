@@ -25,6 +25,12 @@ import {
 import { LuLayoutDashboard } from "react-icons/lu";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
 import { FolderTree } from "lucide-react";
+import { 
+    useGetAllLineOfBusiness, 
+    useGetLobOwners, 
+    useGetLobDomainsForSelection, 
+    useGetLobCatalogs 
+} from "@/hooks/useLineOfBusinessQueries";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -582,46 +588,13 @@ function DetailsPanel({
 function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreate: (form: ModalForm) => void }) {
     const [form, setForm] = useState<ModalForm>({ name: "", description: "", owner: "", color: COLOR_OPTIONS[0], customId: "", catalogId: "" });
     const [advancedOpen, setAdvancedOpen] = useState(false);
-    const [owners, setOwners] = useState<any[]>([]);
-    const [parentDomains, setParentDomains] = useState<any[]>([]);
-    const [catalogs, setCatalogs] = useState<any[]>([]);
-    const [loadingOwners, setLoadingOwners] = useState(true);
-    const [loadingDomains, setLoadingDomains] = useState(true);
-    const [loadingCatalogs, setLoadingCatalogs] = useState(true);
+    
+    const { data: owners = [], isLoading: loadingOwners } = useGetLobOwners(100);
+    const { data: parentDomains = [], isLoading: loadingDomains } = useGetLobDomainsForSelection();
+    const { data: catalogs = [], isLoading: loadingCatalogs } = useGetLobCatalogs();
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoadingOwners(true);
-                setLoadingDomains(true);
-                setLoadingCatalogs(true);
-
-                // Fetch owners
-                const ownersList = await lineOfBusinessApiService.fetchOwnersForLobSelection(100);
-                setOwners(ownersList);
-
-                // Fetch parent domains
-                const domains = await lineOfBusinessApiService.fetchDomainsForParentSelection();
-                setParentDomains(domains);
-
-                // Fetch catalogs
-                const catalogsList = await lineOfBusinessApiService.fetchAllCatalogs();
-                setCatalogs(catalogsList);
-            } catch (err) {
-                console.error("Failed to fetch data:", err);
-                setOwners([]);
-                setParentDomains([]);
-                setCatalogs([]);
-            } finally {
-                setLoadingOwners(false);
-                setLoadingDomains(false);
-                setLoadingCatalogs(false);
-            }
-        };
-        fetchData();
-    }, []);
 
     const handleCreate = async () => {
         if (!form.name.trim()) {
@@ -838,7 +811,7 @@ function OwnerDropdown({ value, onChange }: { value: string; onChange: (v: strin
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LineOfBusiness() {
-    const [domains, setDomains] = useState<Domain[]>([]);
+    const { data: apiData = [], isLoading, refetch } = useGetAllLineOfBusiness();
     const [searchQuery, setSearchQuery] = useState("");
     const [ownerFilter, setOwnerFilter] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -849,22 +822,16 @@ export default function LineOfBusiness() {
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
 
+    // Transform API response to Domain format
+    const domains = useMemo(() => {
+        return transformApiResponse(apiData);
+    }, [apiData]);
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Fetch domains from API
-                const apiData = await lineOfBusinessApiService.fetchAllLineOfBusiness();
-                // Transform API response to Domain format
-                const transformedData = transformApiResponse(apiData);
-                setDomains(transformedData);
-                setExpandedDomains(new Set(transformedData.map((d) => d.id)));
-            } catch (err) {
-                console.error("Failed to fetch domains:", err);
-                setDomains([]);
-            }
-        };
-        fetchData();
-    }, []);
+        if (domains.length > 0 && expandedDomains.size === 0) {
+            setExpandedDomains(new Set(domains.map((d) => d.id)));
+        }
+    }, [domains]);
 
     // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -933,27 +900,14 @@ export default function LineOfBusiness() {
     };
 
     const handleCreate = (form: ModalForm) => {
-        const newDomain: Domain = {
-            id: form.customId || `domain-${Date.now()}`,
-            name: form.name,
-            description: form.description,
-            owner: form.owner,
-            color: form.color,
-            assets: 0,
-            subdomains: [],
-            externalLinks: [],
-            createdAt: new Date().toISOString().split("T")[0],
-        };
-        setDomains((prev) => [...prev, newDomain]);
-        setExpandedDomains((prev) => new Set([...prev, newDomain.id]));
-        setSelectedItem({ type: "domain", id: newDomain.id });
-        setPanelOpen(true);
+        setModalOpen(false);
+        refetch();
     };
 
-    const handleUpdate = (updated: Domain[]) => setDomains(updated);
+    const handleUpdate = (updated: Domain[]) => refetch();
 
     const handleDelete = (domainId: string) => {
-        setDomains((prev) => prev.filter((d) => d.id !== domainId));
+        refetch();
         if (selectedItem?.id === domainId || selectedItem?.parentId === domainId) closePanel();
     };
 

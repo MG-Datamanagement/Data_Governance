@@ -13,6 +13,11 @@ import ComplianceReportModal from "@/app/(data-connectors)/components/Compliance
 import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
+import {
+  useGetCatalogDetail,
+  useGetCatalogDatacard,
+  useGetDatasetComplianceReport,
+} from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
@@ -44,69 +49,22 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   datasetId,
 }) => {
   const router = useRouter();
-  const [catalogData, setCatalogData] = useState<ApiCatalogDetail | null>(null);
-  const [datacardData, setDatacardData] = useState<ApiCatalogDatacard | null>(
-    null,
-  );
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: catalogData, isLoading: isCatalogLoading, refetch: fetchCatalogDetail } = useGetCatalogDetail(datasetId);
+  const { data: datacardData, isLoading: isDatacardLoading } = useGetCatalogDatacard(datasetId);
+
+  const isLoading = isCatalogLoading || isDatacardLoading;
+
   const [activeTab, setActiveTab] = useState<Tab>("DataCard");
   const [showCompliance, setShowCompliance] = useState(false);
   const [isReclassifyAiLoading, setIsReclassifyAiLoading] = useState(false);
   const [reclassifyAiScanPhase, setReclassifyAiScanPhase] =
     useState<ClassifyScanPhase>("never");
   const [aiResults, setAiResults] = useState<any>({});
-  const [complianceData, setComplianceData] = useState<ComplianceApiResponse | null>(null);
-  const [isComplianceLoading, setIsComplianceLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      setIsLoading(true);
-      try {
-        const [detailRes, datacardRes] = await Promise.all([
-          dashboardApiServices.fetchCatalogDetail(datasetId),
-          dashboardApiServices.fetchCatalogDatacard(datasetId).catch((err) => {
-            console.error("Failed to fetch datacard", err);
-            return null;
-          }),
-        ]);
-        setCatalogData(detailRes);
-        setDatacardData(datacardRes);
-      } catch (err) {
-        console.error("Failed to fetch catalog detail", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const handleFetchClassifyApi = async () => {
-      await fetchAll();
-    }
-
-    handleFetchClassifyApi()
-  }, [datasetId]);
-
-  const fetchCatalogDetail = async () => {
-    try {
-      const res = await dashboardApiServices.fetchCatalogDetail(datasetId);
-      setCatalogData(res);
-    } catch (err) {
-      console.error("Failed to fetch catalog detail", err);
-    }
-  }
+  const { data: complianceData, isFetching: isComplianceLoading, refetch: complianceRefetch } = useGetDatasetComplianceReport(datasetId);
 
   const handleViewCompliance = async () => {
     setShowCompliance(true);
-    // if (complianceData) return;
-    setIsComplianceLoading(true);
-    try {
-      const res = await datasourceApiServices.fetchDatasetComplianceReport(datasetId);
-      setComplianceData(res);
-    } catch (err) {
-      console.error("Failed to fetch compliance report", err);
-      setIsComplianceLoading(false);
-    } finally {
-      setIsComplianceLoading(false);
-    }
+    complianceRefetch();
   };
 
   const detail = useMemo(() => {

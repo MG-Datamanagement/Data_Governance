@@ -15,6 +15,7 @@ import {
 } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
 import { manualFixSqlTemplate } from "@/lib/constants";
+import { useGetLineageCentric } from "@/hooks/useDashboardQueries";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1290,10 +1291,9 @@ function SqlEditorSidebar({ node, edges, isOpen, onClose, onApply, isFixing }: S
 }
 
 export default function DatasetLineage({ datasetId, datasetName }: DatasetLineageProps) {
-  const [apiData, setApiData] = useState<LineageCentricResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [depth, setDepth] = useState(2);
+  const { data: apiData = null, isLoading, error: queryError, refetch: refetchLineageData } = useGetLineageCentric(datasetId, depth);
+  const error = queryError ? "Failed to load lineage data." : null;
   const [direction, setDirection] = useState<"upstream" | "downstream" | "both">("both");
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1353,17 +1353,13 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
     setNodeHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }));
   }, []);
 
-  const fetchData = useCallback(() => {
-    if (!datasetId) return;
-    setIsLoading(true); setError(null); setNodeHeights({}); setNodePositions({});
-    setFixedNodeIds(new Set()); setFixingNodeIds(new Set()); setFixedNodes({}); // Reset mock state on fresh fetch
-    dashboardApiServices.fetchLineageCentric(datasetId, depth)
-        .then((data) => { setApiData(data); })
-        .catch(() => setError("Failed to load lineage data."))
-        .finally(() => setIsLoading(false));
+  useEffect(() => {
+    setNodeHeights({});
+    setNodePositions({});
+    setFixedNodeIds(new Set());
+    setFixingNodeIds(new Set());
+    setFixedNodes({});
   }, [datasetId, depth]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
   const { nodes: defaultNodes, edges } = useMemo(() => 
     apiData ? buildGraph(apiData, fixedNodeIds) : { nodes: [], edges: [] }, 
   [apiData, fixedNodeIds]);
@@ -1529,7 +1525,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 <div className="flex flex-col items-center gap-3 text-center px-8">
                   <AlertTriangle className="w-10 h-10 text-yellow-400" />
                   <p className="text-sm font-semibold text-gray-700">{error}</p>
-                  <button onClick={fetchData} className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Retry</button>
+                  <button onClick={() => refetchLineageData()} className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Retry</button>
                 </div>
               </div>
           )}

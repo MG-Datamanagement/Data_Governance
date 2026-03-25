@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Home, Tag, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
+import { useGetOwnersList } from '@/hooks/useDashboardQueries'
 import { CreateTagRequest } from '@/types/tagTypes'
 import { ApiOwner } from '@/services/dashboardApiServices'
 
@@ -32,22 +33,17 @@ export default function TagsPage() {
   const updateTagMutation = useUpdateTag()
   const deleteTagMutation = useDeleteTag()
 
-  // Fetch owners list
+  const { data: ownersData } = useGetOwnersList()
+  const ownersList = (ownersData as ApiOwner[]) || []
+  
   useEffect(() => {
-    const fetchOwners = async () => {
-      try {
-        const { dashboardApiServices } = await import("@/services/dashboardApiServices")
-        const list = await dashboardApiServices.fetchOwnersList()
-        setOwners(list)
-        if (list.length > 0 && !ownerId) {
-          setOwnerId(list[0].id)
-        }
-      } catch (err) {
-        console.error("Failed to fetch owners", err)
+    if (ownersList.length > 0) {
+      setOwners(ownersList)
+      if (!ownerId) {
+        setOwnerId(ownersList[0].id)
       }
     }
-    fetchOwners()
-  }, [])
+  }, [ownersList])
 
   const colors = [
     { name: 'blue', hex: '#3B82F6', class: 'bg-blue-500' },

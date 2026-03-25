@@ -9,6 +9,7 @@ import QueryGridView from "./QueryGridView";
 import NewQueryModal from "./NewQueryModal";
 import QuerySqlPreview from "./QuerySqlPreview";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useGetDatasourceQueries, useGetOwnersList } from "@/hooks/useDashboardQueries";
 
 interface DatasetQueriesTabProps {
   catalogId: string;
@@ -16,39 +17,23 @@ interface DatasetQueriesTabProps {
 }
 
 const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datasetName }) => {
-  const [queries, setQueries] = useState<ApiQuery[]>([]);
-  const [ownersList, setOwnersList] = useState<QueryOwner[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: queriesData, isLoading: isQueriesLoading, refetch: refetchQueries } = useGetDatasourceQueries(catalogId);
+  const { data: ownersData, isLoading: isOwnersLoading } = useGetOwnersList();
+
+  const queries = queriesData?.user_queries || [];
+  const ownersList = (ownersData as QueryOwner[]) || [];
+  const isLoading = isQueriesLoading || isOwnersLoading;
+
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewQuery, setPreviewQuery] = useState<ApiQuery | null>(null);
   const [queryToDelete, setQueryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [queriesResponse, ownersResponse] = await Promise.all([
-        datasourceApiServices.fetchDatasetQueries(catalogId),
-        datasourceApiServices.fetchOwnersList()
-      ]);
-      setQueries(queriesResponse.user_queries || []);
-      setOwnersList(ownersResponse || []);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [catalogId]);
-
   const handleCreateQuery = async (data: CreateQueryRequest) => {
     try {
       const response = await datasourceApiServices.createDatasetQuery(catalogId, data);
-      setQueries(prev => [response, ...prev]);
+      refetchQueries();
     } catch (error) {
       console.error("Failed to create query:", error);
     }
@@ -59,7 +44,7 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
     setIsDeleting(true);
     try {
       await datasourceApiServices.deleteDatasetQuery(catalogId, queryToDelete);
-      setQueries(prev => prev.filter(q => q.id !== queryToDelete));
+      refetchQueries();
       setQueryToDelete(null);
     } catch (error) {
       console.error("Failed to delete query:", error);

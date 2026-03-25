@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
 import { ApiOwner } from "@/services/dashboardApiServices";
 import { useAppStore } from "@/store/appStore";
+import { useGetOwnersList } from "@/hooks/useDashboardQueries";
 import { RedshiftConfig } from "@/lib/constants";
 
 // ─── Only MongoDB + PostgreSQL ────────────────────────────────────────────────
@@ -828,24 +829,16 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
   const [finish, setFinish] = useState({
     name: "", piiEnabled: true, piiApproval: true, failureEmail: "", owner_id: "",
   });
-  const [owners, setOwners] = useState<ApiOwner[]>([]);
-  const { setAddDsConfig } = useAppStore()
+  const { setAddDsConfig } = useAppStore();
+
+  const { data: ownersData } = useGetOwnersList();
+  const owners = (ownersData as ApiOwner[]) || [];
 
   useEffect(() => {
-    const fetchOwners = async () => {
-      try {
-        const { dashboardApiServices } = await import("@/services/dashboardApiServices");
-        const list = await dashboardApiServices.fetchOwnersList();
-        setOwners(list);
-        if (list.length > 0 && !finish.owner_id) {
-          setFinish(p => ({ ...p, owner_id: list[0].id }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch owners", err);
-      }
-    };
-    fetchOwners();
-  }, []);
+    if (owners.length > 0 && !finish.owner_id) {
+      setFinish(p => ({ ...p, owner_id: owners[0].id }));
+    }
+  }, [owners, finish.owner_id]);
 
   const connector = CONNECTORS.find((c) => c.id === selectedId) ?? CONNECTORS[0];
 

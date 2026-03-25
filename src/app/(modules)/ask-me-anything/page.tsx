@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Sidebar } from "../../../components/ask-me-anything/Sidebar";
 import { ChatHeader } from "../../../components/ask-me-anything/ChatHeader";
 import { ChatMessage } from "../../../components/ask-me-anything/ChatMessage";
@@ -24,6 +24,7 @@ import { LoadingFallback } from "@/components/Fallbacks";
 import { chatApiServices } from "@/services/chatApiServices";
 import { MOCK_AGENTS, MOCK_DATASETS } from "@/services/mock/chatMockApiService";
 import { CONSTANTS } from "@/lib/constants";
+import { useGetChatHistory } from "@/hooks/useDashboardQueries";
 
 const AskMeAnything: React.FC = () => {
   // UI State
@@ -49,7 +50,6 @@ const AskMeAnything: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState<boolean>(false);
-  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
   const [isSessionLoading, setIsSessionLoading] = useState<boolean>(false);
   const [replyTo, setReplyTo] = useState<null | string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -73,27 +73,18 @@ const AskMeAnything: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load history on mount
+  const { data: historyData, isLoading: isHistoryLoading, refetch: refetchHistory } = useGetChatHistory();
+
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (historyData) {
+      setSessions(historyData.sessions);
+    }
+  }, [historyData]);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const loadHistory = async () => {
-    setIsHistoryLoading(true);
-    try {
-      const history = await chatApiServices.getHistory();
-      setSessions(history.sessions);
-    } catch (error) {
-      console.error("Failed to load history:", error);
-    } finally {
-      setIsHistoryLoading(false);
-    }
-  };
 
   const handleSendMessage = async (
     content: string,
@@ -167,7 +158,7 @@ const AskMeAnything: React.FC = () => {
         // Since we don't have a real session tracking yet for this endpoint in the response, 
         // we'll just keep the 1001 for now or handle as needed.
         setCurrentSessionId("1001");
-        loadHistory();
+        refetchHistory();
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -315,7 +306,7 @@ const AskMeAnything: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isHistoryLoading={isHistoryLoading}
-        onRetryFetchHistroy={loadHistory}
+        onRetryFetchHistroy={refetchHistory}
         isChatLoading={isSessionLoading}
       />
 

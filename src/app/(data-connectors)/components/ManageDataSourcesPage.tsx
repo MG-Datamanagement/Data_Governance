@@ -12,6 +12,7 @@ import AddDataSourceModal from "@/app/(data-connectors)/components/AddDataSource
 import LiveIngestionPanel from "@/app/(data-connectors)/components/LiveIngestionPanel";
 import IngestionSidebar from "@/app/(data-connectors)/components/IngestionSidebar";
 import { useAppStore } from "@/store/appStore";
+import { useGetDataSources, useGetRunHistory, useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
@@ -76,47 +77,20 @@ const LogIcon: React.FC<{ status: "success" | "error" | "info" | "warning" }> = 
 // ─── Expanded Row ─────────────────────────────────────────────────────────────
 const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveError?: (id: string) => void }> = ({ source, activeJobId, onLiveError }) => {
     const router = useRouter();
-    const [stats, setStats] = useState<{
-        totalTables: number;
-        totalColumns: number;
-        totalRows: number;
-    } | null>(null);
-    const [rowLogs, setRowLogs] = useState<ApiSourceLog[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isLogsLoading, setIsLogsLoading] = useState(true);
-
-    useEffect(() => {
-        const getStats = async () => {
-            setIsLoading(true);
-            try {
-                const apiStats = await dashboardApiServices.fetchSourceStats(source.id);
-                setStats({
-                    totalTables: apiStats.total_tables_ingested,
-                    totalColumns: apiStats.total_column_count,
-                    totalRows: apiStats.total_row_count,
-                });
-            } catch (err) {
-                console.error("Failed to fetch stats for expanded row", err);
-            } finally {
-                setIsLoading(false);
-            }
+    const { data: apiStats, isLoading: isStatsLoading } = useGetSourceStats(source.id);
+    const { data: logsData, isLoading: isLogsLoading } = useGetSourceLogs(source.id, 5);
+    
+    const stats = useMemo(() => {
+        if (!apiStats) return null;
+        return {
+            totalTables: apiStats.total_tables_ingested,
+            totalColumns: apiStats.total_column_count,
+            totalRows: apiStats.total_row_count,
         };
+    }, [apiStats]);
 
-        const getLogs = async () => {
-            setIsLogsLoading(true);
-            try {
-                const response = await dashboardApiServices.fetchSourceLogs(source.id, { limit: 5 });
-                setRowLogs(response.logs);
-            } catch (err) {
-                console.error("Failed to fetch logs for expanded row", err);
-            } finally {
-                setIsLogsLoading(false);
-            }
-        };
-
-        getStats();
-        getLogs();
-    }, [source.id]);
+    const rowLogs = logsData?.logs || [];
+    const isLoading = isStatsLoading;
 
     const formatNumber = (num: number) => {
         if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -361,109 +335,74 @@ const ManageDataSourcesPage: React.FC = () => {
     const [sidebarSourceName, setSidebarSourceName] = useState("");
     const [showSidebar, setShowSidebar] = useState(false);
     const [activeJobs, setActiveJobs] = useState<Record<string, string>>({});
-    const [runHistory, setRunHistory] = useState<ApiRunHistory | null>(null);
-    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [historyStatus, setHistoryStatus] = useState("All");
     const [historyOffset, setHistoryOffset] = useState(0);
     const HISTORY_LIMIT = 10;
 
-    const [sources, setSources] = useState<DataSource[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData = [], isLoading: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
+        status: filter !== "All" ? filter : undefined,
+        limit: 20
+    });
+
+    const { data: runHistoryData, isLoading: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(HISTORY_LIMIT, historyOffset, historyStatus);
+
+    const runHistory = runHistoryData || null;
+    const isHistoryLoading = isHistoryFetchLoading;
+    const isLoading = isSourcesLoading;
+    const error = sourcesFetchError ? "Failed to fetch data sources" : null;
+
+    const allSources = useMemo(() => {
+        return apiData.map((apiDs: any) => {
+            const sourceId = apiDs.source_id || apiDs.id || "";
+            const ownerName = apiDs.owner_name || apiDs.owner_id || "Unknown";
+            const original = dataSources.find(ds => ds.id === sourceId);
+
+            let lastRun = "Never";
+            if (apiDs.last_ingested_at) {
+                const date = new Date(apiDs.last_ingested_at);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) lastRun = "Today";
+                else if (diffDays === 1) lastRun = "Yesterday";
+                else lastRun = `${diffDays} days ago`;
+            }
+
+            return {
+                id: sourceId,
+                name: apiDs.name,
+                icon: original?.icon || (apiDs.name.toLowerCase().includes('mongo') ? 'mongodb' : 'database'),
+                iconBg: original?.iconBg || 'bg-gray-100',
+                schedule: apiDs.schedule,
+                owner: ownerName,
+                ownerIcon: original?.ownerIcon || ownerName.substring(0, 2).toUpperCase(),
+                lastRun: lastRun,
+                status: apiDs.status,
+                stats: original?.stats || { totalDatasets: 0, totalColumns: '0', totalRows: '0', piiDetected: 0 },
+                ingestionLogs: original?.ingestionLogs || [],
+                totalDatasets: original?.totalDatasets || 0
+            };
+        });
+    }, [apiData]);
+
+    const sources = useMemo(() => {
+        if (!search.trim()) return allSources;
+        const q = search.toLowerCase();
+        return allSources.filter((s: DataSource) => s.name.toLowerCase().includes(q));
+    }, [allSources, search]);
+
     const [sourceToDelete, setSourceToDelete] = useState<DataSource | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-    const { setAddDsConfig } = useAppStore()
-
-    const fetchData = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const apiData = await dashboardApiServices.fetchDataSources({
-                status: filter !== "All" ? filter : undefined,
-                limit: 20
-            });
-
-            // Map API data back to UI DataSource structure
-            const mappedSources: DataSource[] = apiData.map(apiDs => {
-                // Find original source to preserve detailed stats/logs for UI consistency if they exist in mocks
-                const sourceId = apiDs.source_id || apiDs.id || "";
-                const ownerName = apiDs.owner_name || apiDs.owner_id || "Unknown";
-
-                // Find original source to preserve detailed stats/logs for UI consistency if they exist in mocks
-                const original = dataSources.find(ds => ds.id === sourceId);
-
-                // Format last run time
-                let lastRun = "Never";
-                if (apiDs.last_ingested_at) {
-                    const date = new Date(apiDs.last_ingested_at);
-                    const now = new Date();
-                    const diffMs = now.getTime() - date.getTime();
-                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-                    if (diffDays === 0) lastRun = "Today";
-                    else if (diffDays === 1) lastRun = "Yesterday";
-                    else lastRun = `${diffDays} days ago`;
-                }
-
-                return {
-                    id: sourceId,
-                    name: apiDs.name,
-                    icon: original?.icon || (apiDs.name.toLowerCase().includes('mongo') ? 'mongodb' : 'database'),
-                    iconBg: original?.iconBg || 'bg-gray-100',
-                    schedule: apiDs.schedule,
-                    owner: ownerName,
-                    ownerIcon: original?.ownerIcon || ownerName.substring(0, 2).toUpperCase(),
-                    lastRun: lastRun,
-                    status: apiDs.status,
-                    stats: original?.stats || { totalDatasets: 0, totalColumns: '0', totalRows: '0', piiDetected: 0 },
-                    ingestionLogs: original?.ingestionLogs || [],
-                    totalDatasets: original?.totalDatasets || 0
-                };
-            });
-
-            // Client side search filtering if needed, or pass search to API
-            let finalSources = mappedSources;
-            if (search.trim()) {
-                const q = search.toLowerCase();
-                finalSources = finalSources.filter(s => s.name.toLowerCase().includes(q));
-            }
-
-            setSources(finalSources);
-        } catch (err) {
-            setError("Failed to fetch data sources");
-            console.error(err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchHistory = async () => {
-        setIsHistoryLoading(true);
-        try {
-            const data = await dashboardApiServices.fetchRunHistory(HISTORY_LIMIT, historyOffset, historyStatus);
-            setRunHistory(data);
-        } catch (err) {
-            console.error("Failed to fetch run history", err);
-        } finally {
-            setIsHistoryLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (activeTab === "Sources") {
-            fetchData();
-        } else if (activeTab === "Run History") {
-            fetchHistory();
-        }
-    }, [filter, search, activeTab, historyStatus, historyOffset]);
+    const { setAddDsConfig } = useAppStore();
 
     const toggleAll = () => {
         if (allChecked) {
             setCheckedIds(new Set());
             setAllChecked(false);
         } else {
-            setCheckedIds(new Set(sources.map((s) => s.id)));
+            setCheckedIds(new Set(sources.map((s: DataSource) => s.id)));
             setAllChecked(true);
         }
     };
@@ -483,7 +422,7 @@ const ManageDataSourcesPage: React.FC = () => {
                 setActiveJobs(prev => ({ ...prev, [id]: response.job_id }));
             }
             // Refresh data to show "running" status if the API updates it
-            fetchData();
+            refetchSources();
         } catch (err) {
             console.error("Failed to trigger ingestion", err);
             alert("Failed to start ingestion");
@@ -498,7 +437,7 @@ const ManageDataSourcesPage: React.FC = () => {
             await dashboardApiServices.deleteSource(sourceToDelete.id);
             setToast({ message: "Source Deleted Successfully", type: "success" });
             setSourceToDelete(null);
-            fetchData();
+            refetchSources();
             
             // Auto-hide toast after 3 seconds
             setTimeout(() => setToast(null), 3000);
@@ -522,7 +461,7 @@ const ManageDataSourcesPage: React.FC = () => {
                         setSidebarSourceName(sourceName);
                         setShowSidebar(true);
                         // Trigger a slight delay refresh or just rely on the sidebar
-                        fetchData();
+                        refetchSources();
                     }}
                 />
             )}
@@ -714,7 +653,7 @@ const ManageDataSourcesPage: React.FC = () => {
 
                     {/* Refresh */}
                     <button
-                        onClick={() => activeTab === "Sources" ? fetchData() : fetchHistory()}
+                        onClick={() => activeTab === "Sources" ? refetchSources() : refetchHistory()}
                         disabled={isLoading || isHistoryLoading}
                         className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
