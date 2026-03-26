@@ -56,6 +56,8 @@ interface InternalNode {
   queryExecution?: LineageApiQueryExecution | null;
   x: number;
   y: number;
+  colIndex: number;
+  colNodeIds: string[];
 }
 interface InternalEdge {
   from: string; to: string; isSecondary?: boolean;
@@ -75,11 +77,11 @@ interface ClickedEdge {
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
-const CARD_W = 210;
-const CENTER_W = 248;
-const CARD_H_EST = 116;
-const GAP_Y = 36;
-const COL_GAP = 160;
+const CARD_W = 220;
+const CENTER_W = 256;
+const CARD_H_EST = 120;
+const GAP_Y = 52;
+const COL_GAP = 220;
 const POPOVER_W = 320;
 
 function mapNode(
@@ -108,6 +110,8 @@ function mapNode(
       ? { ...n.query_execution, query_status: "SUCCEEDED" } as LineageApiQueryExecution
       : (n.query_execution ?? null),
     x, y,
+    colIndex: 0,
+    colNodeIds: [],
   };
 }
 
@@ -175,10 +179,15 @@ function buildGraph(
 
   cols.forEach((list, cIndex) => {
     const startY = centerY - ((list.length - 1) * (CARD_H_EST + GAP_Y)) / 2;
+    const colNodeIds = list.map(n => n.id);
     list.forEach((n, i) => {
       const x = cIndex * (CARD_W + COL_GAP);
       const y = startY + i * (CARD_H_EST + GAP_Y);
-      nodes.push(mapNode(n, x, y, n.id === data.base_node.id, fixedNodeIds.has(n.id)));
+      
+      const mapped = mapNode(n, x, y, n.id === data.base_node.id, fixedNodeIds.has(n.id));
+      mapped.colIndex = cIndex;
+      mapped.colNodeIds = colNodeIds;
+      nodes.push(mapped);
     });
   });
 
@@ -982,7 +991,7 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
           ref={cardRef}
           onClick={handleClick}
           className={[
-            "select-none cursor-pointer rounded-xl border bg-white transition-all w-full",
+            "select-none cursor-pointer rounded-xl border bg-white transition-all w-full overflow-hidden",
             isCenter
                 ? "border-indigo-300 shadow-lg ring-2 ring-indigo-200/60"
                 : isHighlighted
@@ -1128,33 +1137,45 @@ function EdgeLayer({
   activeEdge: InternalEdge | null;
 }) {
   return (
-      <svg style={{ position: "absolute", top: 0, left: 0, width: "5000px", height: "5000px", overflow: "visible", pointerEvents: "none" }}>
+      <svg style={{ position: "absolute", top: 0, left: 0, overflow: "visible", pointerEvents: "none" }} width="10000" height="8000">
         <defs>
-          <marker id="lng-arrow-p" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,2 L0,10 L10,6 z" fill="#818cf8" />
+          {/* Primary edge arrow */}
+          <marker id="lng-arrow-p" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0.5 L0,7.5 L7.5,4 z" fill="#818cf8" />
           </marker>
-          <marker id="lng-arrow-pa" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,1 L0,11 L12,6 z" fill="#7c3aed" />
+          {/* Active primary */}
+          <marker id="lng-arrow-pa" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0.5 L0,7.5 L7.5,4 z" fill="#7c3aed" />
           </marker>
-          <marker id="lng-arrow-s" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,2 L0,10 L10,6 z" fill="#9ca3af" />
+          {/* Secondary / gray */}
+          <marker id="lng-arrow-s" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0.5 L0,7.5 L7.5,4 z" fill="#9ca3af" />
           </marker>
-          <marker id="lng-arrow-fail" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,2 L0,10 L10,6 z" fill="#ef4444" />
+          {/* Failed */}
+          <marker id="lng-arrow-fail" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0.5 L0,7.5 L7.5,4 z" fill="#ef4444" />
           </marker>
-          <marker id="lng-arrow-fail-a" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,1 L0,11 L12,6 z" fill="#dc2626" />
+          {/* Failed active */}
+          <marker id="lng-arrow-fail-a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0.5 L0,7.5 L7.5,4 z" fill="#dc2626" />
           </marker>
         </defs>
         {edges.map((edge, i) => {
           const from = positions[edge.from], to = positions[edge.to];
           if (!from || !to) return null;
-          const x1 = from.x + from.w, y1 = from.y + from.h / 2;
-          const x2 = to.x, y2 = to.y + to.h / 2;
-          
-          // Enhanced S-curve routing: ensures smooth corners and loop-backs for backward edges.
-          const cOffset = Math.max(Math.abs(x2 - x1) / 2.5, 60);
+          // ── Edge ports: always exit right side of source, enter left side of target ──
+          // Offset 3px inward from both node borders so the path lives cleanly in the gap space
+          const x1 = from.x + from.w - 2;
+          const y1 = from.y + from.h / 2;
+          const x2 = to.x + 2;
+          const y2 = to.y + to.h / 2;
+
+          // Unified cubic bezier — consistent S-curve for every direction and angle
+          const absDx = Math.abs(x2 - x1);
+          const absDy = Math.abs(y2 - y1);
+          const cOffset = Math.max(absDx * 0.45, absDy * 0.25, 80);
           const d = `M${x1},${y1} C${x1 + cOffset},${y1} ${x2 - cOffset},${y2} ${x2},${y2}`;
+
           const isActive = activeEdge?.from === edge.from && activeEdge?.to === edge.to;
           const hasQuery = !!edge.transformationQuery;
           const isFailed = edge.queryExecution?.query_status === "FAILURE";
@@ -1364,14 +1385,15 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const [direction, setDirection] = useState<"upstream" | "downstream" | "both">("both");
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.85);
+  const [scale, setScale] = useState(0.82);
   const [pan, setPan] = useState({ x: 60, y: 40 });
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
   const panOrigin = useRef({ x: 0, y: 0 });
   const [search, setSearch] = useState("");
   const [nodeHeights, setNodeHeights] = useState<Record<string, number>>({});
-  const [nodePositions, setNodePositions] = useState<Record<string, { x: number, y: number }>>({});
+  const [nodePositions, setNodePositions] = useState<Record<string, { x: number, y: number }>>({}); 
+  const hasAutoFit = useRef(false);
   const [fixedNodeIds, setFixedNodeIds] = useState<Set<string>>(new Set());
   const [fixedNodes, setFixedNodes] = useState<Record<string, 'auto' | 'manual'>>({});
   const [fixingNodeIds, setFixingNodeIds] = useState<Set<string>>(new Set());
@@ -1431,26 +1453,55 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
     apiData ? buildGraph(apiData, fixedNodeIds) : { nodes: [], edges: [] }, 
   [apiData, fixedNodeIds]);
 
-  const nodes = useMemo(() => defaultNodes.map(n => {
-    const pos = nodePositions[n.id];
-    if (!pos) return n;
-    return { ...n, x: pos.x, y: pos.y };
-  }), [defaultNodes, nodePositions]);
+  const positions = useMemo(() => {
+    const pos: Record<string, NodeRect> = {};
+    const colStacks: Record<number, { id: string, h: number }[]> = {};
+    
+    defaultNodes.forEach(n => {
+      if (!colStacks[n.colIndex]) colStacks[n.colIndex] = [];
+      if (!colStacks[n.colIndex].find(x => x.id === n.id)) {
+        colStacks[n.colIndex].push({ id: n.id, h: nodeHeights[n.id] ?? CARD_H_EST });
+      }
+    });
+
+    defaultNodes.forEach((n) => {
+      let x = n.x;
+      let y = n.y;
+      const isDragged = !!nodePositions[n.id];
+      
+      if (isDragged) {
+        x = nodePositions[n.id].x;
+        y = nodePositions[n.id].y;
+      } else if (colStacks[n.colIndex]) {
+        const stack = colStacks[n.colIndex];
+        const totalH = stack.reduce((acc, curr) => acc + curr.h, 0) + (stack.length - 1) * GAP_Y;
+        const startY = 400 - totalH / 2; 
+        
+        let currentY = startY;
+        for (const item of stack) {
+          if (item.id === n.id) {
+            y = currentY;
+            break;
+          }
+          currentY += item.h + GAP_Y;
+        }
+      }
+      
+      pos[n.id] = { x, y, w: n.isCenter ? CENTER_W : CARD_W, h: nodeHeights[n.id] ?? CARD_H_EST };
+    });
+    return pos;
+  }, [defaultNodes, nodePositions, nodeHeights]);
 
   const visibleNodes = search.trim()
-      ? nodes.filter((n) =>
+      ? defaultNodes.filter((n) =>
           n.label.toLowerCase().includes(search.toLowerCase()) ||
           n.sourceName.toLowerCase().includes(search.toLowerCase()) ||
           n.columns.some((c) => c.name.toLowerCase().includes(search.toLowerCase()))
       )
-      : nodes;
+      : defaultNodes;
 
-  const positions: Record<string, NodeRect> = {};
-  nodes.forEach((n) => {
-    positions[n.id] = { x: n.x, y: n.y, w: n.isCenter ? CENTER_W : CARD_W, h: nodeHeights[n.id] ?? CARD_H_EST };
-  });
 
-  const popoverNode = popoverAnchor ? nodes.find((n) => n.id === popoverAnchor.nodeId) ?? null : null;
+  const popoverNode = popoverAnchor ? defaultNodes.find((n) => n.id === popoverAnchor.nodeId) ?? null : null;
 
   const handleNodeClick = useCallback((nodeId: string, rect: DOMRect) => {
     if (hasDragged.current) return;
@@ -1525,7 +1576,26 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
     setScale((s) => Math.min(2, Math.max(0.25, s - e.deltaY * 0.001)));
   }, []);
 
-  const resetView = () => { setScale(0.85); setPan({ x: 60, y: 40 }); setNodePositions({}); };
+  const fitToView = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !defaultNodes.length) return;
+    const vw = container.clientWidth;
+    const vh = container.clientHeight;
+    const PADDING = 60;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    defaultNodes.forEach(n => {
+      const pos = positions[n.id];
+      if (!pos) return;
+      minX = Math.min(minX, pos.x); minY = Math.min(minY, pos.y);
+      maxX = Math.max(maxX, pos.x + pos.w); maxY = Math.max(maxY, pos.y + pos.h);
+    });
+    if (!isFinite(minX)) return;
+    const fitScale = Math.min((vw - PADDING * 2) / (maxX - minX), (vh - PADDING * 2) / (maxY - minY), 1);
+    setScale(parseFloat(fitScale.toFixed(3)));
+    setPan({ x: PADDING - minX * fitScale, y: PADDING - minY * fitScale });
+  }, [defaultNodes, positions]);
+
+  const resetView = () => { setScale(0.82); setPan({ x: 60, y: 40 }); setNodePositions({}); };
 
   return (
       <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#f8f9fb] rounded-xl">
@@ -1549,7 +1619,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
             <span className="text-xs font-semibold text-indigo-700">
             Lineage for <span className="font-bold">{datasetName}</span>
           </span>
-            {!isLoading && <span className="text-[10px] text-indigo-400 font-medium">· {nodes.length} nodes</span>}
+            {!isLoading && <span className="text-[10px] text-indigo-400 font-medium">· {defaultNodes.length} nodes</span>}
             <button className="text-indigo-300 hover:text-indigo-500 ml-1"><MoreHorizontal size={13} /></button>
           </div>
           <DepthControl
@@ -1598,7 +1668,8 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 </div>
               </div>
           )}
-          {!isLoading && !error && nodes.length === 0 && (
+          {/* ── No data state ── */}
+          {!isLoading && !error && defaultNodes.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="text-center">
                   <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
@@ -1611,7 +1682,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
               </div>
           )}
 
-          {!isLoading && !error && nodes.length > 0 && (
+          {!isLoading && !error && defaultNodes.length > 0 && (
               <div
                   style={{
                     transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
@@ -1620,6 +1691,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                     willChange: "transform",
                   }}
               >
+                {/* Edge layer renders BELOW nodes — visible in the column gap between cards */}
                 <MemoizedEdgeLayer
                     edges={edges}
                     positions={positions}
@@ -1630,16 +1702,18 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                     <div
                         key={node.id}
                         className="lng-node"
-                        onMouseDown={(e) => handleNodeMouseDown(e, node.id, node.x, node.y)}
+                        onMouseDown={(e) => handleNodeMouseDown(e, node.id, positions[node.id].x, positions[node.id].y)}
                         style={{
                           position: "absolute",
-                          left: node.x,
-                          top: node.y,
+                          left: 0,
+                          top: 0,
+                          transform: `translate(${positions[node.id].x}px, ${positions[node.id].y}px)`,
                           width: node.isCenter ? CENTER_W : CARD_W,
                           cursor: draggingNode === node.id ? "grabbing" : draggingNode ? "default" : "grab",
                           willChange: "transform",
                           userSelect: draggingNode === node.id ? "none" : "auto",
                           zIndex: draggingNode === node.id ? 50 : 1,
+                          transition: draggingNode === node.id ? "none" : "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -1692,7 +1766,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
               [<ZoomIn size={14} />, () => setScale((s) => Math.min(2, s + 0.1))],
               [<ZoomOut size={14} />, () => setScale((s) => Math.max(0.25, s - 0.1))],
               [<RotateCcw size={14} />, resetView],
-              [<Maximize2 size={14} />, () => {}],
+              [<Maximize2 size={14} />, fitToView],
             ] as [React.ReactNode, () => void][]).map(([icon, handler], i) => (
                 <button
                     key={i}
@@ -1721,7 +1795,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
         )}
 
         <SqlEditorSidebar 
-            node={sidebarNodeId ? nodes.find(n => n.id === sidebarNodeId) ?? null : null}
+            node={sidebarNodeId ? defaultNodes.find(n => n.id === sidebarNodeId) ?? null : null}
             edges={edges}
             isOpen={showSqlSidebar}
             onClose={() => setShowSqlSidebar(false)}
