@@ -44,6 +44,7 @@ interface DatasetDetailPageProps {
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { ReclassificationActionWithAiRequest } from "@/services/mock";
 import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
+import { useAppStore } from "@/store/appStore";
 
 const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   sourceId,
@@ -62,6 +63,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
     useState<ClassifyScanPhase>("never");
   const [aiResults, setAiResults] = useState<any>({});
   const { data: complianceData, isFetching: isComplianceLoading, refetch: complianceRefetch } = useGetDatasetComplianceReport(datasetId);
+
+  const { setSidebarCollapsed } = useAppStore();
 
   const handleViewCompliance = async () => {
     setShowCompliance(true);
@@ -248,6 +251,13 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       : parseInt(detail.qualityScore) >= 90
         ? "text-green-600"
         : "text-yellow-600";
+
+  const handleTabClick = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === "Lineage") {
+      setSidebarCollapsed(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -470,7 +480,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             {tabs.map(({ name, count }) => (
               <button
                 key={name}
-                onClick={() => setActiveTab(name as Tab)}
+                onClick={() => handleTabClick(name)}
                 className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"

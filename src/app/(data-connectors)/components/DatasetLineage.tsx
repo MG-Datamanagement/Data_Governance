@@ -16,12 +16,18 @@ import {
 import { cn } from "@/lib/utils";
 import { manualFixSqlTemplate } from "@/lib/constants";
 import { useGetLineageCentric } from "@/hooks/useDashboardQueries";
-
+import s3Icon from "@/assets/node-img-icons/amazon-s3-img-icon .jpg";
+import apiIcon from "@/assets/node-img-icons/api-img-icon.png";
+import lambdaIcon from "@/assets/node-img-icons/lambda-img-icon.jpg";
+import mssqlIcon from "@/assets/node-img-icons/ms-sql-img-icon.jpg";
+import nifiIcon from "@/assets/node-img-icons/nifi-img-icon.png";
+import redshiftIcon from "@/assets/node-img-icons/redshift-img-icon.png";
+import sparkIcon from "@/assets/node-img-icons/spark-img-icon-transparent.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type NodeType = "table" | "view" | "dashboard";
-type QualityStatus = "healthy" | "warning" | "error" | "unhealthy";
+type QualityStatus = "healthy" | "warning" | "error" | "unhealthy" | "idempotent";
 
 interface InternalColumn {
   id: string; name: string; data_type: string;
@@ -55,6 +61,7 @@ interface InternalEdge {
   from: string; to: string; isSecondary?: boolean;
   transformationQuery: string | null; fromLabel: string; toLabel: string;
   queryExecution?: LineageApiQueryExecution | null;
+  isIdempotent?: boolean;
 }
 interface NodeRect { x: number; y: number; w: number; h: number; }
 
@@ -71,8 +78,8 @@ interface ClickedEdge {
 const CARD_W = 210;
 const CENTER_W = 248;
 const CARD_H_EST = 116;
-const GAP_Y = 28;
-const COL_GAP = 110;
+const GAP_Y = 36;
+const COL_GAP = 160;
 const POPOVER_W = 320;
 
 function mapNode(
@@ -198,6 +205,7 @@ function buildGraph(
         : (edgeDataNode?.query_execution ?? null),
       fromLabel: fromNode?.table_name || fromId, 
       toLabel: toNode?.table_name || toId,
+      isIdempotent: edgeDataNode?.status === 'idempotent',
     });
   };
 
@@ -243,6 +251,23 @@ function typeIcon(type: NodeType, cls = "w-3.5 h-3.5") {
   );
 }
 
+function getNodeIconSrc(label: string) {
+  const lbl = label.toLowerCase();
+  
+  // Cast module exports to any to safely check .src property
+  const getSrc = (img: any) => img?.src || img;
+  
+  if (lbl === "api") return getSrc(apiIcon);
+  if (lbl === "lambda") return getSrc(lambdaIcon);
+  if (lbl === "nifi") return getSrc(nifiIcon);
+  if (lbl === "microsoft_sql_server" || lbl === "microsoft sql server" || lbl === "ms sql server" || lbl === "ms_sql_server") return getSrc(mssqlIcon);
+  
+  if (["ods_profiles", "sfmc_profiles", "ciam_profiles"].includes(lbl)) return getSrc(sparkIcon);
+  if (lbl === "cdp_profiles") return getSrc(redshiftIcon);
+  
+  return getSrc(s3Icon);
+}
+
 function colTypeIcon(dt: string) {
   const t = dt.toLowerCase();
   if (t.includes("int") || t.includes("number") || t.includes("float") || t.includes("numeric"))
@@ -262,6 +287,11 @@ function qualityDot(status: QualityStatus) {
   if (status === "healthy") return (
       <span className="w-4 h-4 rounded-full border-2 border-green-400 flex items-center justify-center">
       <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+    </span>
+  );
+  if (status === "idempotent") return (
+      <span className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center">
+      <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
     </span>
   );
   if (status === "error" || status === "unhealthy") return (
@@ -965,9 +995,11 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
           ].join(" ")}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-          <div className="flex items-center gap-1.5 min-w-0">
-          <span className={`flex-shrink-0 ${isCenter ? "text-indigo-500" : "text-gray-400"}`}>
-            {typeIcon(node.type)}
+          <div className="flex items-center gap-2 min-w-0">
+          <span className={`flex-shrink-0 flex items-center justify-center ${isCenter ? "text-indigo-500" : "text-gray-400"}`}>
+            <div className={`flex items-center justify-center rounded-lg ${isCenter ? 'w-[30px] h-[30px] shadow-sm' : 'w-10 h-10 shadow-sm'}`}>
+              <img src={getNodeIconSrc(node.label)} alt={node.label} className={`${isCenter ? 'w-[20px] h-[20px]' : 'w-10 h-10'} object-contain mix-blend-multiply`} />
+            </div>
           </span>
             {(node.database || node.sourceName) && (
                 <span className="text-[10px] text-gray-400 truncate">
@@ -1073,7 +1105,19 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
   );
 }
 
+const MemoizedNodeCard = React.memo(NodeCard, (prev, next) => {
+  return prev.node === next.node &&
+         prev.isSelected === next.isSelected &&
+         prev.popoverOpen === next.popoverOpen;
+});
+
 // ─── SVG Edge Layer ───────────────────────────────────────────────────────────
+
+const MemoizedEdgeLayer = React.memo(EdgeLayer, (prev, next) => {
+  return prev.edges === next.edges && 
+         prev.positions === next.positions && 
+         prev.activeEdge === next.activeEdge;
+});
 
 function EdgeLayer({
                      edges, positions, onEdgeClick, activeEdge,
@@ -1084,22 +1128,22 @@ function EdgeLayer({
   activeEdge: InternalEdge | null;
 }) {
   return (
-      <svg style={{ position: "absolute", top: 0, left: 0, width: "5000px", height: "5000px", overflow: "visible" }}>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "5000px", height: "5000px", overflow: "visible", pointerEvents: "none" }}>
         <defs>
-          <marker id="lng-arrow-p" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#6366f1" />
+          <marker id="lng-arrow-p" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,2 L0,10 L10,6 z" fill="#818cf8" />
           </marker>
-          <marker id="lng-arrow-pa" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#7c3aed" />
+          <marker id="lng-arrow-pa" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,1 L0,11 L12,6 z" fill="#7c3aed" />
           </marker>
-          <marker id="lng-arrow-s" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#9ca3af" />
+          <marker id="lng-arrow-s" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,2 L0,10 L10,6 z" fill="#9ca3af" />
           </marker>
-          <marker id="lng-arrow-fail" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+          <marker id="lng-arrow-fail" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,2 L0,10 L10,6 z" fill="#ef4444" />
           </marker>
-          <marker id="lng-arrow-fail-a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="#dc2626" />
+          <marker id="lng-arrow-fail-a" markerWidth="14" markerHeight="14" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,1 L0,11 L12,6 z" fill="#dc2626" />
           </marker>
         </defs>
         {edges.map((edge, i) => {
@@ -1107,8 +1151,10 @@ function EdgeLayer({
           if (!from || !to) return null;
           const x1 = from.x + from.w, y1 = from.y + from.h / 2;
           const x2 = to.x, y2 = to.y + to.h / 2;
-          const cx = (x1 + x2) / 2;
-          const d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;
+          
+          // Enhanced S-curve routing: ensures smooth corners and loop-backs for backward edges.
+          const cOffset = Math.max(Math.abs(x2 - x1) / 2.5, 60);
+          const d = `M${x1},${y1} C${x1 + cOffset},${y1} ${x2 - cOffset},${y2} ${x2},${y2}`;
           const isActive = activeEdge?.from === edge.from && activeEdge?.to === edge.to;
           const hasQuery = !!edge.transformationQuery;
           const isFailed = edge.queryExecution?.query_status === "FAILURE";
@@ -1116,32 +1162,34 @@ function EdgeLayer({
           const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
 
           // Determine colors based on failure status
+          const isIdemp = edge.isIdempotent;
           const edgeColor = isFailed
             ? (isActive ? "#dc2626" : "#ef4444")
-            : (isActive ? "#7c3aed" : (edge.isSecondary || isInventory) ? "#9ca3af" : "#6366f1");
+            : (isActive ? "#7c3aed" : (edge.isSecondary || isInventory || isIdemp) ? "#9ca3af" : "#818cf8");
           const markerEnd = isFailed
             ? (isActive ? "url(#lng-arrow-fail-a)" : "url(#lng-arrow-fail)")
-            : (isActive ? "url(#lng-arrow-pa)" : (edge.isSecondary || isInventory) ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)");
+            : (isActive ? "url(#lng-arrow-pa)" : (edge.isSecondary || isInventory || isIdemp) ? "url(#lng-arrow-s)" : "url(#lng-arrow-p)");
 
           return (
               <g key={i}>
                 <path
                     d={d} fill="none" stroke="transparent" strokeWidth={18}
-                    style={{ cursor: "pointer" }}
+                    style={{ pointerEvents: "stroke", cursor: "pointer" }}
                     onClick={(e) => { e.stopPropagation(); onEdgeClick(edge, e.clientX, e.clientY); }}
                 />
                 <path
                     d={d} fill="none"
                     stroke={edgeColor}
-                    strokeWidth={isActive ? 2.5 : edge.isSecondary ? 1.5 : 2}
+                    strokeWidth={isActive ? 3 : edge.isSecondary ? 1.5 : 2.5}
                     strokeDasharray={edge.isSecondary && !isActive ? "6 4" : undefined}
                     markerEnd={markerEnd}
-                    opacity={isActive ? 1 : 0.85}
+                    opacity={isActive ? 1 : 0.9}
                     style={{ pointerEvents: "none" }}
+                    className="transition-all duration-300 ease-in-out"
                 />
                 {hasQuery && (
                     <g
-                        style={{ cursor: "pointer" }}
+                        style={{ pointerEvents: "all", cursor: "pointer" }}
                         onClick={(e) => { e.stopPropagation(); onEdgeClick(edge, e.clientX, e.clientY); }}
                     >
                       <circle cx={midX} cy={midY} r={9} fill="white" stroke={edgeColor} strokeWidth={1.5} />
@@ -1382,11 +1430,13 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
   const { nodes: defaultNodes, edges } = useMemo(() => 
     apiData ? buildGraph(apiData, fixedNodeIds) : { nodes: [], edges: [] }, 
   [apiData, fixedNodeIds]);
-  const nodes = useMemo(() => defaultNodes.map(n => ({
-    ...n,
-    x: nodePositions[n.id]?.x ?? n.x,
-    y: nodePositions[n.id]?.y ?? n.y
-  })), [defaultNodes, nodePositions]);
+
+  const nodes = useMemo(() => defaultNodes.map(n => {
+    const pos = nodePositions[n.id];
+    if (!pos) return n;
+    return { ...n, x: pos.x, y: pos.y };
+  }), [defaultNodes, nodePositions]);
+
   const visibleNodes = search.trim()
       ? nodes.filter((n) =>
           n.label.toLowerCase().includes(search.toLowerCase()) ||
@@ -1570,7 +1620,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                     willChange: "transform",
                   }}
               >
-                <EdgeLayer
+                <MemoizedEdgeLayer
                     edges={edges}
                     positions={positions}
                     onEdgeClick={handleEdgeClick}
@@ -1587,12 +1637,13 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                           top: node.y,
                           width: node.isCenter ? CENTER_W : CARD_W,
                           cursor: draggingNode === node.id ? "grabbing" : draggingNode ? "default" : "grab",
+                          willChange: "transform",
                           userSelect: draggingNode === node.id ? "none" : "auto",
                           zIndex: draggingNode === node.id ? 50 : 1,
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                      <NodeCard
+                      <MemoizedNodeCard
                           node={node}
                           isSelected={popoverAnchor?.nodeId === node.id}
                           popoverOpen={popoverAnchor?.nodeId === node.id}
