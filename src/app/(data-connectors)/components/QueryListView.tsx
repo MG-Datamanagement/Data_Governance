@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2, Eye } from "lucide-react";
+import { Trash2, Eye, Code, Terminal } from "lucide-react";
 import { ApiQuery } from "@/types/dashboardTypes";
 import QuerySqlPreview from "./QuerySqlPreview";
 
@@ -19,6 +19,9 @@ const QueryListView: React.FC<QueryListViewProps> = ({
   if (queries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+          <Terminal size={32} className="text-gray-300" />
+        </div>
         <p className="text-gray-400 font-medium">No highlighted queries found</p>
       </div>
     );

@@ -422,14 +422,22 @@ function AiSummaryPopover({
           {/* ── Scrollable Body ── */}
           <div className="overflow-y-auto min-h-0 max-h-64 px-4 py-3 space-y-2.5">
             {/* Description */}
-            <p className="text-[12.5px] leading-[1.6] text-gray-700">
-              {node.aiSummary
-                  ? node.aiSummary
-                  : `${node.label} is a ${node.type} in ${node.database || node.sourceName}${node.schema ? `.${node.schema}` : ""} containing ${node.columnCount} column${node.columnCount !== 1 ? "s" : ""} of business data.`}
-            </p>
+            <div className="flex items-start gap-2">
+              <p className="text-[12.5px] leading-[1.6] text-gray-700 flex-1">
+                {node.aiSummary
+                    ? node.aiSummary
+                    : `${node.label} is a ${node.type} in ${node.database || node.sourceName}${node.schema ? `.${node.schema}` : ""} containing ${node.columnCount} column${node.columnCount !== 1 ? "s" : ""} of business data.`}
+              </p>
+              {/* {isFixed && (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+                  <CheckCircle2 size={9} className="text-emerald-600" />
+                  Resolved
+                </span>
+              )} */}
+            </div>
 
-            {/* Note section */}
-            {(node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") && (
+            {/* Note section — only visible when node has active failures (hidden after fix) */}
+            {!isFixed && (node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") && (
               <>
                 {(node.notes || node.queryExecution?.query_status === "FAILURE" || 
                   node.qualityStatus === "unhealthy" || node.qualityStatus === "error" || node.qualityStatus === "warning") && (
@@ -487,8 +495,19 @@ function AiSummaryPopover({
             )}
           </div>
 
-          {/* ── Fixed Footer Remediation ── */}
-          {((node.queryExecution?.query_status !== "SUCCEEDED" || node.qualityStatus !== "healthy") || isFixed) && !initialDeclined && (
+          {/* ── Fixed Footer Remediation ──
+               Only shown when this node has an actual transformation query failure
+               or unhealthy quality status — OR when the fix has already been applied
+               (isFixed). Hidden entirely for normal/healthy nodes. */}
+          {((() => {
+            const hasTransformationFailure =
+              node.queryExecution?.query_status === "FAILURE" ||
+              node.queryExecution?.query_status === "ERROR" ||
+              node.qualityStatus === "unhealthy" ||
+              node.qualityStatus === "error" ||
+              node.qualityStatus === "warning";
+            return hasTransformationFailure || isFixed;
+          })()) && !initialDeclined && (
             <div className="flex-shrink-0 border-t border-gray-100 bg-slate-50/95 p-3 flex flex-col gap-2.5 shadow-[0_-8px_20px_rgba(0,0,0,0.04)] backdrop-blur-sm">
               {!isFixed ? (
                 <>

@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/appStore';
 import { Button } from '@/components/ui/Button';
 import { CONSTANTS } from '@/lib/constants';
 import { dashboardApiServices, SourceAiSummaryResponse } from '@/services/dashboardApiServices';
+import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from '@/hooks/useDashboardQueries';
 import { RiRobot2Fill } from 'react-icons/ri';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,39 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
     const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const STEP_DURATION = 1800;
+
+    // ── State declarations (all up-front to avoid TDZ issues with useCallback) ──
+
+    const [ingestionStepsCount, setIngestionStepsCount] = useState(0);
+    const [phase, setPhase] = useState<IngestionPhase>("scanning");
+    const [currentStepIdx, setCurrentStepIdx] = useState(-1);
+    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+    const [isThinking, setIsThinking] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [totalSteps, setTotalSteps] = useState(0);
+    const [showNotification, setShowNotification] = useState(true);
+    const [logs, setLogs] = useState<IngestionLog[]>([]);
+    const [isComplete, setIsComplete] = useState(false);
+    const [isProgressExpanded, setIsProgressExpanded] = useState(false);
+    const [streamStatus, setStreamStatus] = useState<"connecting" | "connected" | "completed" | "error">("connecting");
+    const [sourceAiSummary, setSourceAiSummary] = useState<SourceAiSummaryResponse | null>(null);
+    const [isSourceAiSummaryLoading, setIsSourceAiSummaryLoading] = useState<boolean>(false);
+    const [summaryError, setSummaryError] = useState<boolean>(false);
+    const [hasAttemptedPhase2, setHasAttemptedPhase2] = useState<boolean>(false);
+
+    const eventSourceRef = useRef<EventSource | null>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const mainScrollRef = useRef<HTMLDivElement>(null);
+
+    const { addDsConfig, setAddDsConfig } = useAppStore();
+    const router = useRouter();
+
+    // Pre-fetch both stage lists via React Query — cached with staleTime:Infinity
+    // so the same network request is shared with any concurrent caller (e.g. LiveIngestionPanel).
+    const { data: ingestionStagesData } = useGetIngestionLoadingStages();
+    const { data: postIngestionStagesData } = useGetPostIngestionLoadingStages();
+
+    // ── Callbacks ────────────────────────────────────────────────────────────────
 
     const advanceStep = useCallback((idx: number, stepList: Step[], onComplete?: () => void) => {
         if (idx >= stepList.length) {
@@ -66,14 +100,14 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         }, STEP_DURATION);
     }, []);
 
-    const fetchInitialSteps = async () => {
+    const fetchInitialSteps = useCallback(async () => {
         if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
         try {
-            const ingestionRes = await dashboardApiServices.getIngestionLoadingStages();
-            const ingestionSteps = ingestionRes.ingestion_loads.map((label: string) => ({ label }));
-            
-            const postRes = await dashboardApiServices.getPostIngestionLoadingStages();
-            const postSteps = postRes.reasoning_loads.map((label: string) => ({ label }));
+            const ingestionLoads = ingestionStagesData?.ingestion_loads ?? [];
+            const postLoads = postIngestionStagesData?.reasoning_loads ?? [];
+
+            const ingestionSteps = ingestionLoads.map((label: string) => ({ label }));
+            const postSteps = postLoads.map((label: string) => ({ label }));
             
             const allSteps = [...ingestionSteps, ...postSteps];
             setSteps(allSteps);
@@ -108,9 +142,9 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         } catch (e) {
             console.error(e);
         }
-    }
+    }, [ingestionStagesData, postIngestionStagesData, addDsConfig?.piiApproval, advanceStep]);
 
-    const appendPostIngestionSteps = async () => {
+    const appendPostIngestionSteps = useCallback(async () => {
         setIsThinking(true);
         setIsComplete(false);
         setHasAttemptedPhase2(true);
@@ -126,8 +160,9 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         }
 
         try {
-            const res = await dashboardApiServices.getPostIngestionLoadingStages();
-            const newSteps = res.reasoning_loads.map((label: string) => ({ label }));
+            // Use cached React Query data — no additional network request fires
+            // because staleTime is Infinity.
+            const newSteps = (postIngestionStagesData?.reasoning_loads ?? []).map((label: string) => ({ label }));
             setSteps(prev => {
                 const combined = [...prev, ...newSteps];
                 // The bar is already configured for the total length
@@ -140,39 +175,15 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         } catch (e) {
             console.error(e);
         }
-    };
+    }, [steps, ingestionStepsCount, postIngestionStagesData, advanceStep]);
 
-    const [ingestionStepsCount, setIngestionStepsCount] = useState(0);
-
-    const [phase, setPhase] = useState<IngestionPhase>("scanning");
-    const [currentStepIdx, setCurrentStepIdx] = useState(-1);
-    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-    const [isThinking, setIsThinking] = useState(true);
-    const [progress, setProgress] = useState(0);
-    const [totalSteps, setTotalSteps] = useState(0);
-    const [showNotification, setShowNotification] = useState(true);
-    const [logs, setLogs] = useState<IngestionLog[]>([]);
-    const [isComplete, setIsComplete] = useState(false);
-
-    const eventSourceRef = useRef<EventSource | null>(null);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [streamStatus, setStreamStatus] = useState<"connecting" | "connected" | "completed" | "error">("connecting");
-    const { addDsConfig, setAddDsConfig } = useAppStore();
-    const router = useRouter();
-    const [sourceAiSummary, setSourceAiSummary] = useState<SourceAiSummaryResponse | null>(null);
-    const [isSourceAiSummaryLoading, setIsSourceAiSummaryLoading] = useState<boolean>(false);
-    const [summaryError, setSummaryError] = useState<boolean>(false);
-    const [hasAttemptedPhase2, setHasAttemptedPhase2] = useState<boolean>(false);
-
-    const mainScrollRef = useRef<HTMLDivElement>(null);
+    // ── Effects ──────────────────────────────────────────────────────────────────
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [logs]);
-
-    const [isProgressExpanded, setIsProgressExpanded] = useState(false);
 
     // Synchronize final completion: Wait for both animations (phase === "done") AND data (isSourceAiSummaryLoading === false)
     useEffect(() => {
@@ -186,7 +197,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
     }, [phase, isSourceAiSummaryLoading, streamStatus]);
 
     useEffect(() => {
-        if (isOpen && jobId && addDsConfig?.sourceId) {
+        if (isOpen && jobId && addDsConfig?.sourceId && ingestionStagesData && postIngestionStagesData) {
             fetchInitialSteps();
             const notificationTimer = setTimeout(() => setShowNotification(false), 5000);
             return () => {
@@ -213,7 +224,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
             setShowNotification(true);
             setIsProgressExpanded(false);
         }
-    }, [isOpen, jobId, addDsConfig?.sourceId]);
+    }, [isOpen, jobId, addDsConfig?.sourceId, ingestionStagesData, postIngestionStagesData]);
 
     useEffect(() => {
         // Only handle log initialization here if needed, completion is driven by staggered animation
@@ -230,6 +241,8 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
         };
     }, [jobId, isOpen, addDsConfig?.sourceId]);
 
+    // ── API Handlers ─────────────────────────────────────────────────────────────
+
     const handleBatchApis = async () => {
         setIsSourceAiSummaryLoading(true);
         try {
@@ -240,9 +253,6 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                 handleFetchIngestionSourceAiSummary(),
             ]);
             setIsSourceAiSummaryLoading(false);
-            // setIsComplete(true);
-            // setIsThinking(false);
-            // setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
         } catch (error) {
             console.error("Error during classification and Ai summary:", error);
             setIsSourceAiSummaryLoading(false);
@@ -597,7 +607,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                         </div>
                     </div>
 
-                    {/* Require Apporval for PII Scan Actions */}
+                    {/* Require Approval for PII Scan Actions */}
                     {(streamStatus === "completed" && addDsConfig?.piiApproval && !hasAttemptedPhase2) ? (
                         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-700 px-1">
                             <div className="bg-orange-50 border border-orange-100 rounded-lg p-2 flex items-start gap-4 shadow-sm border-l-4 border-l-orange-400">
@@ -626,7 +636,6 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                         </div>
                     ) : null}
 
-                    {/* {} */}
                     {/* AI Summary Block — Revealed only when complete or when explicitly loading in the final phase */}
                     {(isComplete || (isSourceAiSummaryLoading && hasAttemptedPhase2) || summaryError) && (sourceAiSummary?.ai_summary || isSourceAiSummaryLoading || summaryError) &&
                         <div className='bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg transition-all space-y-3'>
@@ -647,28 +656,11 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                                         >
                                             Retry Insights
                                         </Button>
-                                        {/* <Button
-                                            className='flex-1 text-[10px] h-9 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 transition-all'
-                                            onClick={() => onCloseReset(true)}
-                                        >
-                                            View Dataset
-                                        </Button> */}
                                     </div>
                                 </div>
                             ) : (sourceAiSummary?.ai_summary) && (
                                 <div className='space-y-3 flex flex-col items-center'>
                                     <p className='text-gray-600 leading-relaxed text-xs'>{sourceAiSummary?.ai_summary}</p>
-                                    {/* <Button
-                                        variant="primary"
-                                        className='text-white w-full gap-2 flex justify-center items-center'
-                                        onClick={() => {
-                                            onCloseReset(true)
-                                        }}
-                                    >
-                                        <Database size={14} />
-                                        View Ingested Dataset
-                                        <ArrowRight size={14} />
-                                    </Button> */}
                                 </div>
                             )}
                         </div>}

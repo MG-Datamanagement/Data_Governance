@@ -38,3 +38,6 @@ SELECT
  
 FROM booking_transaction;
 `
+
+/** Tailwind's md breakpoint = 768px */
+export const MD_BREAKPOINT = 768;

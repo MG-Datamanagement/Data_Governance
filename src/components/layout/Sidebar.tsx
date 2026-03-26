@@ -2,34 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 // import { signOut, useSession } from "next-auth/react"; // disconnected — connect when auth is ready
 import {
   Home,
   Tag,
   Database,
-  Globe,
-  BarChart3,
-  FileText,
   Settings,
   LogOut,
-  User,
   Moon,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
-  FilePlus,
-  FileTextIcon,
-  Book,
   Bot,
   Building2
 } from "lucide-react";
-import { MdOutlineAutoAwesome } from "react-icons/md";
 import { LuMessageSquare, LuCable, LuSparkles } from "react-icons/lu";
 import { GiMicrochip } from "react-icons/gi";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { BrandLogo } from "../ui/BrandLogo";
 import { MOCK_USER } from "@/lib/mockData";
+import { MD_BREAKPOINT } from "@/lib/constants";
 
 const GOVERN_ITEMS = [
   { icon: Home, label: "Home", href: "/overview" },
@@ -51,15 +44,28 @@ const AI_ASSISTANT_ITEMS = [
   { icon: LuMessageSquare, label: "Ask Me Anything", href: "/ask-me-anything" },
 ];
 
-// const CONTEXT_ITEMS = [
-//   { icon: FilePlus, label: "New Document", href: "/documents/new" },
-// ];
+
 
 export function Sidebar() {
   const pathname = usePathname();
   // const { data: session } = useSession(); // disconnected — connect when auth is ready
-  const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode } =
+  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed, darkMode, toggleDarkMode } =
     useAppStore();
+
+  /** Auto-collapse when viewport width is ≤ md breakpoint */
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MD_BREAKPOINT - 1}px)`);
+
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      setSidebarCollapsed(e.matches);
+    };
+
+    // Run immediately on mount
+    handler(mql);
+
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [setSidebarCollapsed]);
 
   const getUserInitials = (name: string) => {
     return name
@@ -73,7 +79,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "bg-white border-r border-gray-200 flex flex-col h-screen transition-all duration-300",
+        "bg-white border-r border-gray-200 flex flex-col h-screen transition-all duration-300 relative flex-shrink-0",
         sidebarCollapsed ? "w-[70px]" : "w-60",
       )}
     >
@@ -193,31 +199,6 @@ export function Sidebar() {
               ))}
             </div>
           </div>
-
-          {/* Context */}
-          {/* <div>
-            {!sidebarCollapsed && (
-              <h3 className="px-3 mb-1 text-xs font-medium text-gray-500 uppercase">
-                Context
-              </h3>
-            )}
-            <div className="space-y-1">
-              {CONTEXT_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "sidebar-link",
-                    pathname === item.href && "active",
-                  )}
-                  title={sidebarCollapsed ? item.label : ""}
-                >
-                  <item.icon size={16} />
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                </Link>
-              ))}
-            </div>
-          </div> */}
         </nav>
       </div>
 
@@ -285,4 +266,3 @@ export function Sidebar() {
     </aside>
   );
 }
-

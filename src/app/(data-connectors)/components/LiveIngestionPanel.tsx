@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Loader2, Check, Zap, X, CheckCircle2, Circle, Tag, ArrowDown } from 'lucide-react';
-import { dashboardApiServices } from '@/services/dashboardApiServices';
+import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from '@/hooks/useDashboardQueries';
 
 interface IngestionLog {
     timestamp: string;
@@ -35,6 +35,11 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
     const [steps, setSteps] = useState<Step[]>([]);
     const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Pre-fetch both stage lists via React Query — results are cached and
+    // deduplicated so concurrent callers (e.g. IngestionSidebar) share one request.
+    const { data: ingestionData } = useGetIngestionLoadingStages();
+    const { data: postIngestionData } = useGetPostIngestionLoadingStages();
+
     const advanceStep = useCallback((idx: number, stepList: Step[]) => {
         if (idx >= stepList.length) return;
 
@@ -50,21 +55,23 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
         }, 1800);
     }, []);
 
-    const fetchInitialSteps = async () => {
+    const fetchInitialSteps = useCallback(() => {
         try {
-            const res = await dashboardApiServices.getIngestionLoadingSteps();
-            const initialSteps = res.ingestion_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            const loads = ingestionData?.ingestion_loads ?? [];
+            if (loads.length === 0) return;
+            const initialSteps = loads.map((label: string) => ({ label, status: 'pending' as const }));
             setSteps(initialSteps);
             advanceStep(0, initialSteps);
         } catch(e) {
             console.error(e);
         }
-    }
+    }, [ingestionData, advanceStep]);
 
-    const appendPostIngestionSteps = async () => {
+    const appendPostIngestionSteps = useCallback(() => {
         try {
-            const res = await dashboardApiServices.getPostIngestionLoadingSteps();
-            const newSteps = res.reasoning_loads.map((label: string) => ({ label, status: 'pending' as const }));
+            const loads = postIngestionData?.reasoning_loads ?? [];
+            if (loads.length === 0) return;
+            const newSteps = loads.map((label: string) => ({ label, status: 'pending' as const }));
             setSteps(prev => {
                 const updated = prev.map(s => ({ ...s, status: 'completed' as const }));
                 const combined = [...updated, ...newSteps];
@@ -75,14 +82,17 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
         } catch(e) {
             console.error(e);
         }
-    };
+    }, [postIngestionData, advanceStep]);
 
     useEffect(() => {
-        fetchInitialSteps();
+        if (ingestionData) {
+            fetchInitialSteps();
+        }
         return () => {
             if (stepTimerRef.current) clearTimeout(stepTimerRef.current);
         };
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ingestionData]);
 
     const [datasets, setDatasets] = useState<IngestingDataset[]>([]);
     const [logs, setLogs] = useState<IngestionLog[]>([]);

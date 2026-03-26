@@ -219,3 +219,23 @@ export const useComplianceRun = () => {
   });
 };
 
+// ─── Ingestion Loading Stages hooks ──────────────────────────────────────────
+// staleTime: Infinity — these are static server-config lists that never change.
+// React Query deduplicates concurrent calls by queryKey, so only one network
+// request fires even if multiple components mount at the same time.
+
+export const useGetIngestionLoadingStages = () => {
+  return useQuery({
+    queryKey: ['dashboard', 'ingestionLoadingStages'],
+    queryFn: () => dashboardApiServices.getIngestionLoadingStages(),
+    staleTime: Infinity,
+  });
+};
+
+export const useGetPostIngestionLoadingStages = () => {
+  return useQuery({
+    queryKey: ['dashboard', 'postIngestionLoadingStages'],
+    queryFn: () => dashboardApiServices.getPostIngestionLoadingStages(),
+    staleTime: Infinity,
+  });
+};

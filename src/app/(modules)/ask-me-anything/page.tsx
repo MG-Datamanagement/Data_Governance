@@ -23,13 +23,17 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/Fallbacks";
 import { chatApiServices } from "@/services/chatApiServices";
 import { MOCK_AGENTS, MOCK_DATASETS } from "@/services/mock/chatMockApiService";
-import { CONSTANTS } from "@/lib/constants";
+import { CONSTANTS, MD_BREAKPOINT } from "@/lib/constants";
 import { useGetChatHistory } from "@/hooks/useDashboardQueries";
+import { useAppStore } from "@/store/appStore";
 
 const AskMeAnything: React.FC = () => {
-  // UI State
+  // Global sidebar state — persists across route navigations
+  const { chatSidebarCollapsed, toggleChatSidebar, setChatSidebarCollapsed } = useAppStore();
+
+  // UI State (chat-specific — no sidebar state here)
   const [uiState, setUIState] = useState<UIState>({
-    isSidebarCollapsed: false,
+    isSidebarCollapsed: false, // kept in type for compat; actual state is in appStore
     memoryEnabled: true,
     reasoningEnabled: true,
     showAgentModal: false,
@@ -80,6 +84,19 @@ const AskMeAnything: React.FC = () => {
       setSessions(historyData.sessions);
     }
   }, [historyData]);
+
+  /** Auto-collapse chatbot sidebar at md breakpoint (< 768px)
+   *  Only fires when breakpoint is actually crossed — user manual toggles
+   *  are NOT overridden when staying on the same side of the breakpoint. */
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MD_BREAKPOINT - 1}px)`);
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      setChatSidebarCollapsed(e.matches);
+    };
+    handler(mql);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [setChatSidebarCollapsed]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -292,15 +309,10 @@ const AskMeAnything: React.FC = () => {
   return (
     <div className="flex h-[calc(100vh-58px)] bg-gray-50">
       <Sidebar
-        isCollapsed={uiState.isSidebarCollapsed}
+        isCollapsed={chatSidebarCollapsed}
         sessions={sessions}
         currentSessionId={currentSessionId}
-        onToggle={() =>
-          setUIState((prev) => ({
-            ...prev,
-            isSidebarCollapsed: !prev.isSidebarCollapsed,
-          }))
-        }
+        onToggle={toggleChatSidebar}
         onNewChat={handleNewChat}
         onSelectSession={handleSelectSession}
         searchQuery={searchQuery}
