@@ -1166,9 +1166,9 @@ function DepthControl({
   onChange: (d: number, dir: "upstream" | "downstream" | "both") => void;
 }) {
   return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <span className="text-[11px] text-gray-500 font-medium">Depth</span>
-        {[1, 2, 3, 4].map((d) => (
+        {[1, 2, 3, 4, 5].map((d: number) => (
             <button
                 key={d}
                 onClick={() => onChange(d, direction)}
@@ -1481,7 +1481,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
       <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#f8f9fb] rounded-xl">
 
         {/* ── Top bar ── */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white flex-shrink-0 z-10 gap-3 flex-wrap">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white flex-shrink-0 z-10 gap-1 flex-wrap">
           <div className="relative w-48 flex-shrink-0">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -1491,7 +1491,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
                 onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 flex-shrink-0">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 flex-shrink-0">
             <svg className="w-3.5 h-3.5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <path d="M3 9h18M3 15h18M9 3v18" />
