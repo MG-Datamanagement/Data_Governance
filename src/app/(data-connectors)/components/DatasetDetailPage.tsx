@@ -19,7 +19,8 @@ import {
   useGetDatasetComplianceReport,
   useGetCatalogProperties,
   useGetCatalogAuditTrail,
-  useGetDatasourceQueries
+  useGetDatasourceQueries,
+  useGetLineageCentric
 } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
@@ -59,9 +60,15 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const router = useRouter();
   const { data: catalogData, isLoading: isCatalogLoading, refetch: fetchCatalogDetail } = useGetCatalogDetail(datasetId);
   const { data: datacardData, isLoading: isDatacardLoading } = useGetCatalogDatacard(datasetId);
-  const { data: propertiesData } = useGetCatalogProperties(datasetId);
-  const { data: auditData } = useGetCatalogAuditTrail(datasetId, 1, 0);
-  const { data: queriesData } = useGetDatasourceQueries(datasetId);
+  const { setSidebarCollapsed, datasetDetailTab, setDatasetDetailTab } = useAppStore();
+  const activeTab = datasetDetailTab as Tab;
+
+  const { data: propertiesData } = useGetCatalogProperties(datasetId, { enabled: !!datasetId && activeTab === "Properties" });
+  const { data: auditData } = useGetCatalogAuditTrail(datasetId, 50, 0, { enabled: !!datasetId && activeTab === "Audit" });
+  const { data: queriesData } = useGetDatasourceQueries(datasetId, { enabled: !!datasetId && activeTab === "Queries" });
+
+  // Pre-fetch lineage data proactively with default depth (2) so it's ready when the user opens the Lineage tab
+  useGetLineageCentric(datasetId, 2);
 
   const isLoading = isCatalogLoading || isDatacardLoading;
 
@@ -72,9 +79,6 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
     useState<ClassifyScanPhase>("never");
   const [aiResults, setAiResults] = useState<any>({});
   const { data: complianceData, isFetching: isComplianceLoading, refetch: complianceRefetch } = useGetDatasetComplianceReport(datasetId);
-
-  const { setSidebarCollapsed, datasetDetailTab, setDatasetDetailTab } = useAppStore();
-  const activeTab = datasetDetailTab as Tab;
 
   const handleViewCompliance = async () => {
     setShowCompliance(true);

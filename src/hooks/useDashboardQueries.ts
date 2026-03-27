@@ -53,12 +53,12 @@ export const useGetCatalogDetail = (catalogId: string) => {
   });
 };
 
-export const useGetCatalogAuditTrail = (catalogId: string, limit: number = 50, offset: number = 0) => {
+export const useGetCatalogAuditTrail = (catalogId: string, limit: number = 50, offset: number = 0, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: dashboardKeys.catalogAuditTrail(catalogId, limit, offset),
     queryFn: () => dashboardApiServices.fetchCatalogAuditTrail(catalogId, limit, offset),
     staleTime: 60000,
-    enabled: !!catalogId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
   });
 };
 
@@ -88,12 +88,12 @@ export const useGetOwnersList = (limit: number = 100) => {
   });
 };
 
-export const useGetDatasourceQueries = (catalogId: string) => {
+export const useGetDatasourceQueries = (catalogId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['datasource', 'datasetQueries', catalogId],
     queryFn: () => datasourceApiServices.fetchDatasetQueries(catalogId),
     staleTime: 60000,
-    enabled: !!catalogId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
   });
 };
 
@@ -268,11 +268,11 @@ export const useGetPostIngestionLoadingStages = () => {
   });
 };
 
-export const useGetCatalogProperties = (catalogId: string) => {
+export const useGetCatalogProperties = (catalogId: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: dashboardKeys.catalogProperties(catalogId),
     queryFn: () => dashboardApiServices.fetchCatalogProperties(catalogId),
-    enabled: !!catalogId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
     staleTime: 5 * 60 * 1000,
   });
 };
