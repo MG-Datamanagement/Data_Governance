@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import {Connector, connectors} from "@/services/mock";
+import { Connector, connectors } from "@/lib/mockConnectors";
 import SearchInput from "@/components/ui/SearchInput";
 import ConnectorCard from "@/app/(data-connectors)/components/ConnectorCard";
 

@@ -265,6 +265,29 @@ export interface ApiSourceLogs {
   logs: ApiSourceLog[];
 }
 
+export interface ReclassifyWithAiRequest {
+  source_id: string;
+  save_to_db: boolean;
+  assigned_by: string;
+  min_confidence: number;
+}
+
+export interface ReClassifyWithAiResponse {
+  source_id: string;
+  catalog_id: string;
+  total_columns: number;
+  classified: number;
+  saved: number;
+  results: any[];
+}
+
+export interface ReclassificationActionWithAiRequest {
+  catalog_id: string;
+  save_to_db: boolean;
+  assigned_by: string;
+  min_confidence: number;
+}
+
 export interface PiiClassificationRequest {
   source_id: string;
   Require_human_approval: boolean;
@@ -796,6 +819,51 @@ export const dashboardApiServices = {
       { params: { depth } },
     );
   },
+
+  async reclassifyWithAi(
+    reClassifyPayload: ReclassifyWithAiRequest,
+  ): Promise<ReClassifyWithAiResponse> {
+    const BASE_DEV_API_URL = process.env.NEXT_PUBLIC_DEV_API_URL;
+    const url = `${BASE_DEV_API_URL}/columns/classify-column/source`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reClassifyPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`ReClassification with Ai API error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to trigger ReClassification with Ai for source ${reClassifyPayload?.source_id}:`, error);
+      throw error;
+    }
+  },
+
+  async reclassificationActionWithAi(
+    reClassificationActionPayload: ReclassificationActionWithAiRequest,
+  ): Promise<ReClassifyWithAiResponse> {
+    const BASE_DEV_API_URL = process.env.NEXT_PUBLIC_DEV_API_URL;
+    const url = `${BASE_DEV_API_URL}/columns/classify-column/catalog`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reClassificationActionPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`ReClassification Action with Ai API error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to trigger ReClassification with Ai for source ${reClassificationActionPayload?.catalog_id}:`, error);
+      throw error;
+    }
+  },
+
   generateDescriptions(catalogId: string): Promise<GenerateDescriptionsResponse> {
     return dashboardApiClient.post<GenerateDescriptionsResponse>(
       `/api/v1/catalog/${catalogId}/columns/generate-descriptions`,

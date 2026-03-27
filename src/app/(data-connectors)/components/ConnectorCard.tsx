@@ -1,6 +1,6 @@
 import React from "react";
 import ConnectorIcon from "./ConnectorIcon";
-import {Connector} from "@/services/mock";
+import { Connector } from "@/lib/mockConnectors";
 
 interface ConnectorCardProps {
     connector: Connector;

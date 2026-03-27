@@ -286,9 +286,8 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                 min_confidence: CONSTANTS.minConfidence,
             };
 
-            const { dataSourcesService } = await import("@/services/mock");
             const response: any =
-                await dataSourcesService.reclassifyWithAi(payload);
+                await dashboardApiServices.reclassifyWithAi(payload);
         } catch (err) {
             console.error("Error during PII classification:", err);
         }

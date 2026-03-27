@@ -49,7 +49,7 @@ interface DatasetDetailPageProps {
 }
 
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
-import { ReclassificationActionWithAiRequest } from "@/services/mock";
+import { ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
 import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
 import { useAppStore } from "@/store/appStore";
 
@@ -135,8 +135,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         min_confidence: 0.7,
       };
 
-      const { dataSourcesService } = await import("@/services/mock");
-      const response: any = await dataSourcesService.reclassificationActionWithAi(payload);
+      const response: any = await dashboardApiServices.reclassificationActionWithAi(payload);
 
       const map: any = {};
       response?.results?.forEach((r: any) => {

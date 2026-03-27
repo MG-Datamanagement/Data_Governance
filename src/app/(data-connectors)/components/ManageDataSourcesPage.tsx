@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { dataSources } from "@/services/mock";
+import { dataSources } from "@/lib/mockDataSources";
 import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from "@/services/dashboardApiServices";
 import { DataSource } from "@/types";
 
