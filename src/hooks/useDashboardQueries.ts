@@ -1,7 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApiServices } from '@/services/dashboardApiServices';
 import { datasourceApiServices } from '@/services/datasourceApiServices';
 import { chatApiServices } from '@/services/chatApiServices';
+
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ StaleTime constants (Phase 10.5) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// Use named constants to make staleTime choices intentional and auditable.
+const STALE_30S   = 30_000;                 // live/polling data (agents, chat)
+const STALE_1MIN  = 60_000;                 // frequently-mutated data
+const STALE_5MIN  = 5 * 60_000;             // stable-ish data (sources list, run history, owners)
+const STALE_10MIN = 10 * 60_000;            // rarely-updated data (dashboards, model risk)
+/** Use for static server-config lists that change only on deployment */
+export const STALE_INF = Infinity;
 
 // Query keys
 export const dashboardKeys = {
@@ -23,23 +32,25 @@ export const useGetDataSources = (params?: { limit?: number; status?: string }) 
   return useQuery({
     queryKey: dashboardKeys.dataSources(params),
     queryFn: () => dashboardApiServices.fetchDataSources(params || {}),
-    staleTime: 30000, 
+    staleTime: STALE_5MIN,
   });
+
 };
 
 export const useGetRunHistory = (limit: number = 10, offset: number = 0, status: string = 'All') => {
   return useQuery({
     queryKey: dashboardKeys.runHistory({ limit, offset, status }),
     queryFn: () => dashboardApiServices.fetchRunHistory(limit, offset, status),
-    staleTime: 30000,
+    staleTime: STALE_5MIN,
   });
+
 };
 
 export const useGetSourceStats = (sourceId: string) => {
   return useQuery({
     queryKey: dashboardKeys.sourceStats(sourceId),
     queryFn: () => dashboardApiServices.fetchSourceStats(sourceId),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: !!sourceId,
   });
 };
@@ -48,7 +59,7 @@ export const useGetCatalogDetail = (catalogId: string) => {
   return useQuery({
     queryKey: dashboardKeys.catalogDetail(catalogId),
     queryFn: () => dashboardApiServices.fetchCatalogDetail(catalogId),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: !!catalogId,
   });
 };
@@ -57,7 +68,7 @@ export const useGetCatalogAuditTrail = (catalogId: string, limit: number = 50, o
   return useQuery({
     queryKey: dashboardKeys.catalogAuditTrail(catalogId, limit, offset),
     queryFn: () => dashboardApiServices.fetchCatalogAuditTrail(catalogId, limit, offset),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
   });
 };
@@ -66,7 +77,7 @@ export const useGetCatalogDatacard = (catalogId: string) => {
   return useQuery({
     queryKey: dashboardKeys.datasetQueries(catalogId), // Reusing key structure for now
     queryFn: () => dashboardApiServices.fetchCatalogDatacard(catalogId),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: !!catalogId,
   });
 };
@@ -75,7 +86,7 @@ export const useGetLineageCentric = (catalogId: string, depth: number = 2) => {
   return useQuery({
     queryKey: dashboardKeys.lineageCentric(catalogId, depth),
     queryFn: () => dashboardApiServices.fetchLineageCentric(catalogId, depth),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: !!catalogId,
   });
 };
@@ -84,7 +95,7 @@ export const useGetOwnersList = (limit: number = 100) => {
   return useQuery({
     queryKey: dashboardKeys.ownersList(limit),
     queryFn: () => dashboardApiServices.fetchOwnersList(limit),
-    staleTime: 300000, 
+    staleTime: STALE_10MIN, 
   });
 };
 
@@ -92,7 +103,7 @@ export const useGetDatasourceQueries = (catalogId: string, options?: { enabled?:
   return useQuery({
     queryKey: ['datasource', 'datasetQueries', catalogId],
     queryFn: () => datasourceApiServices.fetchDatasetQueries(catalogId),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
   });
 };
@@ -101,7 +112,7 @@ export const useGetDatasetComplianceReport = (catalogId: string) => {
   return useQuery({
     queryKey: ['datasource', 'complianceReport', catalogId],
     queryFn: () => datasourceApiServices.fetchDatasetComplianceReport(catalogId),
-    staleTime: 120000,
+    staleTime: STALE_5MIN,
     enabled: false, // Only fetch on demand (when modal opens)
   });
 };
@@ -110,7 +121,7 @@ export const useGetChatHistory = () => {
   return useQuery({
     queryKey: ['chat', 'history'],
     queryFn: () => chatApiServices.getHistory(),
-    staleTime: 30000,
+    staleTime: STALE_30S,
     refetchInterval: 5000, // Polling for async chat tasks
   });
 };
@@ -119,7 +130,7 @@ export const useGetAgents = () => {
   return useQuery({
     queryKey: ['dashboard', 'agents'],
     queryFn: () => dashboardApiServices.getAgents(),
-    staleTime: 30000,
+    staleTime: STALE_30S,
     refetchInterval: 10000, // Polling for agent status
   });
 };
@@ -128,18 +139,18 @@ export const useGetSourceLogs = (sourceId: string, limit: number = 5) => {
   return useQuery({
     queryKey: ['dashboard', 'sourceLogs', sourceId, limit],
     queryFn: () => dashboardApiServices.fetchSourceLogs(sourceId, { limit }),
-    staleTime: 30000,
+    staleTime: STALE_5MIN,
     enabled: !!sourceId,
   });
 };
 
-// ─── Overview / Dashboard hooks ──────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Overview / Dashboard hooks Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 export const useDashboardStats = () => {
   return useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: () => dashboardApiServices.getDashboardStats(),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
   });
 };
 
@@ -147,7 +158,7 @@ export const useAISnapshot = () => {
   return useQuery({
     queryKey: ['dashboard', 'aiSnapshot'],
     queryFn: () => dashboardApiServices.getAISnapshot(),
-    staleTime: 300000,
+    staleTime: STALE_10MIN,
   });
 };
 
@@ -155,7 +166,7 @@ export const useModelRiskTrends = () => {
   return useQuery({
     queryKey: ['dashboard', 'modelRiskTrends'],
     queryFn: () => dashboardApiServices.getModelRiskTrends(),
-    staleTime: 300000,
+    staleTime: STALE_10MIN,
   });
 };
 
@@ -163,7 +174,7 @@ export const useTopTags = (limit: number = 30) => {
   return useQuery({
     queryKey: ['dashboard', 'topTags', limit],
     queryFn: () => dashboardApiServices.getTopTags(limit),
-    staleTime: 120000,
+    staleTime: STALE_5MIN,
   });
 };
 
@@ -171,7 +182,7 @@ export const usePlatformUsage = () => {
   return useQuery({
     queryKey: ['dashboard', 'platformUsage'],
     queryFn: () => dashboardApiServices.getPlatformUsage(),
-    staleTime: 120000,
+    staleTime: STALE_5MIN,
   });
 };
 
@@ -179,7 +190,7 @@ export const useRecentActivity = (userUrn: string) => {
   return useQuery({
     queryKey: ['dashboard', 'recentActivity', userUrn],
     queryFn: () => dashboardApiServices.getRecentActivity(userUrn),
-    staleTime: 30000,
+    staleTime: STALE_5MIN,
     enabled: !!userUrn,
   });
 };
@@ -188,7 +199,7 @@ export const useRecentlyViewed = (userUrn: string) => {
   return useQuery({
     queryKey: ['dashboard', 'recentlyViewed', userUrn],
     queryFn: () => dashboardApiServices.getRecentlyViewed(userUrn),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
     enabled: !!userUrn,
   });
 };
@@ -197,7 +208,7 @@ export const useComplianceFrameworks = () => {
   return useQuery({
     queryKey: ['dashboard', 'complianceFrameworks'],
     queryFn: () => dashboardApiServices.getComplianceFrameworks(),
-    staleTime: 300000,
+    staleTime: STALE_10MIN,
   });
 };
 
@@ -205,7 +216,7 @@ export const usePendingReviewCount = () => {
   return useQuery({
     queryKey: ['dashboard', 'pendingReviewCount'],
     queryFn: () => dashboardApiServices.getPendingReviewCount(),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
   });
 };
 
@@ -213,7 +224,7 @@ export const useOpenIssues = () => {
   return useQuery({
     queryKey: ['dashboard', 'openIssues'],
     queryFn: () => dashboardApiServices.getOpenIssues(),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
   });
 };
 
@@ -221,7 +232,7 @@ export const useGovernanceScore = () => {
   return useQuery({
     queryKey: ['dashboard', 'governanceScore'],
     queryFn: () => dashboardApiServices.getGovernanceScore(),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
   });
 };
 
@@ -229,7 +240,7 @@ export const useComplianceOverview = () => {
   return useQuery({
     queryKey: ['dashboard', 'complianceOverview'],
     queryFn: () => dashboardApiServices.getComplianceOverview(),
-    staleTime: 120000,
+    staleTime: STALE_5MIN,
   });
 };
 
@@ -237,7 +248,7 @@ export const useComplianceHealth = () => {
   return useQuery({
     queryKey: ['dashboard', 'complianceHealth'],
     queryFn: () => dashboardApiServices.getComplianceHealth(),
-    staleTime: 120000,
+    staleTime: STALE_5MIN,
   });
 };
 
@@ -245,7 +256,7 @@ export const useComplianceIssues = () => {
   return useQuery({
     queryKey: ['dashboard', 'complianceIssues'],
     queryFn: () => dashboardApiServices.getComplianceIssues(),
-    staleTime: 60000,
+    staleTime: STALE_1MIN,
   });
 };
 
@@ -253,12 +264,12 @@ export const useComplianceInsights = () => {
   return useQuery({
     queryKey: ['dashboard', 'complianceInsights'],
     queryFn: () => dashboardApiServices.getComplianceInsights(),
-    staleTime: 300000,
+    staleTime: STALE_10MIN,
   });
 };
 
-// ─── Ingestion Loading Stages hooks ──────────────────────────────────────────
-// staleTime: Infinity — these are static server-config lists that never change.
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Ingestion Loading Stages hooks Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// staleTime: Infinity Ã¢â‚¬â€ these are static server-config lists that never change.
 // React Query deduplicates concurrent calls by queryKey, so only one network
 // request fires even if multiple components mount at the same time.
 
@@ -283,7 +294,7 @@ export const useGetCatalogProperties = (catalogId: string, options?: { enabled?:
     queryKey: dashboardKeys.catalogProperties(catalogId),
     queryFn: () => dashboardApiServices.fetchCatalogProperties(catalogId),
     enabled: options?.enabled !== undefined ? options.enabled : !!catalogId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5MIN,
   });
 };
 
@@ -320,7 +331,7 @@ export const useDeleteCatalogProperty = () => {
   });
 };
 
-// ─── Secrets Hooks ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Secrets Hooks Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 export const useGetSecrets = () => {
   return useQuery({
@@ -360,3 +371,4 @@ export const useDeleteSecret = () => {
     },
   });
 };
+

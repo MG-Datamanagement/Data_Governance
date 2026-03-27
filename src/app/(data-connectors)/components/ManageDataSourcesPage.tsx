@@ -7,10 +7,18 @@ import { dataSources } from "@/lib/mockDataSources";
 import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from "@/services/dashboardApiServices";
 import { DataSource } from "@/types";
 
+import dynamic from "next/dynamic";
 import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
-import AddDataSourceModal from "@/app/(data-connectors)/components/AddDataSourceModal";
+// ─── Lazy-loaded heavy modals (Phase 10.2) ────────────────────────────────────
+const AddDataSourceModal = dynamic(
+  () => import("@/app/(data-connectors)/components/AddDataSourceModal"),
+  { ssr: false, loading: () => null },
+);
+const IngestionSidebar = dynamic(
+  () => import("@/app/(data-connectors)/components/IngestionSidebar"),
+  { ssr: false, loading: () => null },
+);
 import LiveIngestionPanel from "@/app/(data-connectors)/components/LiveIngestionPanel";
-import IngestionSidebar from "@/app/(data-connectors)/components/IngestionSidebar";
 import ManageSecretsTab from "@/app/(data-connectors)/components/ManageSecretsTab";
 import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory } from "@/hooks/useDashboardQueries";

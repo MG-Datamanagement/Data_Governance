@@ -9,7 +9,14 @@ import {
   ApiCatalogDatacard,
 } from "@/services/dashboardApiServices";
 import { Dataset, ApiTag, ApiColumn } from "@/types";
-import ComplianceReportModal from "@/app/(data-connectors)/components/ComplianceReportModal";
+import dynamic from "next/dynamic";
+
+// ─── Lazy-loaded heavy components (Phase 10.1 / 10.2) ────────────────────────
+// ComplianceReportModal: only needed when user clicks "Run Compliance Check"
+const ComplianceReportModal = dynamic(
+  () => import("@/app/(data-connectors)/components/ComplianceReportModal"),
+  { ssr: false, loading: () => null },
+);
 import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import DatasetDataCardTab from "./DatasetDataCardTab";
@@ -26,7 +33,29 @@ import {
 } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
-import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
+// DatasetLineage: heavy SVG + positioning engine — only needed on Lineage tab
+const DatasetLineage = dynamic(
+  () => import("@/app/(data-connectors)/components/DatasetLineage"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[400px] animate-pulse">
+        <div className="space-y-3 w-full max-w-2xl px-6">
+          <div className="flex justify-center gap-8 mb-6">
+            {[0,1,2].map(i => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="w-32 h-20 bg-gray-100 rounded-xl" />
+                <div className="h-3 w-24 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+          <div className="h-0.5 w-full bg-gray-100 rounded" />
+          <div className="flex justify-center"><div className="h-3 w-32 bg-gray-100 rounded" /></div>
+        </div>
+      </div>
+    ),
+  },
+);
 import DatasetQueriesTab from "./DatasetQueriesTab";
 import DatasetDetailSidebar from "./DatasetDetailSidebar";
 import DatasetAuditTab from "./DatasetAuditTab";

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Search, ChevronDown, ChevronUp, MoreHorizontal, AlertCircle } from "lucide-react";
+import Image from "next/image";
 import type { InternalNode, InternalColumn } from "@/hooks/useLineageStateEngine";
 import { colTypeIcon, qualityDot, tagPillClass, parseDataType, getNodeIconSrc } from "./lineageUtils";
 
@@ -65,7 +66,14 @@ function NodeCard({ node, isSelected, popoverOpen, onClick, onHeightChange, onCo
         <div className="flex items-center gap-2 min-w-0">
           <span className={`flex-shrink-0 flex items-center justify-center ${isCenter ? "text-indigo-500" : "text-gray-400"}`}>
             <div className={`flex items-center justify-center rounded-lg ${isCenter ? 'w-[30px] h-[30px] shadow-sm' : 'w-10 h-10 shadow-sm'}`}>
-              <img src={getNodeIconSrc(node.label)} alt={node.label} className={`${isCenter ? 'w-[20px] h-[20px]' : 'w-10 h-10'} object-contain mix-blend-multiply`} />
+              <Image
+                src={getNodeIconSrc(node.label)}
+                alt={node.label}
+                width={isCenter ? 20 : 40}
+                height={isCenter ? 20 : 40}
+                className={`${isCenter ? 'w-[20px] h-[20px]' : 'w-10 h-10'} object-contain mix-blend-multiply`}
+                unoptimized
+              />
             </div>
           </span>
           {(node.database || node.sourceName) && (

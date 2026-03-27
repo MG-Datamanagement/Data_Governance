@@ -27,7 +27,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' http://localhost:8000 https:",        // adjust to your actual API origin
+      "connect-src 'self' http://localhost:8000 http://172.188.2.173:8005",        // adjust to your actual API origin
       "worker-src blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
