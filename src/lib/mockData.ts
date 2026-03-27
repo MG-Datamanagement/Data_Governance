@@ -12,10 +12,7 @@ import {
   ModelListItem,
   ModelMetadata,
 } from "@/types";
-import { DiPostgresql } from "react-icons/di";
-import { FaRegSnowflake } from "react-icons/fa";
-import { SiMongodb } from "react-icons/si";
-import { BiLogoPostgresql } from "react-icons/bi";
+
 
 export interface MockUser {
   id: string;
@@ -311,7 +308,7 @@ export const MOCK_RECENT_ACTIVITY: RecentActivity[] = [
   },
 ];
 
-export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
+export const MOCK_RECENTLY_VIEWED: RecentlyViewed[] = [
   {
     id: "1",
     name: "customers",
@@ -319,7 +316,7 @@ export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
     tag: "PII",
     tagColor: "yellow",
     time: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-    icon: BiLogoPostgresql,
+    platformKey: "postgres",
     iconColor: 'text-slate-600'
   },
   {
@@ -329,7 +326,7 @@ export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
     tag: "Financial",
     tagColor: "blue",
     time: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    icon: FaRegSnowflake,
+    platformKey: "snowflake",
     iconColor: 'text-sky-600'
   },
   {
@@ -339,7 +336,7 @@ export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
     tag: "PHI",
     tagColor: "red",
     time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    icon: SiMongodb,
+    platformKey: "mongo",
     iconColor: 'text-green-600'
   },
   {
@@ -349,7 +346,7 @@ export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
     tag: "GDPR",
     tagColor: "green",
     time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    icon: BiLogoPostgresql,
+    platformKey: "postgres",
     iconColor: 'text-slate-600'
   },
   {
@@ -359,7 +356,7 @@ export const MOCK_RECENTLY_VIEWED:RecentlyViewed[] = [
     tag: "HIPAA",
     tagColor: "indigo",
     time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    icon: FaRegSnowflake,
+    platformKey: "snowflake",
     iconColor: 'text-sky-600'
   },
 ];

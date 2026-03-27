@@ -14,6 +14,7 @@ import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import DatasetDataCardTab from "./DatasetDataCardTab";
 import DatasetColumnsTab from "./DatasetColumnsTab";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import {
   useGetCatalogDetail,
   useGetCatalogDatacard,
@@ -30,6 +31,9 @@ import DatasetQueriesTab from "./DatasetQueriesTab";
 import DatasetDetailSidebar from "./DatasetDetailSidebar";
 import DatasetAuditTab from "./DatasetAuditTab";
 import DatasetPropertiesTab from "./DatasetPropertiesTab";
+import { ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
+import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
+import { useAppStore } from "@/store/appStore";
 const TABS = [
   "DataCard",
   "Columns",
@@ -48,11 +52,6 @@ interface DatasetDetailPageProps {
   sourceId: string;
   datasetId: string;
 }
-
-import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
-import { ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
-import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
-import { useAppStore } from "@/store/appStore";
 
 const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   sourceId,

@@ -1,10 +1,4 @@
-import {
-  DiPostgresql,
-} from "react-icons/di";
-import { FaRegSnowflake } from "react-icons/fa";
-import { SiMongodb } from "react-icons/si";
-import { BiLogoPostgresql } from "react-icons/bi";
-import { Database } from "lucide-react";
+
 import {
   MOCK_RECENTLY_VIEWED,
   MOCK_COMPLIANCE_FRAMEWORKS,
@@ -38,27 +32,40 @@ import {
   ApiTag,
   ApiColumn,
   ApiComplianceRunResponse,
+  ApiComplianceFramework,
+  ApiComplianceIssue,
 } from "@/types";
 import { TopTagsResponse, TopTag } from "@/types/tagTypes";
 import { AxiosRequestConfig } from "axios";
 
 export interface ApiComplianceHealth {
-  overall_compliance?: any;
-  compliance_health?: any;
-  trends?: any;
+  overall_compliance?: {
+    score: number;
+    change_from_last_month?: number;
+    health_status?: string;
+    last_updated?: string;
+  };
+  compliance_health?: {
+    score: number;
+    trend_label?: string;
+  };
+  trends?: {
+    labels: string[];
+    datasets: { label: string; data: number[] }[];
+  };
   overall_score_infographic?: string;
 }
 
 export interface ApiComplianceFrameworks {
-  frameworks?: any[];
+  frameworks?: ApiComplianceFramework[];
   frameworks_infographic?: string;
 }
 
 export interface ApiComplianceIssues {
   open_issues?: {
     count?: number;
-    severity_summary?: any;
-    items?: any[];
+    severity_summary?: Record<string, number>;
+    items?: ApiComplianceIssue[];
   };
 }
 
@@ -261,7 +268,7 @@ export interface ApiSourceLog {
 export interface ApiSourceLogs {
   source_id: string;
   total: number;
-  filters: any;
+  filters: Record<string, string | null>;
   logs: ApiSourceLog[];
 }
 
@@ -278,7 +285,7 @@ export interface ReClassifyWithAiResponse {
   total_columns: number;
   classified: number;
   saved: number;
-  results: any[];
+  results: TableClassificationResult[];
 }
 
 export interface ReclassificationActionWithAiRequest {
@@ -581,42 +588,30 @@ export const dashboardApiServices = {
       );
 
       return response.recently_viewed.map((item, index) => {
-        let icon: any = Database;
-        let iconColor = "text-gray-600";
-        let tagColor = "gray";
-
-        const platform = (item.source || "").toLowerCase();
-
-        if (platform.includes("postgres")) {
-          icon = BiLogoPostgresql;
-          iconColor = "text-slate-600";
-        } else if (platform.includes("snowflake")) {
-          icon = FaRegSnowflake;
-          iconColor = "text-sky-600";
-        } else if (platform.includes("mongo")) {
-          icon = SiMongodb;
-          iconColor = "text-green-600";
-        } else if (platform.includes("redshift")) {
-          icon = Database; // Or a specific Redshift icon if available
-          iconColor = "text-red-700";
-        }
-
+        const platformRaw: string = item.source || "";
         const tag = (item.tag || "").toLowerCase();
+        let tagColor = "gray";
         if (tag === "pii") tagColor = "yellow";
         else if (tag === "financial") tagColor = "blue";
         else if (tag === "phi") tagColor = "red";
         else if (tag === "gdpr") tagColor = "green";
         else if (tag === "hipaa") tagColor = "indigo";
-        else tagColor = "gray";
+
+        const platform = platformRaw.toLowerCase();
+        let iconColor = "text-gray-600";
+        if (platform.includes("postgres")) iconColor = "text-slate-600";
+        else if (platform.includes("snowflake")) iconColor = "text-sky-600";
+        else if (platform.includes("mongo")) iconColor = "text-green-600";
+        else if (platform.includes("redshift")) iconColor = "text-red-700";
 
         return {
           id: `${item.dataset}-${index}`,
           name: item.dataset || "Unknown Dataset",
-          platform: item.source || "Unknown Platform",
+          platform: platformRaw,
           tag: item.tag || "",
           tagColor,
           time: item.time || "",
-          icon,
+          platformKey: platformRaw,
           iconColor,
         };
       });

@@ -1,5 +1,4 @@
 import { CatalogTag } from "@/services/dashboardApiServices";
-import { IconType } from "react-icons/lib";
 
 export type InlineStateType = "loading" | "empty" | "error";
 
@@ -194,7 +193,8 @@ export interface RecentlyViewed {
   tag: string;
   tagColor: string;
   time: string;
-  icon: IconType;
+  /** Used by getPlatformDisplay() from lib/sourceTypeDisplayMap to resolve icon at render time */
+  platformKey: string;
   iconColor: string;
 }
 

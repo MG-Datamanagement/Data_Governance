@@ -14,7 +14,7 @@ import { cn, formatTimeAgo } from "@/lib/utils";
 import { InlineState } from "@/components/ui/InlineState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OverviewData } from "@/hooks/useOverviewData";
-import { IconType } from "react-icons/lib";
+import { getPlatformDisplay, PlatformIcon } from "@/lib/sourceTypeDisplayMap";
 import { RecentActivity, RecentlyViewed } from "@/types";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
@@ -71,7 +71,7 @@ type ActivityItemV2Props = {
   tag?: string;
   tagColor?: string;
   time?: string;
-  icon: IconType;
+  icon: PlatformIcon;
   iconColor: string;
 };
 
@@ -319,7 +319,7 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
                       tag={item.tag}
                       tagColor={item.tagColor}
                       time={item.time || ""}
-                      icon={item.icon}
+                      icon={getPlatformDisplay(item.platformKey).icon}
                       iconColor={item.iconColor}
                     />
                   ))}
