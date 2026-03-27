@@ -1,5 +1,6 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { InlineState } from "@/components/ui/InlineState";
 import { cn } from "@/lib/utils";
 
 export interface DataGridColumn<T> {
@@ -62,11 +63,8 @@ export function DataGrid<T>({
           <tbody className="divide-y divide-gray-100 bg-white">
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} className="py-24 text-center">
-                  <div className="flex flex-col items-center justify-center gap-3 text-gray-400">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary/60" />
-                    <p className="text-sm font-medium">Loading data...</p>
-                  </div>
+                <td colSpan={columns.length}>
+                  <InlineState type="loading" message="Loading data..." />
                 </td>
               </tr>
             ) : data.length === 0 ? (

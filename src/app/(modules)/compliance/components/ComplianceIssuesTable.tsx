@@ -3,6 +3,9 @@ import { cn, getSeverityColor } from "@/lib/utils";
 import { AlertCircle, Search, ChevronDown, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { InlineState } from "@/components/ui/InlineState";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 
 interface ComplianceIssuesTableProps {
   issues: ApiComplianceIssue[];
@@ -16,6 +19,53 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
       issue.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issue.dataset.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const columns: DataGridColumn<ApiComplianceIssue>[] = [
+    {
+      key: "issue",
+      header: "Issue",
+      render: (issue) => <div className="text-xs font-medium text-gray-800">{issue.issue}</div>
+    },
+    {
+      key: "framework",
+      header: "Framework",
+      render: (issue) => <Badge variant="framework" size="sm">{issue.framework}</Badge>
+    },
+    {
+      key: "severity",
+      header: "Severity",
+      render: (issue) => (
+        <Badge
+          size="sm"
+          variant={
+            issue.severity === "HIGH" ? "error" :
+            issue.severity === "MEDIUM" ? "warning" : "info"
+          }
+        >
+          {issue.severity}
+        </Badge>
+      )
+    },
+    {
+      key: "dataset",
+      header: "Dataset",
+      render: (issue) => (
+        <div className="text-xs text-gray-500 font-medium font-mono overflow-x-hidden overflow-y-auto max-h-20 w-auto">
+          {issue.dataset}
+        </div>
+      )
+    },
+    {
+      key: "assignee",
+      header: "Assignee",
+      render: (issue) => <div className="text-xs text-gray-800">{issue.assignee}</div>
+    },
+    {
+      key: "dueDate",
+      header: "Due Date",
+      render: (issue) => <div className="text-xs text-gray-500 font-medium">{issue.due_date}</div>
+    }
+  ];
 
   return (
     <div className="card p-6 border border-gray-200 rounded-xl bg-white shadow-sm space-y-6">
@@ -57,102 +107,20 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
               </button>
             )}
           </div>
-          <button className="flex items-center gap-2 h-11 px-6 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all bg-white">
+          <Button variant="outline" size="lg" className="gap-2 bg-white">
             Filter
             <ChevronDown size={16} className="text-gray-400" />
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Table - Desktop */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="py-4 pr-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Issue
-              </th>
-              <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Framework
-              </th>
-              <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Severity
-              </th>
-              <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Dataset
-              </th>
-              <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Assignee
-              </th>
-              <th className="py-4 px-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Due Date
-              </th>
-              {/* <th className="py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Action
-              </th> */}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredIssues.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-12">
-                  <InlineState
-                    type="empty"
-                    message={
-                      searchTerm
-                        ? "No issues match your search."
-                        : "No open compliance issues."
-                    }
-                  />
-                </td>
-              </tr>
-            ) : (
-              filteredIssues.map((issue, idx) => (
-                <tr key={`${issue.framework}-${idx}`} className="group hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4 pr-4">
-                    <div className="text-xs font-medium text-gray-800">{issue.issue}</div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
-                      {issue.framework}
-                    </span>
-                  </td>
-                  <td className="py-4 px-2">
-                    <span
-                      className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border",
-                        issue.severity === "HIGH" ? "bg-red-50 text-red-600 border-red-100" :
-                          issue.severity === "MEDIUM" ? "bg-orange-50 text-orange-600 border-orange-100" :
-                            "bg-blue-50 text-blue-600 border-blue-100"
-                      )}
-                    >
-                      {issue.severity}
-                    </span>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="text-xs text-gray-500 font-medium font-mono overflow-x-hidden overflow-y-auto max-h-20 w-auto">
-                      {issue.dataset}
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="text-xs text-gray-800">
-                      {issue.assignee}
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="text-xs text-gray-500 font-medium">{issue.due_date}</div>
-                  </td>
-                  {/* <td className="py-4 text-right">
-                    <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 ml-auto">
-                      View Details
-                      <ExternalLink size={12} />
-                    </button>
-                  </td> */}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="hidden md:block">
+        <DataGrid
+          data={filteredIssues}
+          columns={columns}
+          keyExtractor={(issue: ApiComplianceIssue) => `${issue.framework}-${issue.issue}-${issue.dataset}`}
+          emptyStateMessage={searchTerm ? "No issues match your search." : "No open compliance issues."}
+        />
       </div>
 
       {/* Cards - Mobile */}

@@ -353,10 +353,12 @@ export interface ApiTag {
 export interface ApiColumn {
   name: string;
   data_type: string;
+  type?: string;
   description: string | null;
   comment: string | null;
   is_nullable: boolean;
   is_primary_key: boolean;
+  tags?: ApiTag[];
 }
 
 // ─── Dataset & Catalog ────────────────────────────────────────────────────────

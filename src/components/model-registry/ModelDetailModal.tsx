@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Tag
 } from "lucide-react";
+import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 
 interface ModelDetailModalProps {
   model: ModelMetadata;
@@ -39,6 +40,32 @@ const tagColorMap: Record<string, string> = {
 
 export function ModelDetailModal({ model, isOpen, onClose }: ModelDetailModalProps) {
   if (!isOpen) return null;
+
+  const datasetColumns: DataGridColumn<any>[] = [
+    {
+      key: "name",
+      header: "Dataset",
+      render: (row) => <span className="text-[13.5px] font-medium text-gray-900">{row.name}</span>,
+    },
+    {
+      key: "purpose",
+      header: "Purpose",
+      render: (row) => <span className="text-[13.5px] text-gray-500">{row.purpose}</span>,
+    },
+    {
+      key: "classification",
+      header: "Classification",
+      render: (row) => (
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+          row.classification === "Confidential" ? "text-gray-700 border-gray-200 bg-white" :
+          row.classification === "PII" ? "text-red-600 bg-red-50/50 border-red-100" :
+          "text-gray-600 border-gray-200 bg-white"
+        }`}>
+          {row.classification}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
@@ -178,32 +205,13 @@ export function ModelDetailModal({ model, isOpen, onClose }: ModelDetailModalPro
                 <Database className="w-4 h-4 text-indigo-600" /> Datasets Used (Training/Eval)
               </h3>
               <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm bg-white mt-1">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50">
-                    <tr className="border-b border-gray-100">
-                      <th className="px-1 py-3 text-[13px] font-medium text-gray-500 whitespace-nowrap">Dataset</th>
-                      <th className="px-1 py-3 text-[13px] font-medium text-gray-500 whitespace-nowrap">Purpose</th>
-                      <th className="px-1 py-3 text-[13px] font-medium text-gray-500 whitespace-nowrap">Classification</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {model.datasets.map((dataset, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-1 py-3.5 text-[13.5px] font-medium text-gray-900">{dataset.name}</td>
-                        <td className="px-1 py-3.5 text-[13.5px] text-gray-500">{dataset.purpose}</td>
-                        <td className="px-1 py-3.5">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                            dataset.classification === "Confidential" ? "text-gray-700 border-gray-200 bg-white" :
-                            dataset.classification === "PII" ? "text-red-600 bg-red-50/50 border-red-100" :
-                            "text-gray-600 border-gray-200 bg-white"
-                          }`}>
-                            {dataset.classification}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <DataGrid
+                  data={model.datasets}
+                  columns={datasetColumns}
+                  keyExtractor={(row: any) => row.name}
+                  density="compact"
+                  className="border-none shadow-none"
+                />
               </div>
             </div>
 

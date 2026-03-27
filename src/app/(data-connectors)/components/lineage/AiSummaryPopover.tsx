@@ -72,9 +72,7 @@ export function AiSummaryPopover({
         style={{ background: "linear-gradient(90deg, #6D28D9 0%, #7C3AED 100%)" }}
       >
         <div className="flex items-center gap-1.5">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white" fillOpacity="0.9" className="flex-shrink-0">
-            <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-5.26L4 11l5.91-1.74z" />
-          </svg>
+          <Sparkles size={14} className="text-white flex-shrink-0 fill-white/20 opacity-90" />
           <span className="text-[12px] font-bold text-white tracking-wide">Insights</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -86,6 +84,7 @@ export function AiSummaryPopover({
           </span>
           <button
             onClick={onClose}
+            aria-label="Close insight"
             className="w-5 h-5 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/20 transition-all"
           >
             <X size={11} />

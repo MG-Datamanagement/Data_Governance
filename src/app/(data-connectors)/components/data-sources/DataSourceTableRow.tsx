@@ -3,39 +3,30 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { DataSource } from "@/types";
-import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
+import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
 import { useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
-    const map = {
-        success: {
-            dot: "bg-green-500",
-            text: "text-green-600",
-            bg: "bg-green-50",
-            label: "Success",
-        },
-        failed: {
-            dot: "bg-red-500",
-            text: "text-red-600",
-            bg: "bg-red-50",
-            label: "Failed",
-        },
-        running: {
-            dot: "bg-blue-500",
-            text: "text-blue-600",
-            bg: "bg-blue-50",
-            label: "Running",
-        },
+    const variantMap: Record<string, "success" | "error" | "info"> = {
+        success: "success",
+        failed: "error",
+        running: "info",
     };
-    const s = map[status] || map.running; // fallback
+    const dotMap: Record<string, string> = {
+        success: "bg-green-500",
+        failed: "bg-red-500",
+        running: "bg-blue-500",
+    };
+    const s = status || "running";
+    const mappedVariant = variantMap[s] || "neutral";
     return (
-        <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${s.bg} ${s.text}`}
-        >
-            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-            {s.label}
-        </span>
+        <Badge variant={mappedVariant as any} size="sm">
+            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotMap[s] || "bg-gray-400"}`} />
+            {s}
+        </Badge>
     );
 };
 
@@ -164,12 +155,12 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                                 {isLoading ? "..." : (stats?.totalTables.toLocaleString() || "0")} ingested datasets.
                             </p>
                         </div>
-                        <button
+                        <Button
                             onClick={() => router.push(`/data-sources/${source.id}/datasets`)}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors"
+                            className="w-full"
                         >
                             View All Datasets
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </td>
@@ -257,32 +248,24 @@ export const DataSourceTableRow: React.FC<{
                 <td className="py-3 pr-4">
                     <div className="flex items-center gap-1">
                         {/* Play button */}
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => onIngest(source.id)}
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                             </svg>
-                        </button>
-                        {/* Delete button */}
-                        {/* <button
-                            onClick={() => onDelete(source)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete Source"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.78 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
-                        </button> */}
+                        </Button>
                         {/* More options */}
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <Button variant="ghost" size="icon" className="text-gray-400">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                 <circle cx="12" cy="5" r="1.5" />
                                 <circle cx="12" cy="12" r="1.5" />
                                 <circle cx="12" cy="19" r="1.5" />
                             </svg>
-                        </button>
+                        </Button>
                     </div>
                 </td>
             </tr>

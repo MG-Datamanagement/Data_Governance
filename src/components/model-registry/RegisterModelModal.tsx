@@ -3,6 +3,7 @@
 import { X, Brain } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
+import { Select } from "@/components/ui/Select";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -116,16 +117,17 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
                 <label htmlFor="model-source" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Source
                 </label>
-                <select
+                <Select
                   id="model-source"
                   {...register("source")}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors appearance-none"
-                >
-                  <option>Internal</option>
-                  <option>Hugging Face</option>
-                  <option>AWS SageMaker</option>
-                  <option>OpenAI</option>
-                </select>
+                  className="w-full bg-white"
+                  options={[
+                    { value: "Internal", label: "Internal" },
+                    { value: "Hugging Face", label: "Hugging Face" },
+                    { value: "AWS SageMaker", label: "AWS SageMaker" },
+                    { value: "OpenAI", label: "OpenAI" }
+                  ]}
+                />
               </div>
             </div>
 
@@ -135,16 +137,17 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
                 <label htmlFor="model-task" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Task Type
                 </label>
-                <select
+                <Select
                   id="model-task"
                   {...register("task")}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors appearance-none"
-                >
-                  <option>Classification</option>
-                  <option>Anomaly Detection</option>
-                  <option>Text Generation</option>
-                  <option>Time Series</option>
-                </select>
+                  className="w-full bg-white"
+                  options={[
+                    { value: "Classification", label: "Classification" },
+                    { value: "Anomaly Detection", label: "Anomaly Detection" },
+                    { value: "Text Generation", label: "Text Generation" },
+                    { value: "Time Series", label: "Time Series" }
+                  ]}
+                />
               </div>
               {/* Owner */}
               <div>

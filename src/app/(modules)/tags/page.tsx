@@ -6,8 +6,13 @@ import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/us
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
 import { CreateTagRequest } from '@/types/tagTypes'
 import { ApiOwner } from '@/services/dashboardApiServices'
+import { useAppStore } from '@/store/appStore'
+import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
+
+import { Select } from '@/components/ui/Select'
 
 export default function TagsPage() {
+  const { addToast } = useAppStore()
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [tagToDelete, setTagToDelete] = useState<string | null>(null)
@@ -96,12 +101,12 @@ export default function TagsPage() {
 
   const handleCreateOrUpdateTag = async () => {
     if (!tagName.trim()) {
-      alert('Please enter a tag name')
+      addToast('Please enter a tag name', 'error')
       return
     }
 
     if (!ownerId) {
-      alert('Please select an owner')
+      addToast('Please select an owner', 'error')
       return
     }
 
@@ -124,7 +129,7 @@ export default function TagsPage() {
       handleCloseModal()
     } catch (error) {
       console.error('Error saving tag:', error)
-      alert('Failed to save tag. Please try again.')
+      addToast('Failed to save tag. Please try again.', 'error')
     }
   }
 
@@ -142,7 +147,7 @@ export default function TagsPage() {
       setTagToDelete(null)
     } catch (error) {
       console.error('Error deleting tag:', error)
-      alert('Failed to delete tag. Please try again.')
+      addToast('Failed to delete tag. Please try again.', 'error')
     }
   }
 
@@ -156,6 +161,90 @@ export default function TagsPage() {
       tag.description.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesSearch
   })
+
+  const columns: DataGridColumn<any>[] = [
+    {
+      key: "name",
+      header: "Tag Name",
+      render: (tag: any) => (
+        <div className="flex items-center gap-3">
+          <span
+            className="inline-block w-3 h-3 rounded-full"
+            style={{ backgroundColor: tag.color }}
+          />
+          <span className="text-sm font-medium text-gray-900">{tag.name}</span>
+        </div>
+      )
+    },
+    {
+      key: "type",
+      header: "Type",
+      render: (tag: any) => (
+        <span className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-gray-100 rounded-full px-3 py-1">
+          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          {tag.tag_type}
+        </span>
+      )
+    },
+    {
+      key: "description",
+      header: "Description",
+      render: (tag: any) => <p className="text-sm text-gray-600 truncate max-w-md">{tag.description}</p>
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (tag: any) => (
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+          tag.status === 'active' 
+            ? 'bg-green-100 text-green-700' 
+            : 'bg-gray-100 text-gray-600'
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            tag.status === 'active' ? 'bg-green-600' : 'bg-gray-600'
+          }`} />
+          {tag.status}
+        </span>
+      )
+    },
+    {
+      key: "security",
+      header: "Security",
+      render: (tag: any) => (
+        <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+          tag.security_policy === 'high' ? 'bg-red-100 text-red-700' :
+          tag.security_policy === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-green-100 text-green-700'
+        }`}>
+          {tag.security_policy}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (tag: any) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleOpenModal(tag.id)}
+            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+            title="Edit tag"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDeleteTag(tag.id)}
+            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+            title="Delete tag"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -204,26 +293,28 @@ export default function TagsPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Filters:</span>
-              <select
+              <Select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Types</option>
-                <option value="privacy">Privacy</option>
-                <option value="classification">Classification</option>
-                <option value="retention">Retention</option>
-                <option value="general">General</option>
-              </select>
-              <select
+                className="w-40 bg-white"
+                options={[
+                  { value: "", label: "All Types" },
+                  { value: "privacy", label: "Privacy" },
+                  { value: "classification", label: "Classification" },
+                  { value: "retention", label: "Retention" },
+                  { value: "general", label: "General" }
+                ]}
+              />
+              <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                className="w-40 bg-white"
+                options={[
+                  { value: "", label: "All Statuses" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" }
+                ]}
+              />
             </div>
           </div>
         </div>
@@ -245,91 +336,13 @@ export default function TagsPage() {
         {/* Table */}
         {!isLoading && !error && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Security</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTags.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                      No tags found. Create your first tag to get started.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTags.map((tag) => (
-                    <tr key={tag.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="inline-block w-3 h-3 rounded-full"
-                            style={{ backgroundColor: tag.color }}
-                          />
-                          <span className="text-sm font-medium text-gray-900">{tag.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-gray-100 rounded-full px-3 py-1">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                          {tag.tag_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-600 truncate max-w-md">{tag.description}</p>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                          tag.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            tag.status === 'active' ? 'bg-green-600' : 'bg-gray-600'
-                          }`} />
-                          {tag.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                          tag.security_policy === 'high' ? 'bg-red-100 text-red-700' :
-                          tag.security_policy === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {tag.security_policy}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleOpenModal(tag.id)}
-                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                            title="Edit tag"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTag(tag.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Delete tag"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <DataGrid
+              data={filteredTags}
+              columns={columns}
+              keyExtractor={(tag: any) => tag.id}
+              emptyStateMessage="No tags found. Create your first tag to get started."
+              className="border-none shadow-none rounded-none"
+            />
           </div>
         )}
       </div>
@@ -416,17 +429,18 @@ export default function TagsPage() {
                   <label htmlFor="tagType" className="block text-sm font-medium text-gray-700 mb-2">
                     Tag Type
                   </label>
-                  <select
+                  <Select
                     id="tagType"
                     value={tagType}
                     onChange={(e) => setTagType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="general">General</option>
-                    <option value="privacy">Privacy</option>
-                    <option value="classification">Classification</option>
-                    <option value="retention">Retention</option>
-                  </select>
+                    className="w-full bg-white"
+                    options={[
+                      { value: "general", label: "General" },
+                      { value: "privacy", label: "Privacy" },
+                      { value: "classification", label: "Classification" },
+                      { value: "retention", label: "Retention" }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -449,34 +463,33 @@ export default function TagsPage() {
                   <label htmlFor="securityPolicy" className="block text-sm font-medium text-gray-700 mb-2">
                     Security Policy
                   </label>
-                  <select
+                  <Select
                     id="securityPolicy"
                     value={securityPolicy}
                     onChange={(e) => setSecurityPolicy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
+                    className="w-full bg-white"
+                    options={[
+                      { value: "low", label: "Low" },
+                      { value: "medium", label: "Medium" },
+                      { value: "high", label: "High" }
+                    ]}
+                  />
                 </div>
                 <div>
                   <label htmlFor="owner" className="block text-sm font-medium text-gray-700 mb-2">
                     Owner <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Select
                     id="owner"
                     value={ownerId}
                     onChange={(e) => setOwnerId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer"
-                  >
-                    <option value="">Select an owner</option>
-                    {owners.map((owner) => (
-                      <option key={owner.id} value={owner.id}>
-                        {owner.name}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full bg-white cursor-pointer"
+                    placeholder="Select an owner"
+                    options={owners.map((owner) => ({
+                      value: owner.id,
+                      label: owner.name
+                    }))}
+                  />
                 </div>
               </div>
 

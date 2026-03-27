@@ -60,7 +60,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         governance to get quick, context-aware insights.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3">
         {SUGGESTED_PROMPTS.map((prompt, idx) => {
           const Icon = prompt?.icon;
 

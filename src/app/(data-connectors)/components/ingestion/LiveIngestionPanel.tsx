@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Loader2, Check, Zap, X, CheckCircle2, Circle, Tag, ArrowDown } from 'lucide-react';
 import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from '@/hooks/useDashboardQueries';
+import { logger } from '@/lib/logger';
+import { useAppStore } from '@/store/appStore';
+import { InlineState } from '@/components/ui/InlineState';
 
 interface IngestionLog {
     timestamp: string;
@@ -31,6 +34,7 @@ interface LiveIngestionPanelProps {
 }
 
 const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId, sourceName, onClose, onNotFound }) => {
+    const { addToast } = useAppStore();
     const [isScanning, setIsScanning] = useState(false);
     const [steps, setSteps] = useState<Step[]>([]);
     const stepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,7 +116,7 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
     useEffect(() => {
         if (!jobId) return;
 
-        console.log(`Connecting to SSE for job: ${jobId}`);
+        logger.info(`Connecting to SSE for job: ${jobId}`);
         const url = `${process.env.NEXT_PUBLIC_DASHBOARD_API_URL || 'http://172.188.2.173:8005'}/api/v1/jobs/${jobId}/logs/stream`;
         const es = new EventSource(url);
         eventSourceRef.current = es;
@@ -123,7 +127,7 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
                 const log: IngestionLog = JSON.parse(event.data);
                 handleNewLog(log);
             } catch (err) {
-                console.error("Failed to parse log message", err, event.data);
+                logger.error("Failed to parse log message", { error: err, data: event.data });
             }
         };
 
@@ -132,19 +136,19 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
                 const log: IngestionLog = JSON.parse(event.data);
                 handleNewLog(log);
             } catch (err) {
-                console.error("Failed to parse log event", err);
+                logger.error("Failed to parse log event", { error: err });
             }
         });
 
         es.addEventListener('done', (event: any) => {
-            console.log("Ingestion job completed.");
+            logger.info("Ingestion job completed.");
             setIsComplete(true);
             setSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
             es.close();
         });
 
         es.onerror = (err) => {
-            console.error("SSE Error:", err);
+            logger.error("SSE Error", { error: err });
             // If we get an error immediately and have no data, it's likely a 404 or connection issue
             if (datasets.length === 0 && logs.length === 0) {
                 onNotFound?.();
@@ -174,7 +178,7 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
             setIsComplete(true);
             setSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
         } else if (msg.includes("Duplicate key")) {
-            console.warn("Ingestion warning:", msg);
+            logger.warn("Ingestion warning", { msg });
         }
     };
 
@@ -193,13 +197,13 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
                 })
             });
             if (response.ok) {
-                alert("PII Scan triggered successfully");
+                addToast("PII Scan triggered successfully", "success");
             } else {
-                alert("Failed to trigger PII Scan");
+                addToast("Failed to trigger PII Scan", "error");
             }
         } catch (err) {
-            console.error("PII Scan error:", err);
-            alert("Error connecting to scan service");
+            logger.error("PII Scan error", { error: err });
+            addToast("Error connecting to scan service", "error");
         } finally {
             setIsScanning(false);
         }
@@ -258,9 +262,8 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
                         {/* Scrollable list */}
                         <div className="flex-1 overflow-y-auto px-2 pb-4 custom-scrollbar-thick border-t border-gray-50 pt-3">
                             {steps.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                                    <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-300" />
-                                    <span className="text-sm font-medium">Initializing ingestion pipeline...</span>
+                                <div className="mt-8">
+                                    <InlineState type="loading" message="Initializing ingestion pipeline..." />
                                 </div>
                             ) : steps.map((step, idx) => {
                                 const isReasoningStep = step.label.toLowerCase().includes('classif') || step.label.toLowerCase().includes('tag') || step.label.toLowerCase().includes('scan') || step.label.toLowerCase().includes('summary') || step.label.toLowerCase().includes('reasoning');

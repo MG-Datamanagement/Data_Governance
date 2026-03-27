@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { X, CheckCircle2, Bot, ChevronDown, ChevronUp, Loader2, DownloadIcon } from "lucide-react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/appStore";
 
 type ScanSummary = {
   frameworks_scanned: number;
@@ -29,6 +30,7 @@ export function ComplianceScanPanel({
   onClose,
   onScanComplete,
 }: Props) {
+  const { addToast } = useAppStore();
   const [phase, setPhase] = useState<"scanning" | "completing" | "done">(
     "scanning",
   );
@@ -156,7 +158,7 @@ export function ComplianceScanPanel({
       await dashboardApiServices.exportComplianceReport();
     } catch (err) {
       console.error("Failed to export compliance report:", err);
-      alert("Failed to export report. Please try again.");
+      addToast("Failed to export report. Please try again.", "error");
       setIsDownloadingReport(false);
     } finally {
       setIsDownloadingReport(false);

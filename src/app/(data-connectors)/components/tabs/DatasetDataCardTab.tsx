@@ -3,6 +3,8 @@
 import React from "react";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { cn } from "@/lib/utils";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { KeyField } from "@/types";
 
 interface DatasetDataCardTabProps {
   detail: any;
@@ -14,23 +16,20 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
   return (
     <div className="space-y-4">
       {detail.dataCardContent ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <SectionCard title="Data Card Documentation" bodyClassName="p-6">
           <MarkdownRenderer content={detail.dataCardContent} />
-        </div>
+        </SectionCard>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">
-            Dataset Overview
-          </h2>
-          <p className="text-sm text-gray-600 leading-relaxed">
+        <SectionCard title="Dataset Overview" bodyClassName="p-6">
+          <p className="text-sm text-gray-600 leading-relaxed mb-6">
             {detail.overview}
           </p>
 
-          <h3 className="text-sm font-semibold text-gray-900 mt-5 mb-2">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">
             Key Fields
           </h3>
           <ul className="space-y-1.5">
-            {detail.keyFields.map((field: any) => (
+            {detail.keyFields.map((field: KeyField) => (
               <li key={field.name} className="flex items-baseline gap-2 text-sm">
                 <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0 mt-[5px]" />
                 <span>
@@ -40,14 +39,11 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
               </li>
             ))}
           </ul>
-        </div>
+        </SectionCard>
       )}
 
       {/* Data Quality */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-        <h2 className="text-base font-semibold text-gray-900 mb-2">
-          Data Quality
-        </h2>
+      <SectionCard title="Data Quality" bodyClassName="p-4">
         <div className="grid grid-cols-3 gap-2">
           {[
             {
@@ -79,7 +75,7 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
     </div>
   );
 };

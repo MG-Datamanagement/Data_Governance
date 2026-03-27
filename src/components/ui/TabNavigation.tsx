@@ -1,98 +1,75 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Select } from "./Select";
-import { Option } from "@/types";
-import QuickActionsDropdown from "./QuickActionsDropdown";
-import { Button } from "./Button";
-import { Download, Play, ChevronDown, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
-import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
 
-export function TabNavigation() {
-  const pathname = usePathname();
-  const [isExporting, setIsExporting] = useState(false);
-  const [isScanOpen, setIsScanOpen] = useState(false);
+export interface TabItem {
+  id: string;
+  name: React.ReactNode;
+  href?: string;
+}
 
-  const handleExportReport = async () => {
-    if (isExporting) return;
-    setIsExporting(true);
-    try {
-      await dashboardApiServices.exportComplianceReport();
-    } catch (err) {
-      console.error("Failed to export compliance report:", err);
-      alert("Failed to export report. Please try again.");
-      setIsExporting(false);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+export interface TabNavigationProps {
+  tabs: TabItem[];
+  activeTabId?: string;
+  onTabChange?: (tabId: string) => void;
+  rightAction?: React.ReactNode;
+  className?: string;
+  tabClassName?: string;
+}
 
-  const tabs = [
-    { name: "Overview", href: "/overview" },
-    { name: "Compliance", href: "/compliance" },
-  ];
-
+export function TabNavigation({
+  tabs,
+  activeTabId,
+  onTabChange,
+  rightAction,
+  className,
+  tabClassName,
+}: TabNavigationProps) {
   return (
-    <div className="border-b border-gray-200 px-0 py-1 flex items-center justify-between">
+    <div className={cn("border-b border-gray-200 px-0 flex items-center justify-between mb-2", className)}>
       <nav className="flex gap-5">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={cn(
-              "pb-2 px-1 text-sm font-medium transition-colors border-b-2",
-              pathname === tab.href
-                ? "text-primary border-primary font-bold"
-                : "text-gray-500 border-transparent hover:text-gray-900",
-            )}
-          >
-            {tab.name}
-          </Link>
-        ))}
-      </nav>
-      <div className="flex items-center gap-2">
-        {pathname === "/compliance" ? (
-          <>
-            <div>
-              <Button
-                variant="primary"
-                onClick={() => setIsScanOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 h-9 px-4 rounded-lg flex items-center gap-2"
-                icon={<Play size={16} fill="currentColor" />}
-              >
-                Run Full Scan
-              </Button>
-            </div>
-            <div>
-              <Button
-                variant="outline"
-                onClick={handleExportReport}
-                disabled={isExporting}
-                className="h-9 px-4 border-gray-300 rounded-lg text-gray-700 font-medium flex items-center gap-2 bg-white disabled:opacity-60"
-                icon={
-                  isExporting ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Download size={16} />
-                  )
-                }
-              >
-                {isExporting ? "Exporting..." : "Export Report"}
-              </Button>
-            </div>
-          </>
-        ) : null}
-        <QuickActionsDropdown />
-      </div>
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTabId;
+          const content = (
+            <span
+              className={cn(
+                "pb-3 px-1 text-sm font-medium transition-colors border-b-2 block",
+                isActive
+                  ? "text-primary border-primary font-bold"
+                  : "text-gray-500 border-transparent hover:text-gray-900",
+                tabClassName
+              )}
+            >
+              {tab.name}
+            </span>
+          );
 
-      <ComplianceScanPanel
-        isOpen={isScanOpen}
-        onClose={() => setIsScanOpen(false)}
-      />
+          if (tab.href) {
+            return (
+              <Link key={tab.id} href={tab.href}>
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange?.(tab.id)}
+              className="focus:outline-none"
+            >
+              {content}
+            </button>
+          );
+        })}
+      </nav>
+      {rightAction && (
+        <div className="flex items-center gap-2 pb-2">
+          {rightAction}
+        </div>
+      )}
     </div>
   );
 }

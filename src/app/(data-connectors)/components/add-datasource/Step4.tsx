@@ -1,11 +1,14 @@
 "use client";
 
 import React from "react";
-import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
+import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
 import { ConnectorDefinition } from "@/lib/connectors";
 import { ApiOwner } from "@/services/dashboardApiServices";
+import { Select } from "@/components/ui/Select";
+import { Checkbox } from "@/components/ui/Checkbox";
 import type { DataSourceConfig } from "./Step2";
 import type { ScheduleConfig } from "./Step3";
+import { Input } from "@/components/ui/Input";
 
 export interface FinishConfig {
   name: string;
@@ -85,7 +88,7 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
       <div>
         <label className="block text-sm font-semibold text-red-500 mb-0.5">* Name</label>
         <p className="text-xs text-gray-400 mb-1.5">Give this data source a name</p>
-        <input type="text" value={finish.name} onChange={(e) => onChange("name", e.target.value)} placeholder={connector.defaultName}
+        <Input type="text" value={finish.name} onChange={(e) => onChange("name", e.target.value)} placeholder={connector.defaultName}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
       </div>
 
@@ -93,13 +96,18 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1.5">* Owner</label>
         <p className="text-xs text-gray-400 mb-1.5">Select the primary owner for this data source</p>
-        <select value={finish.owner_id} onChange={(e) => onChange("owner_id", e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer">
-          <option value="">Select an owner</option>
-          {owners.map((owner) => (
-            <option key={owner.id} value={owner.id}>{owner.name}</option>
-          ))}
-        </select>
+        <Select 
+          value={finish.owner_id} 
+          onChange={(e) => onChange("owner_id", e.target.value)}
+          className="w-full bg-white text-gray-700"
+          options={[
+            { value: "", label: "Select an owner" },
+            ...owners.map((owner) => ({
+              value: owner.id,
+              label: owner.name
+            }))
+          ]}
+        />
       </div>
 
       {/* PII Detection */}
@@ -117,8 +125,7 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
             { key: "piiApproval", label: "Require approval for PII actions", desc: "Pause ingestion at PII detection steps and wait for a human to review and approve before proceeding.", value: finish.piiApproval },
           ].map((opt) => (
             <label key={opt.key} className="flex items-start gap-3 p-4 cursor-pointer">
-              <input type="checkbox" checked={opt.value} onChange={(e) => onChange(opt.key, e.target.checked)}
-                className="w-4 h-4 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 flex-shrink-0" />
+              <Checkbox checked={opt.value} onChange={(e) => onChange(opt.key, e.target.checked)} />
               <div>
                 <p className="text-sm font-medium text-gray-700">{opt.label}</p>
                 <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{opt.desc}</p>
@@ -148,7 +155,7 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
           <p className="text-sm font-medium text-gray-700">Failure Notifications</p>
         </div>
         <p className="text-xs text-gray-400 mb-2">Enter email addresses to notify when an ingestion run fails. Separate multiple emails with commas.</p>
-        <input type="text" value={finish.failureEmail} onChange={(e) => onChange("failureEmail", e.target.value)}
+        <Input type="text" value={finish.failureEmail} onChange={(e) => onChange("failureEmail", e.target.value)}
           placeholder="e.g. data-team@company.com, oncall@company.com"
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
         <div className="mt-2 flex items-start gap-1.5 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">

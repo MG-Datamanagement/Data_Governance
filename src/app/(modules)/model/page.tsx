@@ -9,7 +9,7 @@ import { RegisterModelModal } from "@/components/model-registry/RegisterModelMod
 import { MOCK_MODEL_LIST, MOCK_MODEL_METADATA } from "@/lib/mockData";
 import { Select } from "@/components/ui/Select";
 
-export function ModelRegistryPage() {
+export default function ModelRegistryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceFilter, setSelectedSourceFilter] = useState("All Sources");
   const [selectedTaskFilter, setSelectedTaskFilter] = useState("All Tasks");
@@ -224,4 +224,3 @@ export function ModelRegistryPage() {
   );
 }
 
-export default ModelRegistryPage;

@@ -26,6 +26,7 @@ import { MOCK_AGENTS, MOCK_DATASETS } from "@/lib/mockChatData";
 import { CONSTANTS, MD_BREAKPOINT } from "@/lib/constants";
 import { useGetChatHistory } from "@/hooks/useDashboardQueries";
 import { useAppStore } from "@/store/appStore";
+import { logger } from "@/lib/logger";
 
 const AskMeAnything: React.FC = () => {
   // Global sidebar state — persists across route navigations
@@ -178,7 +179,7 @@ const AskMeAnything: React.FC = () => {
         refetchHistory();
       }
     } catch (error) {
-      console.error("Failed to send message:", error);
+      logger.error("Failed to send message", { error });
 
       const errorMessage: Message = {
         id: crypto.randomUUID(),
@@ -256,7 +257,7 @@ const AskMeAnything: React.FC = () => {
       setCurrentSessionId(sessionId);
       setMessageResponses(new Map());
     } catch (error) {
-      console.error("Failed to load session:", error);
+      logger.error("Failed to load session", { error });
     } finally {
       setIsSessionLoading(false);
     }
@@ -307,7 +308,7 @@ const AskMeAnything: React.FC = () => {
   }, -1);
 
   return (
-    <div className="flex h-[calc(100vh-58px)] bg-gray-50">
+    <div className="flex h-[calc(100vh-70px)] bg-gray-50">
       <Sidebar
         isCollapsed={chatSidebarCollapsed}
         sessions={sessions}
@@ -338,15 +339,15 @@ const AskMeAnything: React.FC = () => {
               reasoningEnabled: !prev.reasoningEnabled,
             }))
           }
-          onSettingsClick={() => console.log("Settings clicked")}
-          onExpandClick={() => console.log("Expand clicked")}
+          onSettingsClick={() => logger.debug("Settings clicked")}
+          onExpandClick={() => logger.debug("Expand clicked")}
           showAIPreferences={uiState.showAIPreferences}
           aiPreferences={uiState.aiPreferences}
           onToggleAIPreferences={handleToggleAIPreferences}
           onTogglePreference={handleTogglePreference}
         />
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {showWelcome ? (
             <WelcomeScreen onPromptClick={handleSendMessage} />
           ) : (

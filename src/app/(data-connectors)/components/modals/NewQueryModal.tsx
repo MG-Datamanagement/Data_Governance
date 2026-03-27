@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Plus, Terminal, Info, User as UserIcon, Loader2 } from "lucide-react";
 import { CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
+import { Select } from "@/components/ui/Select";
 
 interface NewQueryModalProps {
   isOpen: boolean;
@@ -123,20 +124,20 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               Owner
             </label>
-            <select
+            <Select
               name="owner_id"
               value={formData.owner_id}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all font-medium text-gray-700"
+              className="bg-white"
               required
-            >
-              <option value="" disabled>Select an owner</option>
-              {ownersList.map((owner) => (
-                <option key={owner.id} value={owner.id}>
-                  {owner.name} ({owner.role})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Select an owner" },
+                ...ownersList.map((owner) => ({
+                  value: owner.id,
+                  label: `${owner.name} (${owner.role})`
+                }))
+              ]}
+            />
           </div>
         </form>
 

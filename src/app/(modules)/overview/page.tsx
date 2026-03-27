@@ -10,6 +10,7 @@
 
 import { LoadingFallback, DataErrorFallback } from "@/components/Fallbacks";
 import { TabNavigation } from "@/components/ui/TabNavigation";
+import QuickActionsDropdown from "@/components/ui/QuickActionsDropdown";
 import { useOverviewData } from "../../../hooks/useOverviewData";
 import {
   ActivitySection,
@@ -47,9 +48,18 @@ function OverviewContent() {
   if (stats.isLoading) return <LoadingFallback />;
   if (stats.error) return <DataErrorFallback retry={stats.refetch} />;
 
+  const tabs = [
+    { id: "overview", name: "Overview", href: "/overview" },
+    { id: "compliance", name: "Compliance", href: "/compliance" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
-      <TabNavigation />
+      <TabNavigation 
+        tabs={tabs} 
+        activeTabId="overview" 
+        rightAction={<QuickActionsDropdown />} 
+      />
       <OverviewHeader />
 
       {/* Main two-column layout */}

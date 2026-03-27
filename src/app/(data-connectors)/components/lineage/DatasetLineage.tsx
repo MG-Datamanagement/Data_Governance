@@ -21,15 +21,16 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Search, MoreHorizontal, Loader2, AlertTriangle } from "lucide-react";
 import { useLineageStateEngine, InternalColumn, InternalEdge, InternalNode, NodeRect, ClickedEdge, PopoverAnchor } from "@/hooks/useLineageStateEngine";
-import { AiSummaryPopover } from "./lineage/AiSummaryPopover";
-import { TransformationPopup } from "./lineage/TransformationPopup";
-import { ColumnQueryPopup } from "./lineage/ColumnQueryPopup";
-import { MemoizedNodeCard } from "./lineage/NodeCard";
-import { MemoizedEdgeLayer } from "./lineage/EdgeLayer";
-import { DepthControl } from "./lineage/DepthControl";
-import { SqlEditorSidebar } from "./lineage/SqlEditorSidebar";
-import { typeIcon } from "./lineage/lineageUtils";
-import { CARD_W, CENTER_W, CARD_H_EST, GAP_Y } from "./lineage/lineage.types";
+import { AiSummaryPopover } from "./AiSummaryPopover";
+import { TransformationPopup } from "./TransformationPopup";
+import { ColumnQueryPopup } from "./ColumnQueryPopup";
+import { InlineState } from "@/components/ui/InlineState";
+import { MemoizedNodeCard } from "./NodeCard";
+import { MemoizedEdgeLayer } from "./EdgeLayer";
+import { DepthControl } from "./DepthControl";
+import { SqlEditorSidebar } from "./SqlEditorSidebar";
+import { typeIcon } from "./lineageUtils";
+import { CARD_W, CENTER_W, CARD_H_EST, GAP_Y } from "./lineage.types";
 
 interface DatasetLineageProps { datasetId: string; datasetName: string; }
 
@@ -265,10 +266,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
       >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-20">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-              <p className="text-sm text-gray-500 font-medium">Building lineage graph…</p>
-            </div>
+            <InlineState type="loading" message="Building lineage graph…" />
           </div>
         )}
         {error && !isLoading && (

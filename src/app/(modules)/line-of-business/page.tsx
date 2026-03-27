@@ -31,6 +31,8 @@ import {
     useGetLobDomainsForSelection, 
     useGetLobCatalogs 
 } from "@/hooks/useLineOfBusinessQueries";
+import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -658,7 +660,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
 
                 <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-800">Name <span className="text-red-500">*</span></label>
-                    <input type="text" placeholder="e.g. Platform Engineering" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(null); }} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
+                    <Input type="text" placeholder="e.g. Platform Engineering" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(null); }} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -673,18 +675,18 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                             Loading owners...
                         </div>
                     ) : (
-                        <select
+                        <Select
                             value={form.owner}
                             onChange={(e) => { setForm({ ...form, owner: e.target.value }); setError(null); }}
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                        >
-                            <option value="">Select an owner...</option>
-                            {owners.map((owner) => (
-                                <option key={owner.id} value={owner.id}>
-                                    {owner.name} ({owner.email})
-                                </option>
-                            ))}
-                        </select>
+                            className="bg-white"
+                            options={[
+                                { value: "", label: "Select an owner..." },
+                                ...owners.map((owner) => ({
+                                    value: owner.id,
+                                    label: `${owner.name} (${owner.email})`
+                                }))
+                            ]}
+                        />
                     )}
                 </div>
 
@@ -712,18 +714,18 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                         Loading domains...
                                     </div>
                                 ) : (
-                                    <select
+                                    <Select
                                         value={form.customId}
                                         onChange={(e) => setForm({ ...form, customId: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                    >
-                                        <option value="">None (Top-level domain)</option>
-                                        {parentDomains.map((domain) => (
-                                            <option key={domain.id} value={domain.id}>
-                                                {domain.name} ({domain.owner})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        className="w-full bg-white"
+                                        options={[
+                                            { value: "", label: "None (Top-level domain)" },
+                                            ...parentDomains.map((domain) => ({
+                                                value: domain.id,
+                                                label: `${domain.name} (${domain.owner})`
+                                            }))
+                                        ]}
+                                    />
                                 )}
                                 <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
                                     <FiAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -739,18 +741,18 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                         Loading catalogs...
                                     </div>
                                 ) : catalogs && catalogs.length > 0 ? (
-                                    <select
+                                    <Select
                                         value={form.catalogId || ""}
                                         onChange={(e) => setForm({ ...form, catalogId: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                    >
-                                        <option value="">None (No catalog)</option>
-                                        {catalogs.map((catalog) => (
-                                            <option key={catalog.id} value={catalog.id}>
-                                                {catalog.full_name || `${catalog.schema_name}.${catalog.table_name}` || catalog.table_name || catalog.id} ({catalog.source_name || "Unknown"})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        className="w-full bg-white"
+                                        options={[
+                                            { value: "", label: "None (No catalog)" },
+                                            ...catalogs.map((catalog) => ({
+                                                value: catalog.id,
+                                                label: `${catalog.full_name || `${catalog.schema_name}.${catalog.table_name}` || catalog.table_name || catalog.id} (${catalog.source_name || "Unknown"})`
+                                            }))
+                                        ]}
+                                    />
                                 ) : (
                                     <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
                                         No catalogs available

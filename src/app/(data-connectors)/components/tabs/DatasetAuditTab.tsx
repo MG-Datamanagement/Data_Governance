@@ -18,6 +18,10 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { Button } from "@/components/ui/Button";
+import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Select } from "@/components/ui/Select";
 
 interface DatasetAuditTabProps {
   catalogId: string;
@@ -121,6 +125,93 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     );
   }
 
+  const columns: DataGridColumn<any>[] = [
+    {
+      key: "when",
+      header: "When",
+      render: (log) => (
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-gray-900">
+            {formatDistanceToNow(new Date(log.when_time), { addSuffix: true })}
+          </span>
+          <span className="text-[10px] text-gray-400 mt-0.5">
+            {format(new Date(log.when_time), "MMM d, yyyy HH:mm:ss")}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "who",
+      header: "Who",
+      render: (log) => {
+        const { name, role } = parseWho(log.who_name);
+        return (
+          <div className="flex items-center gap-2.5">
+            {role.toLowerCase() === "automated" || role.toLowerCase() === "bot" ? (
+              <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
+                <Activity className="w-3.5 h-3.5 text-indigo-500" />
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-gray-600">
+                {getInitials(name)}
+              </div>
+            )}
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-gray-900">{name}</span>
+              <span className="text-[10px] text-gray-500">{role}</span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "what",
+      header: "What",
+      render: (log) => {
+        const { badge, text } = parseAction(log.what_action);
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border", getBadgeColor(badge))}>
+              {badge}
+            </span>
+            <p className="text-xs text-gray-700 line-clamp-2 max-w-[180px]">{text}</p>
+          </div>
+        );
+      },
+    },
+    {
+      key: "where",
+      header: "Where",
+      render: (log) => {
+        const { primary: locPrimary, secondary: locSecondary } = parseLocation(log.where_location);
+        return (
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-gray-900">{locPrimary}</span>
+            {locSecondary && (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-gray-400">{locSecondary}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "details",
+      header: "Details",
+      render: (log) => (
+        <p className="text-xs text-gray-500 italic max-w-[200px] line-clamp-2">
+          {log.details}
+        </p>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (log) => getStatusDisplay(log.status),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -142,14 +233,12 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
               className="pl-9 pr-4 py-2 w-64 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Filter className="w-4 h-4 text-gray-500" />
+          <Button variant="outline" icon={<Filter size={16} />}>
             Filter
-          </button>
-          <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Download className="w-4 h-4 text-gray-500" />
+          </Button>
+          <Button variant="outline" icon={<Download size={16} />}>
             Export
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -185,104 +274,24 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
       </div>
 
       {/* Activity Log Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-base font-bold text-gray-900">Activity Log</h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-              {total_log_count} events
-            </span>
-          </div>
+      <SectionCard 
+        title="Activity Log" 
+        badgeCount={`${total_log_count} events`}
+        headerAction={
           <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
             Showing all event types
           </button>
-        </div>
+        }
+      >
 
-        <div className="overflow-x-auto max-h-[500px] overflow-y-auto relative custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-gray-50/95 backdrop-blur z-10 shadow-sm">
-              <tr className="border-b border-gray-200">
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">When</th>
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Who</th>
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">What</th>
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Where</th>
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Details</th>
-                <th className="py-2.5 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {activity_log?.map((log) => {
-                const { name, role } = parseWho(log.who_name);
-                const { badge, text } = parseAction(log.what_action);
-                const { primary: locPrimary, secondary: locSecondary } = parseLocation(log.where_location);
-                
-                return (
-                  <tr key={log.id} className="hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
-                    <td className="py-3 px-4 align-top">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-900">
-                          {formatDistanceToNow(new Date(log.when_time), { addSuffix: true })}
-                        </span>
-                        <span className="text-[10px] text-gray-400 mt-0.5">
-                          {format(new Date(log.when_time), "MMM d, yyyy HH:mm:ss")}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 align-top">
-                      <div className="flex items-center gap-2.5">
-                        {role.toLowerCase() === "automated" || role.toLowerCase() === "bot" ? (
-                          <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
-                            <Activity className="w-3.5 h-3.5 text-indigo-500" />
-                          </div>
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-gray-600">
-                            {getInitials(name)}
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-900">{name}</span>
-                          <span className="text-[10px] text-gray-500">{role}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 align-top">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border", getBadgeColor(badge))}>
-                          {badge}
-                        </span>
-                        <p className="text-xs text-gray-700 line-clamp-2 max-w-[180px]">{text}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 align-top">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-900">{locPrimary}</span>
-                        {locSecondary && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] text-gray-400">{locSecondary}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 align-top">
-                      <p className="text-xs text-gray-500 italic max-w-[200px] line-clamp-2">
-                        {log.details}
-                      </p>
-                    </td>
-                    <td className="py-3 px-4 align-top">
-                      {getStatusDisplay(log.status)}
-                    </td>
-                  </tr>
-                );
-              })}
-              {(!activity_log || activity_log.length === 0) && (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-sm text-gray-500">
-                    No activity events found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="overflow-y-auto max-h-[500px] relative custom-scrollbar">
+          <DataGrid
+            data={activity_log || []}
+            columns={columns}
+            keyExtractor={(log: any) => log.id}
+            emptyStateMessage="No activity events found."
+            className="border-none shadow-none"
+          />
         </div>
 
         {/* Pagination */}
@@ -293,16 +302,17 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
             </span>
             <div className="flex items-center gap-2">
               <span className="text-gray-400">Rows per page:</span>
-              <select 
+              <Select 
                 value={limit}
                 onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                className="border border-gray-200 rounded text-gray-600 bg-white py-0.5 px-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+                className="py-0.5 px-2 bg-white text-gray-600 min-w-[70px] min-h-[28px]"
+                options={[
+                  { value: "10", label: "10" },
+                  { value: "20", label: "20" },
+                  { value: "50", label: "50" },
+                  { value: "100", label: "100" }
+                ]}
+              />
             </div>
           </div>
 
@@ -329,7 +339,7 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
             </button>
           </div>
         </div>
-      </div>
+      </SectionCard>
     </div>
   );
 }

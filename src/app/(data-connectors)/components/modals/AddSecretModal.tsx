@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Select } from "@/components/ui/Select";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const secretTypeValues = ["password", "connection_string", "api_key", "token"] as const;
@@ -125,18 +126,18 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
             <label htmlFor="secret-type" className="block text-sm font-semibold text-gray-800 mb-1.5">
               Type
             </label>
-            <select
+            <Select
               id="secret-type"
               {...register("type")}
               disabled={isEditMode || isLoading}
-              aria-invalid={!!errors.type}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50 disabled:bg-gray-50 appearance-none"
-            >
-              <option value="password">Password</option>
-              <option value="connection_string">Connection String</option>
-              <option value="api_key">API Key</option>
-              <option value="token">Token</option>
-            </select>
+              className="w-full bg-white text-gray-900"
+              options={[
+                { value: "password", label: "Password" },
+                { value: "connection_string", label: "Connection String" },
+                { value: "api_key", label: "API Key" },
+                { value: "token", label: "Token" }
+              ]}
+            />
             {fieldError("type")}
           </div>
 

@@ -10,8 +10,33 @@ import {
   ComplianceFrameworksPanel,
 } from "@/app/(modules)/compliance/components/sections";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import QuickActionsDropdown from "@/components/ui/QuickActionsDropdown";
+import { Button } from "@/components/ui/Button";
+import { Download, Play, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
+import { useAppStore } from "@/store/appStore";
 
 function ComplianceContent() {
+  const { addToast } = useAppStore();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  
+  const handleExportReport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await dashboardApiServices.exportComplianceReport();
+      addToast("Details successfully exported", "success");
+    } catch (err) {
+      console.error("Failed to export compliance report:", err);
+      addToast("Failed to export report. Please try again.", "error");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const { healthQuery, issuesQuery, frameworksQuery, insightsQuery } = useComplianceData();
 
   const isPageLoading = healthQuery.isLoading;
@@ -25,9 +50,36 @@ function ComplianceContent() {
       />
     );
 
+  const tabs = [
+    { id: "overview", name: "Overview", href: "/overview" },
+    { id: "compliance", name: "Compliance", href: "/compliance" },
+  ];
+
+  const rightActions = (
+    <>
+      <Button
+        variant="primary"
+        onClick={() => setIsScanOpen(true)}
+        icon={<Play size={16} className="fill-current" />}
+      >
+        Run Full Scan
+      </Button>
+      <Button
+        variant="outline"
+        onClick={handleExportReport}
+        disabled={isExporting}
+        icon={isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+      >
+        {isExporting ? "Exporting..." : "Export Report"}
+      </Button>
+      <QuickActionsDropdown />
+    </>
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
-      <TabNavigation />
+      <TabNavigation tabs={tabs} activeTabId="compliance" rightAction={rightActions} />
+      <ComplianceScanPanel isOpen={isScanOpen} onClose={() => setIsScanOpen(false)} />
       <ComplianceHeader />
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">

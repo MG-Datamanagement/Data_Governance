@@ -15,10 +15,10 @@
 
 import React, { useState, useEffect } from "react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
-import type { NewComplianceRule, NewComplianceSummary, NewComplianceResponse } from "./compliance-report/compliance.types";
-import { CompliantRule } from "./compliance-report/CompliantRule";
-import { ViolationRule } from "./compliance-report/ViolationRule";
-import { ComplianceScoreCards } from "./compliance-report/ComplianceScoreCards";
+import type { NewComplianceRule, NewComplianceSummary, NewComplianceResponse } from "../compliance-report/compliance.types";
+import { CompliantRule } from "../compliance-report/CompliantRule";
+import { ViolationRule } from "../compliance-report/ViolationRule";
+import { ComplianceScoreCards } from "../compliance-report/ComplianceScoreCards";
 
 interface ComplianceReportModalProps {
   datasetName?: string;
@@ -158,4 +158,4 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
 export default ComplianceReportModal;
 
 // Re-export types for backward compatibility with any consumers importing them from this file
-export type { RuleViolation, NewComplianceRule, NewComplianceSummary, NewComplianceDataset, NewComplianceResponse } from "./compliance-report/compliance.types";
+export type { RuleViolation, NewComplianceRule, NewComplianceSummary, NewComplianceDataset, NewComplianceResponse } from "../compliance-report/compliance.types";

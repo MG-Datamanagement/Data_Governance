@@ -22,16 +22,12 @@ export function Select({
         error && "border-red-500 focus:border-red-500 focus:ring-red-500/40",
         className,
       )}
-      defaultValue=""
+      {...(props.value !== undefined ? {} : { defaultValue: "" })}
       {...props}
     >
-      <option disabled value="">
-        {placeholder}
-      </option>
+      <option disabled value="">{placeholder}</option>
       {options.map(({ value, label }) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
+        <option key={value} value={value}>{label}</option>
       ))}
     </select>
   );

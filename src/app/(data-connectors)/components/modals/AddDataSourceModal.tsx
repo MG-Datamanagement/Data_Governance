@@ -20,11 +20,12 @@ import { useAppStore } from "@/store/appStore";
 import { useGetOwnersList } from "@/hooks/useDashboardQueries";
 import { useCreateDataSource } from "@/hooks/useCreateDataSource";
 import { CONNECTORS } from "@/lib/connectors";
-import { Stepper, ModalFooter } from "./add-datasource/ModalChrome";
-import { Step1 } from "./add-datasource/Step1";
-import { Step2, DataSourceConfig } from "./add-datasource/Step2";
-import { Step3, ScheduleConfig } from "./add-datasource/Step3";
-import { Step4, FinishConfig } from "./add-datasource/Step4";
+import { Stepper } from "@/components/ui/Stepper";
+import { ModalFooter } from "@/components/ui/ModalFooter";
+import { Step1 } from "../add-datasource/Step1";
+import { Step2, DataSourceConfig } from "../add-datasource/Step2";
+import { Step3, ScheduleConfig } from "../add-datasource/Step3";
+import { Step4, FinishConfig } from "../add-datasource/Step4";
 
 interface AddDataSourceModalProps {
   onClose: () => void;
@@ -60,14 +61,14 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
 
   useEffect(() => {
     if (owners.length > 0 && !finish.owner_id) {
-      setFinish(p => ({ ...p, owner_id: owners[0].id }));
+      setFinish((p: any) => ({ ...p, owner_id: owners[0].id }));
     }
   }, [owners, finish.owner_id]);
 
   const connector = CONNECTORS.find((c) => c.id === selectedId) ?? CONNECTORS[0];
-  const updateConfig = (k: string, v: string | boolean) => setConfig((p) => ({ ...p, [k]: v }));
-  const updateSchedule = (k: string, v: string | boolean) => setSchedule((p) => ({ ...p, [k]: v }));
-  const updateFinish = (k: string, v: string | boolean) => setFinish((p) => ({ ...p, [k]: v }));
+  const updateConfig = (k: string, v: string | boolean) => setConfig((p: any) => ({ ...p, [k]: v }));
+  const updateSchedule = (k: string, v: string | boolean) => setSchedule((p: any) => ({ ...p, [k]: v }));
+  const updateFinish = (k: string, v: string | boolean) => setFinish((p: any) => ({ ...p, [k]: v }));
 
   const next = () => setStep((s) => Math.min(s + 1, 4));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
@@ -88,7 +89,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
           </button>
         </div>
 
-        <Stepper current={step} />
+        <Stepper steps={["Choose Data Source", "Configure Connection", "Sync Schedule", "Finish up"]} current={step} />
 
         {submitError && (
           <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg flex items-center gap-2">

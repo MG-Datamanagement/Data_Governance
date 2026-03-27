@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Select } from "@/components/ui/Select";
 
 type Frequency = "Hourly" | "Daily" | "Weekly";
 
@@ -102,12 +103,10 @@ export const Step3: React.FC<Step3Props> = ({ schedule, onChange }) => {
 
           <div>
             <p className="text-xs font-semibold text-red-500 mb-1.5">* Timezone</p>
-            <select value={schedule.timezone} onChange={(e) => onChange("timezone", e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
-              ))}
-            </select>
+            <Select value={schedule.timezone} onChange={(e) => onChange("timezone", e.target.value)}
+              className="bg-white"
+              options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+            />
           </div>
         </div>
       )}

@@ -172,7 +172,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </button>
       </div>
 
-      <div className="text-center text-xs/3 text-gray-300 my-1.5">
+      <div className="text-center text-xs/3 text-gray-300 mt-1.5">
         AI can make mistakes. Please review generated insights.
       </div>
     </div>

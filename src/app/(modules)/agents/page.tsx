@@ -24,6 +24,8 @@ import {
 
 import { useGetAgents } from "@/hooks/useDashboardQueries";
 import { InlineState } from "@/components/ui/InlineState";
+import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Select } from "@/components/ui/Select";
 
 export default function AgentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +106,76 @@ export default function AgentsPage() {
         });
     }, [searchQuery, statusFilter, typeFilter]);
 
+    const columns: DataGridColumn<any>[] = [
+        {
+            key: "name",
+            header: "Agent Name",
+            render: (agent: any) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center flex-shrink-0 border border-indigo-100">
+                        <Bot size={16} className="text-indigo-600" />
+                    </div>
+                    <span className="font-semibold text-gray-900">{agent.name}</span>
+                </div>
+            )
+        },
+        {
+            key: "type",
+            header: "Type / Use Case",
+            render: (agent: any) => (
+                <div className="flex flex-col gap-1 items-start">
+                    <span className="font-medium text-gray-900">{agent.type}</span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-600">
+                        {agent.useCaseBadge}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: "status",
+            header: "Status",
+            render: (agent: any) => (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${agent.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                    agent.status === 'Error' ? 'bg-red-50 text-red-700 border-red-100' :
+                        'bg-amber-50 text-amber-700 border-amber-100'
+                    }`}>
+                    {agent.status === 'Active' ? (
+                        <CheckCircle2 size={12} className="text-emerald-500" />
+                    ) : agent.status === 'Error' ? (
+                        <XCircle size={12} className="text-red-500" />
+                    ) : (
+                        <PauseCircle size={12} className="text-amber-500" />
+                    )}
+                    {agent.status}
+                </span>
+            )
+        },
+        {
+            key: "owner",
+            header: "Owner",
+            render: (agent: any) => <span className="text-gray-500">{agent.owner}</span>
+        },
+        {
+            key: "models",
+            header: "Models Used",
+            render: (agent: any) => (
+                <div className="flex flex-wrap gap-2">
+                    {agent.models.map((model: string, idx: number) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-indigo-50/50 text-indigo-700 border border-indigo-100">
+                            <BrainCircuit size={12} className="text-indigo-500" />
+                            {model}
+                        </span>
+                    ))}
+                </div>
+            )
+        },
+        {
+            key: "lastUpdated",
+            header: "Last Updated",
+            render: (agent: any) => <span className="text-gray-500 text-sm whitespace-nowrap">{agent.lastUpdated}</span>
+        }
+    ];
+
     return (
         <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-6 bg-white min-h-screen text-gray-900">
 
@@ -160,39 +232,29 @@ export default function AgentsPage() {
                         </div>
 
                         {/* Statuses Filter Dropdown */}
-                        <select
+                        <Select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-gray-700 cursor-pointer appearance-none outline-none transition-all pr-8 relative"
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                                backgroundPosition: `right 0.25rem center`,
-                                backgroundRepeat: `no-repeat`,
-                                backgroundSize: `1.5em 1.5em`
-                            }}
-                        >
-                            <option value="All Statuses">All Statuses</option>
-                            <option value="Active">Active</option>
-                            <option value="Paused">Paused</option>
-                            <option value="Error">Error</option>
-                        </select>
+                            className="bg-white min-w-[140px]"
+                            options={[
+                                { value: "All Statuses", label: "All Statuses" },
+                                { value: "Active", label: "Active" },
+                                { value: "Paused", label: "Paused" },
+                                { value: "Error", label: "Error" }
+                            ]}
+                        />
 
                         {/* Types Filter Dropdown */}
-                        <select
+                        <Select
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-gray-700 cursor-pointer appearance-none outline-none transition-all pr-8 relative"
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                                backgroundPosition: `right 0.25rem center`,
-                                backgroundRepeat: `no-repeat`,
-                                backgroundSize: `1.5em 1.5em`
-                            }}
-                        >
-                            <option value="All Types">All Types</option>
-                            <option value="BYO Agent">BYO Agent</option>
-                            <option value="Platform Agent">Platform Agent</option>
-                        </select>
+                            className="bg-white min-w-[140px]"
+                            options={[
+                                { value: "All Types", label: "All Types" },
+                                { value: "BYO Agent", label: "BYO Agent" },
+                                { value: "Platform Agent", label: "Platform Agent" }
+                            ]}
+                        />
 
                         {(searchQuery !== "" || statusFilter !== "All Statuses" || typeFilter !== "All Types") && (
                             <button
@@ -231,81 +293,13 @@ export default function AgentsPage() {
                 <InlineState type="loading" message="Loading agents ecosystem..." />
             ) : viewMode === "list" ? (
                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-gray-200 text-gray-500 text-xs font-semibold uppercase tracking-wider bg-gray-50/50">
-                                    <th className="px-6 py-4 font-semibold">Agent Name</th>
-                                    <th className="px-6 py-4 font-semibold">Type / Use Case</th>
-                                    <th className="px-6 py-4 font-semibold">Status</th>
-                                    <th className="px-6 py-4 font-semibold">Owner</th>
-                                    <th className="px-6 py-4 font-semibold">Models Used</th>
-                                    <th className="px-6 py-4 font-semibold">Last Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredAgents.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                            No agents found matching your filters.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredAgents.map((agent) => (
-                                        <tr key={agent.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center flex-shrink-0 border border-indigo-100">
-                                                        <Bot size={16} className="text-indigo-600" />
-                                                    </div>
-                                                    <span className="font-semibold text-gray-900">{agent.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-1 items-start">
-                                                    <span className="font-medium text-gray-900">{agent.type}</span>
-                                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-gray-600">
-                                                        {agent.useCaseBadge}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${agent.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                    agent.status === 'Error' ? 'bg-red-50 text-red-700 border-red-100' :
-                                                        'bg-amber-50 text-amber-700 border-amber-100'
-                                                    }`}>
-                                                    {agent.status === 'Active' ? (
-                                                        <CheckCircle2 size={12} className="text-emerald-500" />
-                                                    ) : agent.status === 'Error' ? (
-                                                        <XCircle size={12} className="text-red-500" />
-                                                    ) : (
-                                                        <PauseCircle size={12} className="text-amber-500" />
-                                                    )}
-                                                    {agent.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-500">
-                                                {agent.owner}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-2">
-                                                    {agent.models.map((model: string, idx: number) => (
-                                                        <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-indigo-50/50 text-indigo-700 border border-indigo-100">
-                                                            <BrainCircuit size={12} className="text-indigo-500" />
-                                                            {model}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-500 text-sm whitespace-nowrap">
-                                                {agent.lastUpdated}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                    <DataGrid
+                        data={filteredAgents}
+                        columns={columns}
+                        keyExtractor={(agent: any) => agent.id}
+                        emptyStateMessage="No agents found matching your filters."
+                        className="border-none shadow-none rounded-none"
+                    />
                 </div>
             ) : (
                 /* Grid View */
