@@ -36,6 +36,7 @@ const QueryListView: React.FC<QueryListViewProps> = ({
             <th className="px-3 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</th>
             <th className="px-3 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Query Text</th>
             <th className="px-3 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created By</th>
+            <th className="px-3 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date Created</th>
             <th className="px-3 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
           </tr>
         </thead>
@@ -75,7 +76,15 @@ const QueryListView: React.FC<QueryListViewProps> = ({
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-gray-700">{query.owner_name}</span>
-                    <span className="text-[10px] text-gray-400">{new Date(query.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </td>
+
+              {/* Date Created */}
+              <td className="px-3 py-3 align-top whitespace-nowrap">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-700">{new Date(query.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </td>
