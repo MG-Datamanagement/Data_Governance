@@ -1,7 +1,5 @@
 import { create } from "zustand";
 
-export type DashboardTabType = "Overview" | "Compliance";
-export type ActivityTabType = "recent" | "viewed";
 export type DatasetDetailTabType = "DataCard" | "Columns" | "Lineage" | "Properties" | "Queries" | "Audit";
 export type ToastType = "success" | "error" | "info" | "warning";
 
@@ -20,10 +18,6 @@ interface AppState {
   datasetDetailSidebarCollapsed: boolean;
   /** Dark mode */
   darkMode: boolean;
-  /** Activity tab */
-  activityTab: ActivityTabType;
-  /** Dashboard tab */
-  dashboardTab: DashboardTabType;
   /** Dataset detail tab */
   datasetDetailTab: DatasetDetailTabType;
   /** Add dataset configuration */
@@ -31,8 +25,6 @@ interface AppState {
   /** Global toast notifications */
   toasts: AppToast[];
 
-  setDashboardTab: (tab: DashboardTabType) => void;
-  setActivityTab: (tab: ActivityTabType) => void;
   setDatasetDetailTab: (tab: DatasetDetailTabType) => void;
 
   toggleSidebar: () => void;
@@ -56,14 +48,10 @@ export const useAppStore = create<AppState>((set) => ({
   chatSidebarCollapsed: true,
   datasetDetailSidebarCollapsed: false,
   darkMode: false,
-  dashboardTab: "Overview",
-  activityTab: "recent",
   datasetDetailTab: "DataCard",
   addDsConfig: {},
   toasts: [],
 
-  setDashboardTab: (tab) => set({ dashboardTab: tab }),
-  setActivityTab: (tab) => set({ activityTab: tab }),
   setDatasetDetailTab: (tab) => set({ datasetDetailTab: tab }),
 
   toggleSidebar: () =>

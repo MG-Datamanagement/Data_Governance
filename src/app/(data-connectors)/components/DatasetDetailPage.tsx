@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   dashboardApiServices,
   ClassificationResponse,
@@ -12,7 +12,8 @@ import { Dataset, ApiTag, ApiColumn } from "@/types";
 import ComplianceReportModal from "@/app/(data-connectors)/components/ComplianceReportModal";
 import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
-import { ClassifyScanPhase } from "@/types/datasourcesTypes";
+import DatasetDataCardTab from "./DatasetDataCardTab";
+import DatasetColumnsTab from "./DatasetColumnsTab";
 import {
   useGetCatalogDetail,
   useGetCatalogDatacard,
@@ -60,8 +61,16 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const router = useRouter();
   const { data: catalogData, isLoading: isCatalogLoading, refetch: fetchCatalogDetail } = useGetCatalogDetail(datasetId);
   const { data: datacardData, isLoading: isDatacardLoading } = useGetCatalogDatacard(datasetId);
-  const { setSidebarCollapsed, datasetDetailTab, setDatasetDetailTab } = useAppStore();
-  const activeTab = datasetDetailTab as Tab;
+  const { setSidebarCollapsed } = useAppStore();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const activeTab = (searchParams.get("tab") as Tab) || "DataCard";
+
+  const setDatasetDetailTab = (tab: Tab) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const { data: propertiesData } = useGetCatalogProperties(datasetId, { enabled: !!datasetId && activeTab === "Properties" });
   const { data: auditData } = useGetCatalogAuditTrail(datasetId, 50, 0, { enabled: !!datasetId && activeTab === "Audit" });
@@ -74,10 +83,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
 
   // using appStore for activeTab
   const [showCompliance, setShowCompliance] = useState(false);
-  const [isReclassifyAiLoading, setIsReclassifyAiLoading] = useState(false);
-  const [reclassifyAiScanPhase, setReclassifyAiScanPhase] =
-    useState<ClassifyScanPhase>("never");
-  const [aiResults, setAiResults] = useState<any>({});
+
   const { data: complianceData, isFetching: isComplianceLoading, refetch: complianceRefetch } = useGetDatasetComplianceReport(datasetId);
 
   const handleViewCompliance = async () => {
@@ -121,42 +127,6 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       dataCardContent: datacardData?.data_card,
     };
   }, [catalogData, datacardData, sourceId]);
-
-
-  const handleReclassificationActionWithAI = async () => {
-    setIsReclassifyAiLoading(true);
-    setReclassifyAiScanPhase("scanning");
-
-    try {
-      const payload: ReclassificationActionWithAiRequest = {
-        catalog_id: datasetId,
-        save_to_db: CONSTANTS.saveToDb,
-        assigned_by: CONSTANTS.assignedBy,
-        min_confidence: 0.7,
-      };
-
-      const response: any = await dashboardApiServices.reclassificationActionWithAi(payload);
-
-      const map: any = {};
-      response?.results?.forEach((r: any) => {
-        map[r.column_name] = ["pii", "phi"].includes(r)
-          ? "pii"
-          : r
-      });
-
-      setAiResults(map);
-
-      setReclassifyAiScanPhase("complete");
-    } catch (err) {
-      console.log("Error during PII classification:", "never", "false")
-      console.error("Error during PII classification:", err);
-      setReclassifyAiScanPhase("never");
-      setIsReclassifyAiLoading(false);
-    } finally {
-      setIsReclassifyAiLoading(false);
-      setReclassifyAiScanPhase("re-scan");
-    }
-  };
 
   if (isLoading) {
     return (
@@ -515,124 +485,40 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           </div>
         </div>
 
-        {/* DataCard tab body */}
-        {activeTab === "DataCard" && (
-          <div className="flex gap-4">
-            {/* Left content */}
-            <div className="flex-1 min-w-0 space-y-4">
-              {detail.dataCardContent ? (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <MarkdownRenderer content={detail.dataCardContent} />
-                </div>
-              ) : (
-                <>
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                    <h2 className="text-base font-semibold text-gray-900 mb-2">
-                      Dataset Overview
-                    </h2>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {detail.overview}
-                    </p>
-
-                    <h3 className="text-sm font-semibold text-gray-900 mt-5 mb-2">
-                      Key Fields
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {detail.keyFields.map((field) => (
-                        <li
-                          key={field.name}
-                          className="flex items-baseline gap-2 text-sm"
-                        >
-                          <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0 mt-[5px]" />
-                          <span>
-                            <span className="font-medium text-gray-800">
-                              {field.name}:
-                            </span>{" "}
-                            <span className="text-gray-500">
-                              {field.description}
-                            </span>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              )}
-
-              {/* Data Quality */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                <h2 className="text-base font-semibold text-gray-900 mb-2">
-                  Data Quality
-                </h2>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    {
-                      label: "FRESHNESS",
-                      value: detail.freshness,
-                      color: "text-green-600",
-                    },
-                    {
-                      label: "VOLUME",
-                      value: detail.volume,
-                      color: "text-green-600",
-                    },
-                    {
-                      label: "QUALITY SCORE",
-                      value: detail.qualityScore,
-                      color: qualityColor,
-                    },
-                  ].map((metric) => (
-                    <div
-                      key={metric.label}
-                      className="bg-green-50 border border-green-100 rounded-xl px-4 py-4 flex flex-col justify-center items-center"
-                    >
-                      <p className="text-xs font-semibold text-gray-400 tracking-wide uppercase mb-1 text-center">
-                        {metric.label}
-                      </p>
-                      <p className={cn(`text-2xl font-extrabold ${metric.color} text-center`)}>
-                        {metric.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+        {/* Tab Body Container */}
+        <div className="flex gap-4 mt-5">
+          <div className="flex-1 min-w-0">
+            {activeTab === "DataCard" && <DatasetDataCardTab detail={detail} />}
+            {activeTab === "Columns" && (
+              <DatasetColumnsTab catalogData={catalogData} datasetId={datasetId} />
+            )}
+            {activeTab === "Lineage" && (
+              <div
+                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                style={{ height: "600px" }}
+              >
+                <DatasetLineage datasetId={datasetId} datasetName={detail.name} />
               </div>
-            </div>
-
-            {/* Right sidebar */}
-            <DatasetDetailSidebar
-              name={detail.name}
-              type={detail.type}
-              sourceName={detail.sourceName}
-              owner={detail.owner}
-              ownerInitials={detail.ownerInitials}
-              tags={detail.tags}
-              lineageWarning={detail.lineageWarning}
-            />
-          </div>
-        )}
-
-        {/* Columns tab body */}
-        {activeTab === "Columns" && (
-          <div className="flex gap-4">
-            {/* Left content — Schema Definition table */}
-            <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-              <div className="flex items-center gap-2">
-                <h2 className="text-md font-bold text-gray-900">
-                  Schema Definition
-                </h2>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-bold border border-indigo-100">
-                  {catalogData?.columns?.length || 0} Columns
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {reclassifyAiScanPhase === "never" && (
-                  <button
-                    onClick={handleReclassificationActionWithAI}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
+            )}
+            {activeTab === "Properties" && (
+              <DatasetPropertiesTab catalogId={datasetId} />
+            )}
+            {activeTab === "Queries" && (
+              <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
+            )}
+            {activeTab === "Audit" && (
+              <DatasetAuditTab catalogId={datasetId} />
+            )}
+            {activeTab !== "DataCard" &&
+              activeTab !== "Columns" &&
+              activeTab !== "Lineage" &&
+              activeTab !== "Properties" &&
+              activeTab !== "Queries" &&
+              activeTab !== "Audit" && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
                     <svg
-                      className="w-3.5 h-3.5"
+                      className="w-6 h-6 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -640,277 +526,19 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                        strokeWidth={1.5}
+                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
                       />
                     </svg>
-                    Reclassify with AI
-                  </button>
-                )}
-                {reclassifyAiScanPhase === "scanning" && (
-                  <button
-                    disabled
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50"
-                  >
-                    <div>
-                      <Loader2
-                        className="text-indigo-400 animate-spin"
-                        size={16}
-                      />
-                    </div>
-                    Reclassifying...
-                  </button>
-                )}
-                {["re-scan", "complete"].includes(reclassifyAiScanPhase) && (
-                  <button
-                    onClick={() => {
-                      setReclassifyAiScanPhase("re-scan");
-                      handleReclassificationActionWithAI();
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
-                    <div>
-                      <CheckCircle2 size={16} className="text-green-400" />
-                    </div>
-                    Reclassified
-                  </button>
-                )}
-                <button className="p-1.5 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg bg-white transition-colors">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              {reclassifyAiScanPhase === "scanning" && (
-                <div
-                  className={cn(
-                    "p-4 flex items-center w-full gap-2",
-                    reclassifyAiScanPhase === "scanning" && "bg-indigo-50",
-                  )}
-                >
-                  <>
-                    <div>
-                      <Loader2
-                        className="text-indigo-400 animate-spin"
-                        size={16}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-sm text-indigo-600">
-                        AI Reclassification in progress...
-                      </h3>
-                      <p className="text-xs text-indigo-500">
-                        Analyzing column patterns, data types, and semantic
-                        context
-                      </p>
-                    </div>
-                  </>
+                  </div>
+                  <p className="text-sm font-medium text-gray-500">
+                    {activeTab} — coming soon
+                  </p>
                 </div>
               )}
+          </div>
 
-              {["complete", "re-scan"].includes(reclassifyAiScanPhase) && (
-                <div
-                  className={cn(
-                    "p-4 flex items-center w-full gap-2 bg-green-50",
-                  )}
-                >
-                  <div>
-                    <CheckCircle2 size={16} className="text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-green-700">
-                      Reclassification complete — confidence scores updated.
-                      Review any changes below.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider w-16">
-                      #
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Column Name
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Classification
-                    </th>
-                    {/* <th className="py-3 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Terms
-                    </th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {catalogData?.columns?.map((col: any, idx: number) => {
-                    const ai = aiResults[col.name];
-
-                    return (
-                      <tr
-                        key={col.name}
-                        className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors"
-                      >
-                        <td className="py-4 px-6 text-xs text-gray-400">
-                          {idx + 1}
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800">
-                              {col.name}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-400 mt-0.5">
-                              {col.is_nullable ? "NULLABLE" : "NOT NULL"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200">
-                            {(
-                              col.type ||
-                              col.data_type ||
-                              "UNKNOWN"
-                            ).toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-500 italic">
-                          <div className="overflow-y-auto min-h-10 max-h-16">
-                            {col?.description || "No description yet."}
-                          </div>
-                        </td>
-                        {/* <td className="py-4 px-6 text-sm text-gray-600 font-medium">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            {col.is_primary_key && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
-                                Primary Key
-                                <span className="text-[8px] opacity-70">
-                                  ✦ AI
-                                </span>
-                              </span>
-                            )}
-                            {!col.is_primary_key && (
-                              <span className="text-[10px] text-gray-300">
-                                —
-                              </span>
-                            )}
-                          </div>
-
-                          {col.is_primary_key && (
-                            <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="w-[99%] h-full bg-green-500 rounded-full" />
-                            </div>
-                          )}
-                        </div>
-                      </td> */}
-                        <td className="py-2 px-6 text-sm text-gray-600 font-medium">
-                          <div className="flex flex-col justify-center items-start gap-1">
-                            {ai ? (
-                              <>
-                                <span className="gap-1 px-2 rounded-xl bg-yellow-100 text-yellow-800 text-[10px] font-bold border border-yellow-200">
-                                  {ai?.tag_name ? ai?.tag_name?.toUpperCase() : ""}
-                                </span>
-
-                                <span className="items-center gap-1 px-2 rounded-xl bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 w-fit">
-                                  ✦ AI
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                      style={{
-                                        width: `${ai.confidence_score * 100}%`,
-                                      }}
-                                      className="h-full bg-green-500 rounded-full"
-                                    />
-                                  </div>
-
-                                  <span className="text-[10px] text-gray-500">
-                                    {Math.round(ai.confidence_score * 100)}%
-                                  </span>
-                                </div>
-                              </>
-                            ) : col.tags?.length ? (
-                              col.tags.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="px-2 py-0.5 rounded-xl bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200 capitalize"
-                                >
-                                  {tag?.name ? tag?.name?.toUpperCase() : ""}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[10px] text-gray-300">
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        {/* <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-[10px] text-gray-300">—</span>
-                        </div>
-                      </td> */}
-                        {/* <td className="py-2 px-6">
-                          <div className="flex flex-wrap gap-1">
-                            {ai ? (
-                              <span className="px-2 py-0.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
-                                {ai.tag_name}
-                              </span>
-                            ) : col.tags?.length ? (
-                              col.tags.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="px-2 py-0.5 rounded-xl bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200"
-                                >
-                                  {tag.name}
-                                </span>
-                              ))
-                            ) : (
-                            <span className="text-[10px] text-gray-300">—</span>
-                            )}
-                          </div>
-                        </td> */}
-                      </tr>
-                    );
-                  })}
-                  {(!catalogData?.columns ||
-                    catalogData.columns.length === 0) && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="py-12 text-center text-sm text-gray-400 italic"
-                        >
-                          No columns found for this dataset.
-                        </td>
-                      </tr>
-                    )}
-                </tbody>
-              </table>
-            </div>
-            </div>
-
-            {/* Right sidebar */}
+          {activeTab !== "Lineage" && (
             <DatasetDetailSidebar
               name={detail.name}
               type={detail.type}
@@ -920,93 +548,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               tags={detail.tags}
               lineageWarning={detail.lineageWarning}
             />
-          </div>
-        )}
-
-        {/* Other tabs — placeholder */}
-        {activeTab === "Lineage" && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ height: "600px" }}>
-            <DatasetLineage datasetId={datasetId} datasetName={detail.name} />
-          </div>
-        )}
-
-        {activeTab === "Queries" && (
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
-            </div>
-
-            {/* Right sidebar */}
-            <DatasetDetailSidebar
-              name={detail.name}
-              type={detail.type}
-              sourceName={detail.sourceName}
-              owner={detail.owner}
-              ownerInitials={detail.ownerInitials}
-              tags={detail.tags}
-              lineageWarning={detail.lineageWarning}
-            />
-          </div>
-        )}
-
-        {activeTab === "Properties" && (
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <DatasetPropertiesTab catalogId={datasetId} />
-            </div>
-            {/* Right sidebar */}
-            <DatasetDetailSidebar
-              name={detail.name}
-              type={detail.type}
-              sourceName={detail.sourceName}
-              owner={detail.owner}
-              ownerInitials={detail.ownerInitials}
-              tags={detail.tags}
-              lineageWarning={detail.lineageWarning}
-            />
-          </div>
-        )}
-
-        {activeTab === "Audit" && (
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <DatasetAuditTab catalogId={datasetId} />
-            </div>
-            {/* Right sidebar */}
-            <DatasetDetailSidebar
-              name={detail.name}
-              type={detail.type}
-              sourceName={detail.sourceName}
-              owner={detail.owner}
-              ownerInitials={detail.ownerInitials}
-              tags={detail.tags}
-              lineageWarning={detail.lineageWarning}
-            />
-          </div>
-        )}
-
-        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && activeTab !== "Properties" && activeTab !== "Queries" && activeTab !== "Audit" && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
-            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-              <svg
-                className="w-6 h-6 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-gray-500">
-              {activeTab} — coming soon
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );

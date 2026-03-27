@@ -5,6 +5,7 @@ import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
 import { ApiOwner } from "@/services/dashboardApiServices";
 import { useAppStore } from "@/store/appStore";
 import { useGetOwnersList } from "@/hooks/useDashboardQueries";
+import { useCreateDataSource } from "@/hooks/useCreateDataSource";
 import { RedshiftConfig } from "@/lib/constants";
 
 // ─── Only MongoDB + PostgreSQL ────────────────────────────────────────────────
@@ -849,140 +850,18 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
   const next = () => setStep((s: number) => Math.min(s + 1, 4));
   const prev = () => setStep((s: number) => Math.max(s - 1, 1));
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { createDataSource, isSubmitting, submitError } = useCreateDataSource();
 
-  const handleSubmit = async () => {
-    if (!selectedId) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      let payload: any = {
-        name: finish.name || connector.defaultName,
-        source_type: selectedId,
-        description: finish.name || `Source for ${connector.name}`,
-        schedule: `${schedule.hour}:${schedule.minute} ${schedule.timezone === 'Asia/Calcutta' ? 'GMT+5:30' : schedule.timezone}`,
-        owner_id: finish.owner_id,
-      };
-
-      if (selectedId === 'postgresql') {
-        payload.source_type = 'postgres';
-
-        // Parse URI if it looks like one: postgresql://user:pass@host:port/db
-        let hostPort = config.uri || "host.docker.internal:5432";
-        let dbName = "test";
-
-        if (config.uri && config.uri.includes("://")) {
-          try {
-            const url = new URL(config.uri.replace("postgresql://", "http://"));
-            hostPort = url.host;
-            dbName = url.pathname.slice(1).split('?')[0] || "test";
-          } catch (e) {
-            console.error("Failed to parse URI for PostgreSQL", e);
-          }
-        }
-
-        payload.connection_details = {
-          host_port: hostPort,
-          database: dbName,
-          username: config.username,
-          password: config.password,
-        };
-        payload.include_views = true;
-        payload.include_tables = true;
-        payload.schema_pattern = ["public"];
-        payload.table_pattern = [".*"];
-      } else if (selectedId === 'mongodb') {
-        payload.connection_details = {
-          connect_uri: config.uri,
-          username: config.username,
-          password: config.password,
-          enableSchemaInference: config.schemaInference,
-          useRandomSampling: config.randomSampling,
-          maxSchemaSize: parseInt(config.maxSchemaSize) || 300,
-        };
-        payload.include_views = false;
-        payload.include_tables = true;
-      } else if (selectedId === 'athena') {
-        payload.connection_details = {
-          username: config.username,
-          password: config.password,
-          aws_region: config.aws_region,
-          work_group: config.work_group,
-          s3_staging_dir: config.s3_staging_dir,
-        };
-      } else if (selectedId === 'redshift') {
-        // payload.connection_details = {
-        //   username: RedshiftConfig.username,
-        //   password: RedshiftConfig.password,
-        //   aws_region: RedshiftConfig.aws_region,
-        //   work_group: RedshiftConfig.work_group,
-        //   s3_staging_dir: RedshiftConfig.s3_staging_dir,
-        // };
-        // payload.include_views = true;
-        // payload.include_tables = true;
-        // payload.schema_pattern = [".*"];
-        // payload.table_pattern = [".*"];
-
-        // if (config.processing_engine === 'glue') {
-        //   payload.processing_engine = {
-        //     type: "glue",
-        //     config: {
-        //       region: config.glue_region,
-        //       job_name: config.glue_job_name,
-        //       job_run_id: config.glue_job_run_id || null,
-        //       track_latest_run: config.glue_track_latest_run,
-        //       auth: {
-        //         role_arn: config.common_role_arn
-        //       }
-        //     }
-        //   };
-        // }
-
-        // if (config.query_source === 'cloudwatch') {
-        //   payload.query_source = {
-        //     type: "cloudwatch",
-        //     config: {
-        //       region: config.cw_region,
-        //       log_group_name: config.cw_log_group_name,
-        //       log_stream_name: config.cw_log_stream_name,
-        //       filter_pattern: config.cw_filter_pattern,
-        //       auth: {
-        //         access_key_id: config.common_access_key_id,
-        //         secret_access_key: config.common_secret_access_key,
-        //         role_arn: config.common_role_arn
-        //       }
-        //     }
-        //   };
-        // }
-      }
-
-      const { dashboardApiServices } = await import("@/services/dashboardApiServices");
-      const createdSource = await dashboardApiServices.createDataSource(selectedId as any, payload);
-
-      // Trigger ingestion after creation
-      let jobId = "";
-      if (createdSource && (createdSource.id || createdSource.source_id)) {
-        const sourceId = createdSource.id || createdSource.source_id;
-        if (sourceId) {
-          const ingestRes = await dashboardApiServices.ingestSource(sourceId);
-          jobId = ingestRes.job_id;
-          setAddDsConfig({...config, ...finish, sourceId, jobId})
-        }
-      }
-
-      if (onSuccess && jobId) {
-        onSuccess(jobId, finish.name || connector.defaultName);
-      } else {
-        onClose();
-      }
-    } catch (err: any) {
-      setSubmitError(err.message || "Failed to create data source");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSubmit = () => {
+      createDataSource({
+          selectedId,
+          connector,
+          config,
+          schedule,
+          finish,
+          onSuccess,
+          onClose
+      });
   };
 
   return (

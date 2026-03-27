@@ -8,15 +8,12 @@ import { Option } from "@/types";
 import QuickActionsDropdown from "./QuickActionsDropdown";
 import { Button } from "./Button";
 import { Download, Play, ChevronDown, Loader2 } from "lucide-react";
-import { DashboardTabType, useAppStore } from "@/store/appStore";
 import { useState } from "react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { ComplianceScanPanel } from "@/components/compliance/ComplianceScanPanel";
 
 export function TabNavigation() {
   const pathname = usePathname();
-  const dashboardTab = useAppStore((s) => s.dashboardTab);
-  const setDashboardTab = useAppStore((s) => s.setDashboardTab);
   const [isExporting, setIsExporting] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
 
@@ -46,7 +43,6 @@ export function TabNavigation() {
           <Link
             key={tab.href}
             href={tab.href}
-            onClick={() => setDashboardTab(tab.name as DashboardTabType)}
             className={cn(
               "pb-2 px-1 text-sm font-medium transition-colors border-b-2",
               pathname === tab.href

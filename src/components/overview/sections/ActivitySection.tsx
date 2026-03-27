@@ -15,8 +15,10 @@ import { InlineState } from "@/components/ui/InlineState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OverviewData } from "@/hooks/useOverviewData";
 import { IconType } from "react-icons/lib";
-import { ActivityTabType, useAppStore } from "@/store/appStore";
 import { RecentActivity, RecentlyViewed } from "@/types";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+
+type ActivityTabType = "recent" | "viewed";
 
 type Props = {
   activityQuery: OverviewData["activity"];
@@ -206,8 +208,17 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
     refetch: refetchRecentlyViewed,
   } = recentlyViewedQuery;
 
-  const activeTab = useAppStore((s) => s.activityTab);
-  const setActivityTab = useAppStore((s) => s.setActivityTab);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const activeTab = (searchParams.get("activityTab") as ActivityTabType) || "recent";
+  
+  const setActivityTab = (tabId: ActivityTabType) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("activityTab", tabId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   const isRecent = activeTab === "recent";
   const isLoading = isRecent ? activityLoading : recentlyViewedLoading;
   const hasError = isRecent ? activityError : recentlyViewedError;
