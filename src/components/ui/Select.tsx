@@ -5,23 +5,27 @@ import { Option } from "@/types";
 type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   options: Option[];
   placeholder?: string;
+  error?: boolean;
 };
 
 export function Select({
   options,
   placeholder = "Select",
+  error,
   className,
   ...props
 }: Props) {
   return (
     <select
       className={cn(
-        "px-2 py-2 text-gray-800 text-xs font-medium rounded-md border-2 border-gray-200 bg-white transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed",
+        "px-3 py-2 text-gray-900 text-sm font-medium rounded-md border border-gray-200 bg-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed",
+        error && "border-red-500 focus:border-red-500 focus:ring-red-500/40",
         className,
       )}
+      defaultValue=""
       {...props}
     >
-      <option disabled selected hidden value="">
+      <option disabled value="">
         {placeholder}
       </option>
       {options.map(({ value, label }) => (
