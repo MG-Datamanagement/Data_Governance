@@ -1,8 +1,8 @@
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DataErrorFallback } from "@/components/Fallbacks";
 import { InlineState } from "@/components/ui/InlineState";
-import { ComplianceIssuesTable } from "@/components/compliance/ComplianceIssuesTable";
-import { ComplianceData } from "../../../hooks/useComplianceData";
+import { ComplianceIssuesTable } from "@/app/(modules)/compliance/components/ComplianceIssuesTable";
+import { ComplianceData } from "@/hooks/useComplianceData";
 
 type Props = {
   issuesQuery: ComplianceData["issuesQuery"];

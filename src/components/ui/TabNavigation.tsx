@@ -10,7 +10,7 @@ import { Button } from "./Button";
 import { Download, Play, ChevronDown, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
-import { ComplianceScanPanel } from "@/components/compliance/ComplianceScanPanel";
+import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
 
 export function TabNavigation() {
   const pathname = usePathname();

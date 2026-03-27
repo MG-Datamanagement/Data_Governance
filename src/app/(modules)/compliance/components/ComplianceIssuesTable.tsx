@@ -2,7 +2,7 @@ import { ApiComplianceIssue } from "@/types";
 import { cn, getSeverityColor } from "@/lib/utils";
 import { AlertCircle, Search, ChevronDown, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { InlineState } from "../ui/InlineState";
+import { InlineState } from "@/components/ui/InlineState";
 
 interface ComplianceIssuesTableProps {
   issues: ApiComplianceIssue[];
@@ -18,7 +18,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
   );
 
   return (
-    <div className="card p-6 border border-gray-200 rounded-3xl bg-white shadow-sm space-y-6">
+    <div className="card p-6 border border-gray-200 rounded-xl bg-white shadow-sm space-y-6">
       {/* Header & Search/Filter Row */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">

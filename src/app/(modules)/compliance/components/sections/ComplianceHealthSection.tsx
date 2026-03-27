@@ -2,7 +2,7 @@ import { Shield, Sparkles, ChevronUp } from "lucide-react";
 import { ComplianceScoreCard } from "@/components/ui/ComplianceScoreCard";
 import { ComplianceTrendsChart } from "@/components/charts/ComplianceTrendsChart";
 import { InlineState } from "@/components/ui/InlineState";
-import { ComplianceData } from "../../../hooks/useComplianceData";
+import { ComplianceData } from "@/hooks/useComplianceData";
 
 type Props = {
   healthQuery: ComplianceData["healthQuery"];
@@ -52,7 +52,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
   const overallScoreInfographic = runData?.overall_score_infographic;
 
   return (
-    <div className="p-6 border border-gray-200 rounded-3xl bg-white shadow-sm space-y-6">
+    <div className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm space-y-6">
       {/* Section Header */}
       <div className="flex items-start justify-between">
         <div className="flex gap-3">

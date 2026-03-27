@@ -124,7 +124,7 @@ export function ComplianceScanPanel({
 
         // 4. If animation already finished all steps, resolve now
         // (phase check handled by the useEffect below)
-        await dashboardApiServices.runCompliance();
+        await dashboardApiServices.runComplianceScan();
         onScanComplete?.();
       } catch {
         clearTimer();

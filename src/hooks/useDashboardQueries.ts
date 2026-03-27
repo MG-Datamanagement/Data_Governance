@@ -111,6 +111,16 @@ export const useGetChatHistory = () => {
     queryKey: ['chat', 'history'],
     queryFn: () => chatApiServices.getHistory(),
     staleTime: 30000,
+    refetchInterval: 5000, // Polling for async chat tasks
+  });
+};
+
+export const useGetAgents = () => {
+  return useQuery({
+    queryKey: ['dashboard', 'agents'],
+    queryFn: () => dashboardApiServices.getAgents(),
+    staleTime: 30000,
+    refetchInterval: 10000, // Polling for agent status
   });
 };
 

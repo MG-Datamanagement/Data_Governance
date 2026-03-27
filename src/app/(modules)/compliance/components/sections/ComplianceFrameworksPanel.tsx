@@ -1,6 +1,6 @@
 import { Shield } from "lucide-react";
 import { InlineState } from "@/components/ui/InlineState";
-import { ComplianceFrameworkCard } from "@/components/compliance/ComplianceFrameworkCard";
+import { ComplianceFrameworkCard } from "@/app/(modules)/compliance/components/ComplianceFrameworkCard";
 import { ComplianceData } from "@/hooks/useComplianceData";
 import { ApiComplianceFramework } from "@/types";
 import { InfoIcon } from "lucide-react";
@@ -18,7 +18,7 @@ export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
 
 
   return (
-    <div className="border border-gray-200 rounded-3xl bg-white col-span-4 border-l-4 border-l-indigo-600 shadow-sm overflow-hidden flex flex-col h-full sticky top-6">
+    <div className="border border-gray-200 rounded-xl bg-white col-span-4 border-l-4 border-l-indigo-600 shadow-sm overflow-hidden flex flex-col h-full sticky top-6">
       <div className="p-6 border-b border-gray-100 flex items-start justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">

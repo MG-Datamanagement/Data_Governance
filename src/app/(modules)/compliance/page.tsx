@@ -8,7 +8,7 @@ import {
   ComplianceHealthSection,
   ComplianceIssuesSection,
   ComplianceFrameworksPanel,
-} from "@/components/compliance/sections";
+} from "@/app/(modules)/compliance/components/sections";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ComplianceContent() {

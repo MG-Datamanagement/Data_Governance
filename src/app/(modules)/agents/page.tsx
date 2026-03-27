@@ -22,63 +22,8 @@ import {
     Settings
 } from 'lucide-react';
 
-const initialAgents = [
-    {
-        id: 1,
-        name: "Data Quality Agent",
-        type: "Data Validation",
-        description: "Automatically scans new datasets for anomalies and schema drifts based on defined rules.",
-        useCaseBadge: "BYO Agent",
-        status: "Active",
-        owner: "Data Engineering",
-        models: ["Anomaly Detection v2"],
-        lastUpdated: "Mar 6, 2026"
-    },
-    {
-        id: 2,
-        name: "Classification Agent",
-        type: "Metadata Tagging",
-        description: "Platform-managed agent that auto-tags columns with PII and classification metadata.",
-        useCaseBadge: "Platform Agent",
-        status: "Active",
-        owner: "Governance Team",
-        models: ["PII Classifier v4", "Llama-3-70b-Instruct"],
-        lastUpdated: "Mar 5, 2026"
-    },
-    {
-        id: 3,
-        name: "Compliance Monitor",
-        type: "Policy Enforcement",
-        description: "Monitors data access patterns for potential compliance violations.",
-        useCaseBadge: "BYO Agent",
-        status: "Paused",
-        owner: "Legal Team",
-        models: ["Policy Evaluator v1"],
-        lastUpdated: "Feb 20, 2026"
-    },
-    {
-        id: 4,
-        name: "Support Router Agent",
-        type: "Workflow Automation",
-        description: "Reads incoming tickets and routes them to the appropriate support tier.",
-        useCaseBadge: "BYO Agent",
-        status: "Active",
-        owner: "CX Team",
-        models: ["Support Ticket Classifier v3"],
-        lastUpdated: "Jan 15, 2026"
-    },
-    {
-        id: 5,
-        name: "Sync Agent",
-        type: "Data Sync",
-        description: "Validates synchronization jobs across distributed data systems for integrity constraints.",
-        useCaseBadge: "Platform Agent",
-        status: "Error",
-        owner: "DevOps",
-        models: ["Sync Validator v1"],
-        lastUpdated: "Feb 10, 2026"
-    }
-];
+import { useGetAgents } from "@/hooks/useDashboardQueries";
+import { InlineState } from "@/components/ui/InlineState";
 
 export default function AgentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -89,7 +34,13 @@ export default function AgentsPage() {
     const [selectedAgentType, setSelectedAgentType] = useState<"byo" | "managed" | null>(null);
     const [modalStep, setModalStep] = useState<1 | 2>(1);
 
-    const [agents, setAgents] = useState(initialAgents);
+    const { data: serverAgents = [], isLoading } = useGetAgents();
+    const [localAgents, setLocalAgents] = useState<any[]>([]);
+
+    // Sync newly created agents over server agents
+    const agents = useMemo(() => {
+        return [...localAgents, ...serverAgents];
+    }, [localAgents, serverAgents]);
     const [newAgentName, setNewAgentName] = useState("");
     const [newAgentOwner, setNewAgentOwner] = useState("");
     const [newAgentDesc, setNewAgentDesc] = useState("");
@@ -126,7 +77,7 @@ export default function AgentsPage() {
             lastUpdated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         };
 
-        setAgents([newAgent, ...agents]);
+        setLocalAgents([newAgent, ...localAgents]);
         handleCloseModal();
     };
 
@@ -276,7 +227,9 @@ export default function AgentsPage() {
             </div>
 
             {/* Content Area */}
-            {viewMode === "list" ? (
+            {isLoading ? (
+                <InlineState type="loading" message="Loading agents ecosystem..." />
+            ) : viewMode === "list" ? (
                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -336,7 +289,7 @@ export default function AgentsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-2">
-                                                    {agent.models.map((model, idx) => (
+                                                    {agent.models.map((model: string, idx: number) => (
                                                         <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-indigo-50/50 text-indigo-700 border border-indigo-100">
                                                             <BrainCircuit size={12} className="text-indigo-500" />
                                                             {model}
@@ -413,7 +366,7 @@ export default function AgentsPage() {
 
                                     {/* Models Separator */}
                                     <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-2">
-                                        {agent.models.map((model, idx) => (
+                                        {agent.models.map((model: string, idx: number) => (
                                             <span key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-indigo-50/50 text-indigo-600 border border-indigo-100">
                                                 <BrainCircuit size={12} className="text-indigo-400" />
                                                 {model}

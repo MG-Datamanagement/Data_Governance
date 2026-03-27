@@ -390,6 +390,65 @@ const config: AxiosRequestConfig = {
 };
 
 export const dashboardApiServices = {
+  getAgents: async () => {
+    return [
+      {
+        id: 1,
+        name: "Data Quality Agent",
+        type: "Data Validation",
+        description: "Automatically scans new datasets for anomalies and schema drifts based on defined rules.",
+        useCaseBadge: "BYO Agent",
+        status: "Active",
+        owner: "Data Engineering",
+        models: ["Anomaly Detection v2"],
+        lastUpdated: "Mar 6, 2026"
+      },
+      {
+        id: 2,
+        name: "Classification Agent",
+        type: "Metadata Tagging",
+        description: "Platform-managed agent that auto-tags columns with PII and classification metadata.",
+        useCaseBadge: "Platform Agent",
+        status: "Active",
+        owner: "Governance Team",
+        models: ["PII Classifier v4", "Llama-3-70b-Instruct"],
+        lastUpdated: "Mar 5, 2026"
+      },
+      {
+        id: 3,
+        name: "Compliance Monitor",
+        type: "Policy Enforcement",
+        description: "Monitors data access patterns for potential compliance violations.",
+        useCaseBadge: "BYO Agent",
+        status: "Paused",
+        owner: "Legal Team",
+        models: ["Policy Evaluator v1"],
+        lastUpdated: "Feb 20, 2026"
+      },
+      {
+        id: 4,
+        name: "Support Router Agent",
+        type: "Workflow Automation",
+        description: "Reads incoming tickets and routes them to the appropriate support tier.",
+        useCaseBadge: "BYO Agent",
+        status: "Active",
+        owner: "CX Team",
+        models: ["Support Ticket Classifier v3"],
+        lastUpdated: "Jan 15, 2026"
+      },
+      {
+        id: 5,
+        name: "Sync Agent",
+        type: "Data Sync",
+        description: "Validates synchronization jobs across distributed data systems for integrity constraints.",
+        useCaseBadge: "Platform Agent",
+        status: "Error",
+        owner: "DevOps",
+        models: ["Sync Validator v1"],
+        lastUpdated: "Feb 10, 2026"
+      }
+    ];
+  },
   // ─── Compliance & Overview ───────────────────────────────────────────────
   async getComplianceHealth() {
     return dashboardApiClient.get<ApiComplianceHealth>("/api/compliance/health");
