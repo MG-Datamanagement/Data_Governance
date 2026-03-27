@@ -21,8 +21,9 @@ type Props = {
 };
 
 function ComplianceContent({ query, overviewQuery }: Props) {
-  const { data: frameworks, isLoading: isFrameworksLoading, error: frameworksError, refetch: refetchFrameworks } = query;
+  const { data: frameworksData, isLoading: isFrameworksLoading, error: frameworksError, refetch: refetchFrameworks } = query;
   const { data: overview, isLoading: isOverviewLoading, error: overviewError, refetch: refetchOverview } = overviewQuery;
+  const frameworksList = frameworksData?.frameworks || [];
   const router = useRouter();
 
   const isLoading = isFrameworksLoading || isOverviewLoading;
@@ -43,6 +44,12 @@ function ComplianceContent({ query, overviewQuery }: Props) {
         </div>
       </div>
 
+      {!isLoading && !error && overview?.info && (
+        <p className="text-xs text-gray-500 leading-relaxed -mt-2">
+          {overview.info}
+        </p>
+      )}
+
       {isLoading && (
         <InlineState
           type="loading"
@@ -58,14 +65,14 @@ function ComplianceContent({ query, overviewQuery }: Props) {
         />
       )}
 
-      {!isLoading && !error && frameworks?.length === 0 && (
+      {!isLoading && !error && frameworksList.length === 0 && (
         <InlineState
           type="empty"
           message="No compliance frameworks configured yet."
         />
       )}
 
-      {!isLoading && !error && frameworks && frameworks.length > 0 && (
+      {!isLoading && !error && frameworksList.length > 0 && (
         <div className="space-y-5">
           {overview?.insight && (
             <div className="p-3 bg-green-50 rounded-lg max-h-[325px] overflow-y-auto pr-2 custom-scrollbar">

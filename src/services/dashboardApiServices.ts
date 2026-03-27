@@ -42,6 +42,33 @@ import {
 import { TopTagsResponse, TopTag } from "@/types/tagTypes";
 import { AxiosRequestConfig } from "axios";
 
+export interface ApiComplianceHealth {
+  overall_compliance?: any;
+  compliance_health?: any;
+  trends?: any;
+  overall_score_infographic?: string;
+}
+
+export interface ApiComplianceFrameworks {
+  frameworks?: any[];
+  frameworks_infographic?: string;
+}
+
+export interface ApiComplianceIssues {
+  open_issues?: {
+    count?: number;
+    severity_summary?: any;
+    items?: any[];
+  };
+}
+
+export interface ApiComplianceInsights {
+  ai_insights?: {
+    text?: string;
+    beta?: boolean;
+  };
+}
+
 export interface ApiDataSource {
   id?: string;
   source_id?: string;
@@ -341,8 +368,8 @@ const config: AxiosRequestConfig = {
 
 export const dashboardApiServices = {
   // ─── Compliance & Overview ───────────────────────────────────────────────
-  async runCompliance(): Promise<ApiComplianceRunResponse> {
-    return dashboardApiClient.get("/api/compliance/run");
+  async getComplianceHealth() {
+    return dashboardApiClient.get<ApiComplianceHealth>("/api/compliance/health");
   },
 
   async getComplianceLoadingSteps(): Promise<{ reasoning_loads: string[] }> {
@@ -363,13 +390,13 @@ export const dashboardApiServices = {
     return dashboardApiClient.get("/api/compliance/summary");
   },
   async getComplianceFrameworks() {
-    return MOCK_COMPLIANCE_FRAMEWORKS;
+    return dashboardApiClient.get<ApiComplianceFrameworks>("/api/compliance/frameworks");
   },
   async getComplianceIssues() {
-    return MOCK_COMPLIANCE_ISSUES;
+    return dashboardApiClient.get<ApiComplianceIssues>("/api/compliance/issues");
   },
-  async getComplianceTrends() {
-    return MOCK_COMPLIANCE_TRENDS;
+  async getComplianceInsights() {
+    return dashboardApiClient.get<ApiComplianceInsights>("/api/compliance/insights");
   },
   async getAISnapshot() {
     return MOCK_AI_SNAPSHOT;
@@ -427,6 +454,7 @@ export const dashboardApiServices = {
 
   async getComplianceOverview() {
     return dashboardApiClient.get<{
+      info?: string;
       insight: string;
       framework_scores: { framework: string; score: number }[];
     }>("/compliance-overview");

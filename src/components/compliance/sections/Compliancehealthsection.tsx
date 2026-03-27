@@ -5,10 +5,11 @@ import { InlineState } from "@/components/ui/InlineState";
 import { ComplianceData } from "../../../hooks/useComplianceData";
 
 type Props = {
-  complianceRunQuery: ComplianceData["complianceRun"];
+  healthQuery: ComplianceData["healthQuery"];
+  insightsQuery: ComplianceData["insightsQuery"];
 };
 
-export function AIInsightsCard({ text }: { text?: string }) {
+export function AIInsightsCard({ text, isLoading }: { text?: string; isLoading?: boolean }) {
   return (
     <div className="card p-4 md:p-6 border border-indigo-100 bg-indigo-50/30 rounded-2xl">
       <div className="flex items-start gap-4">
@@ -24,20 +25,30 @@ export function AIInsightsCard({ text }: { text?: string }) {
               BETA
             </span>
           </div>
-          <p className="text-xs text-gray-600 leading-relaxed max-w-4xl whitespace-pre-wrap">
-            {text?.replace(/\*\*/g, "") || "Generating AI insights based on your compliance data..."}
-          </p>
+          {isLoading ? (
+            <div className="space-y-2 mt-2">
+              <div className="h-4 bg-indigo-100/50 rounded w-full animate-pulse" />
+              <div className="h-4 bg-indigo-100/50 rounded w-5/6 animate-pulse" />
+              <div className="h-4 bg-indigo-100/50 rounded w-4/6 animate-pulse" />
+            </div>
+          ) : (
+            <p className="text-xs text-gray-600 leading-relaxed max-w-4xl whitespace-pre-wrap mt-1">
+              {text?.replace(/\*\*/g, "") || "Generating AI insights based on your compliance data..."}
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function ComplianceHealthSection({ complianceRunQuery }: Props) {
-  const { data: runData, isLoading, error, refetch } = complianceRunQuery;
+export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
+  const { data: runData, isLoading, error, refetch } = healthQuery;
   const trends = runData?.trends;
   const health = runData?.compliance_health;
-  const insights = runData?.ai_insights;
+  
+  const insightsData = insightsQuery.data?.ai_insights;
+  const isInsightsLoading = insightsQuery.isLoading;
   const overallScoreInfographic = runData?.overall_score_infographic;
 
   return (
@@ -98,8 +109,8 @@ export function ComplianceHealthSection({ complianceRunQuery }: Props) {
           </div>
         </div>
 
-        {insights?.text && (
-          <AIInsightsCard text={insights.text} />
+        {(insightsData?.text || isInsightsLoading) && (
+          <AIInsightsCard text={insightsData?.text} isLoading={isInsightsLoading} />
         )}
       </div>
     </div>

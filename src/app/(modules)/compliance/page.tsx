@@ -12,16 +12,16 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function ComplianceContent() {
-  const { complianceRun } = useComplianceData();
+  const { healthQuery, issuesQuery, frameworksQuery, insightsQuery } = useComplianceData();
 
-  const isLoading = complianceRun.isLoading;
-  const error = complianceRun.error;
+  const isPageLoading = healthQuery.isLoading;
+  const pageError = healthQuery.error;
 
-  if (isLoading) return <LoadingFallback />;
-  if (error)
+  if (isPageLoading) return <LoadingFallback />;
+  if (pageError)
     return (
       <DataErrorFallback
-        retry={() => complianceRun.refetch()}
+        retry={() => healthQuery.refetch()}
       />
     );
 
@@ -32,11 +32,11 @@ function ComplianceContent() {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
         <div className="grid grid-cols-1 gap-5 col-span-8 min-w-0">
-          <ComplianceHealthSection complianceRunQuery={complianceRun} />
-          <ComplianceIssuesSection query={complianceRun} />
+          <ComplianceHealthSection healthQuery={healthQuery} insightsQuery={insightsQuery} />
+          <ComplianceIssuesSection issuesQuery={issuesQuery} />
         </div>
 
-        <ComplianceFrameworksPanel query={complianceRun} />
+        <ComplianceFrameworksPanel frameworksQuery={frameworksQuery} />
       </div>
     </div>
   );

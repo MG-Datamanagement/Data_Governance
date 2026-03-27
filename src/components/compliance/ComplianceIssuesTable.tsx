@@ -110,7 +110,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
               filteredIssues.map((issue, idx) => (
                 <tr key={`${issue.framework}-${idx}`} className="group hover:bg-gray-50/50 transition-colors">
                   <td className="py-4 pr-4">
-                    <div className="text-xs font-semibold text-gray-900">{issue.issue}</div>
+                    <div className="text-xs font-medium text-gray-800">{issue.issue}</div>
                   </td>
                   <td className="py-4 px-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
@@ -135,7 +135,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
                     </div>
                   </td>
                   <td className="py-4 px-2">
-                    <div className="text-xs text-gray-900 font-medium">
+                    <div className="text-xs text-gray-800">
                       {issue.assignee}
                     </div>
                   </td>

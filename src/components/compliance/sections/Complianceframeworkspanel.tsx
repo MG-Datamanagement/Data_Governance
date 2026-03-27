@@ -8,11 +8,11 @@ import { InfoIconTooltip } from "@/components/ui/InfoIconTooltip";
 
 
 type Props = {
-  query: ComplianceData["complianceRun"];
+  frameworksQuery: ComplianceData["frameworksQuery"];
 };
 
-export function ComplianceFrameworksPanel({ query }: Props) {
-  const { data: runData, isLoading, error, refetch } = query;
+export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
+  const { data: runData, isLoading, error, refetch } = frameworksQuery;
   const frameworks = runData?.frameworks;
     const frameworkInfographic = runData?.frameworks_infographic;
 

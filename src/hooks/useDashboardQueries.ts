@@ -223,11 +223,27 @@ export const useComplianceOverview = () => {
   });
 };
 
-export const useComplianceRun = () => {
+export const useComplianceHealth = () => {
   return useQuery({
-    queryKey: ['dashboard', 'complianceRun'],
-    queryFn: () => dashboardApiServices.runCompliance(),
+    queryKey: ['dashboard', 'complianceHealth'],
+    queryFn: () => dashboardApiServices.getComplianceHealth(),
     staleTime: 120000,
+  });
+};
+
+export const useComplianceIssues = () => {
+  return useQuery({
+    queryKey: ['dashboard', 'complianceIssues'],
+    queryFn: () => dashboardApiServices.getComplianceIssues(),
+    staleTime: 60000,
+  });
+};
+
+export const useComplianceInsights = () => {
+  return useQuery({
+    queryKey: ['dashboard', 'complianceInsights'],
+    queryFn: () => dashboardApiServices.getComplianceInsights(),
+    staleTime: 300000,
   });
 };
 

@@ -1,14 +1,21 @@
-import { useComplianceRun } from "@/hooks/useDashboardQueries";
+import { 
+  useComplianceHealth, 
+  useComplianceFrameworks, 
+  useComplianceIssues, 
+  useComplianceInsights 
+} from "@/hooks/useDashboardQueries";
 
 export function useComplianceData() {
-  const complianceRun = useComplianceRun();
+  const healthQuery = useComplianceHealth();
+  const frameworksQuery = useComplianceFrameworks();
+  const issuesQuery = useComplianceIssues();
+  const insightsQuery = useComplianceInsights();
 
   return { 
-    complianceRun,
-    // Keep these for backward compatibility if needed, but they should eventually be removed
-    frameworks: { ...complianceRun, data: complianceRun.data?.frameworks },
-    issues: { ...complianceRun, data: complianceRun.data?.open_issues?.items },
-    trends: { ...complianceRun, data: complianceRun.data?.trends }
+    healthQuery,
+    frameworksQuery,
+    issuesQuery,
+    insightsQuery
   } as const;
 }
 
