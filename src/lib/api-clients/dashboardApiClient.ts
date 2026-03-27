@@ -78,6 +78,18 @@ class DashboardApiClient {
     throw new Error("GraphQL not implemented yet");
   }
 
+  async patch<T>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    if (this.apiType === "rest") {
+      const response = await this.restClient.patch<T>(url, data, config);
+      return response.data;
+    }
+    throw new Error("GraphQL not implemented yet");
+  }
+
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     if (this.apiType === "rest") {
       const response = await this.restClient.delete<T>(url, config);

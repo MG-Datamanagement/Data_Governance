@@ -113,6 +113,77 @@ export interface ApiCatalogDatacard {
   status: string;
 }
 
+export interface ApiAuditLogEntry {
+  id: string;
+  when_time: string;
+  who_name: string;
+  what_action: string;
+  where_location: string;
+  details: string;
+  status: string;
+}
+
+export interface ApiAuditSummary {
+  total_events: number;
+  metadata_updates: number;
+  classification_events: number;
+  access_events: number;
+  lineage_events: number;
+}
+
+export interface ApiAuditTrailResponse {
+  catalog_id: string;
+  summary: ApiAuditSummary;
+  total_log_count: number;
+  activity_log: ApiAuditLogEntry[];
+}
+
+export interface ApiSecret {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  created_at?: string;
+  last_rotated?: string;
+  is_active?: boolean;
+}
+
+export interface ApiSecretCreateRequest {
+  name: string;
+  type: string;
+  value: string;
+  description?: string;
+}
+
+export interface ApiSecretUpdateRequest {
+  value: string;
+  description?: string;
+}
+
+export interface ApiCustomProperty {
+  id: string;
+  key: string;
+  value: string;
+  value_type: string;
+  last_updated: string;
+}
+
+export interface ApiCustomPropertiesResponse {
+  name: string;
+  custom_properties: ApiCustomProperty[];
+}
+
+export interface ApiCreateCustomPropertyRequest {
+  key: string;
+  value: string;
+  value_type: string;
+}
+
+export interface ApiUpdateCustomPropertyRequest {
+  value: string;
+  value_type: string;
+}
+
 export interface DatacardBulkGenerationResult {
   catalog_id: string;
   table_name: string;
@@ -530,6 +601,40 @@ export const dashboardApiServices = {
     );
   },
 
+  async fetchCatalogAuditTrail(catalogId: string, limit: number = 50, offset: number = 0) {
+    return dashboardApiClient.get<ApiAuditTrailResponse>(
+      `/api/v1/catalogs/${catalogId}/audit-trail`,
+      { params: { limit, offset } }
+    );
+  },
+
+  // Properties CRUD
+  async fetchCatalogProperties(catalogId: string): Promise<ApiCustomPropertiesResponse> {
+    return dashboardApiClient.get<ApiCustomPropertiesResponse>(
+      `/api/v1/catalogs/${catalogId}/properties`
+    );
+  },
+
+  async createCatalogProperty(catalogId: string, payload: ApiCreateCustomPropertyRequest): Promise<ApiCustomProperty> {
+    return dashboardApiClient.post<ApiCustomProperty>(
+      `/api/v1/catalogs/${catalogId}/properties`,
+      payload
+    );
+  },
+
+  async updateCatalogProperty(catalogId: string, propertyId: string, payload: ApiUpdateCustomPropertyRequest): Promise<ApiCustomProperty> {
+    return dashboardApiClient.patch<ApiCustomProperty>(
+      `/api/v1/catalogs/${catalogId}/properties/${propertyId}`,
+      payload
+    );
+  },
+
+  async deleteCatalogProperty(catalogId: string, propertyId: string): Promise<string> {
+    return dashboardApiClient.delete<string>(
+      `/api/v1/catalogs/${catalogId}/properties/${propertyId}`
+    );
+  },
+
   async fetchCatalogDatacard(catalogId: string) {
     return dashboardApiClient.get<ApiCatalogDatacard>(
       `/api/v1/catalogs/${catalogId}/datacard`,
@@ -555,6 +660,23 @@ export const dashboardApiServices = {
     return dashboardApiClient.get<ApiRunHistory>("/api/v1/run-history", {
       params,
     });
+  },
+
+  // Secrets CRUD
+  async fetchSecrets(): Promise<ApiSecret[]> {
+    return dashboardApiClient.get<ApiSecret[]>("/api/v1/get/secrets");
+  },
+
+  async createSecret(payload: ApiSecretCreateRequest) {
+    return dashboardApiClient.post<any>("/api/v1/add/secrets", payload);
+  },
+
+  async updateSecret(secretId: string, payload: ApiSecretUpdateRequest) {
+    return dashboardApiClient.put<any>(`/api/v1/update/secrets/${secretId}`, payload);
+  },
+
+  async deleteSecret(secretId: string) {
+    return dashboardApiClient.delete<any>(`/api/v1/secrets/remove/${secretId}`);
   },
 
   async fetchSourceLogs(

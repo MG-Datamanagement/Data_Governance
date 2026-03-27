@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApiServices } from '@/services/dashboardApiServices';
 import { datasourceApiServices } from '@/services/datasourceApiServices';
 import { chatApiServices } from '@/services/chatApiServices';
@@ -11,8 +11,11 @@ export const dashboardKeys = {
   sourceStats: (sourceId: string) => [...dashboardKeys.all, 'sourceStats', sourceId] as const,
   catalogDetail: (catalogId: string) => [...dashboardKeys.all, 'catalogDetail', catalogId] as const,
   datasetQueries: (catalogId: string) => [...dashboardKeys.all, 'datasetQueries', catalogId] as const,
+  catalogAuditTrail: (catalogId: string, limit: number, offset: number) => [...dashboardKeys.all, 'catalogAuditTrail', catalogId, limit, offset] as const,
+  catalogProperties: (catalogId: string) => [...dashboardKeys.all, 'catalogProperties', catalogId] as const,
   lineageCentric: (catalogId: string, depth?: number) => [...dashboardKeys.all, 'lineageCentric', catalogId, depth] as const,
   ownersList: (limit?: number) => [...dashboardKeys.all, 'ownersList', limit] as const,
+  secrets: () => [...dashboardKeys.all, 'secrets'] as const,
 };
 
 // Hooks
@@ -45,6 +48,15 @@ export const useGetCatalogDetail = (catalogId: string) => {
   return useQuery({
     queryKey: dashboardKeys.catalogDetail(catalogId),
     queryFn: () => dashboardApiServices.fetchCatalogDetail(catalogId),
+    staleTime: 60000,
+    enabled: !!catalogId,
+  });
+};
+
+export const useGetCatalogAuditTrail = (catalogId: string, limit: number = 50, offset: number = 0) => {
+  return useQuery({
+    queryKey: dashboardKeys.catalogAuditTrail(catalogId, limit, offset),
+    queryFn: () => dashboardApiServices.fetchCatalogAuditTrail(catalogId, limit, offset),
     staleTime: 60000,
     enabled: !!catalogId,
   });
@@ -237,5 +249,88 @@ export const useGetPostIngestionLoadingStages = () => {
     queryKey: ['dashboard', 'postIngestionLoadingStages'],
     queryFn: () => dashboardApiServices.getPostIngestionLoadingStages(),
     staleTime: Infinity,
+  });
+};
+
+export const useGetCatalogProperties = (catalogId: string) => {
+  return useQuery({
+    queryKey: dashboardKeys.catalogProperties(catalogId),
+    queryFn: () => dashboardApiServices.fetchCatalogProperties(catalogId),
+    enabled: !!catalogId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useCreateCatalogProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ catalogId, data }: { catalogId: string; data: { key: string; value: string; value_type: string } }) =>
+      dashboardApiServices.createCatalogProperty(catalogId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.catalogProperties(variables.catalogId) });
+    },
+  });
+};
+
+export const useUpdateCatalogProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ catalogId, propertyId, data }: { catalogId: string; propertyId: string; data: { value: string; value_type: string } }) =>
+      dashboardApiServices.updateCatalogProperty(catalogId, propertyId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.catalogProperties(variables.catalogId) });
+    },
+  });
+};
+
+export const useDeleteCatalogProperty = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ catalogId, propertyId }: { catalogId: string; propertyId: string }) =>
+      dashboardApiServices.deleteCatalogProperty(catalogId, propertyId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.catalogProperties(variables.catalogId) });
+    },
+  });
+};
+
+// ─── Secrets Hooks ─────────────────────────────────────────────────────────────
+
+export const useGetSecrets = () => {
+  return useQuery({
+    queryKey: dashboardKeys.secrets(),
+    queryFn: () => dashboardApiServices.fetchSecrets(),
+  });
+};
+
+export const useCreateSecret = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; type: string; value: string; description?: string }) =>
+      dashboardApiServices.createSecret(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.secrets() });
+    },
+  });
+};
+
+export const useUpdateSecret = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ secretId, data }: { secretId: string; data: { value: string; description?: string } }) =>
+      dashboardApiServices.updateSecret(secretId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.secrets() });
+    },
+  });
+};
+
+export const useDeleteSecret = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (secretId: string) => dashboardApiServices.deleteSecret(secretId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.secrets() });
+    },
   });
 };

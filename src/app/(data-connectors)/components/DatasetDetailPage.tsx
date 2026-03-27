@@ -17,18 +17,24 @@ import {
   useGetCatalogDetail,
   useGetCatalogDatacard,
   useGetDatasetComplianceReport,
+  useGetCatalogProperties,
+  useGetCatalogAuditTrail,
+  useGetDatasourceQueries
 } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, SparkleIcon } from "lucide-react";
 import DatasetLineage from "@/app/(data-connectors)/components/DatasetLineage";
 import DatasetQueriesTab from "./DatasetQueriesTab";
 import DatasetDetailSidebar from "./DatasetDetailSidebar";
+import DatasetAuditTab from "./DatasetAuditTab";
+import DatasetPropertiesTab from "./DatasetPropertiesTab";
 const TABS = [
   "DataCard",
   "Columns",
   "Lineage",
   "Properties",
   "Queries",
+  "Audit"
   // "Stats",
   // "Quality",
   // "Governance",
@@ -53,10 +59,13 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const router = useRouter();
   const { data: catalogData, isLoading: isCatalogLoading, refetch: fetchCatalogDetail } = useGetCatalogDetail(datasetId);
   const { data: datacardData, isLoading: isDatacardLoading } = useGetCatalogDatacard(datasetId);
+  const { data: propertiesData } = useGetCatalogProperties(datasetId);
+  const { data: auditData } = useGetCatalogAuditTrail(datasetId, 1, 0);
+  const { data: queriesData } = useGetDatasourceQueries(datasetId);
 
   const isLoading = isCatalogLoading || isDatacardLoading;
 
-  const [activeTab, setActiveTab] = useState<Tab>("DataCard");
+  // using appStore for activeTab
   const [showCompliance, setShowCompliance] = useState(false);
   const [isReclassifyAiLoading, setIsReclassifyAiLoading] = useState(false);
   const [reclassifyAiScanPhase, setReclassifyAiScanPhase] =
@@ -64,7 +73,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   const [aiResults, setAiResults] = useState<any>({});
   const { data: complianceData, isFetching: isComplianceLoading, refetch: complianceRefetch } = useGetDatasetComplianceReport(datasetId);
 
-  const { setSidebarCollapsed } = useAppStore();
+  const { setSidebarCollapsed, datasetDetailTab, setDatasetDetailTab } = useAppStore();
+  const activeTab = datasetDetailTab as Tab;
 
   const handleViewCompliance = async () => {
     setShowCompliance(true);
@@ -235,14 +245,13 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
   }
 
   const tabs = TABS.map((tab) => {
-    if (tab === "Columns")
-      return { name: tab, count: catalogData?.columns?.length || 0 };
-    if (tab === "Properties")
-      return {
-        name: tab,
-        count: Object.keys(catalogData?.properties || {}).length || 0,
-      };
-    return { name: tab, count: undefined };
+    let count: number | undefined;
+    if (tab === "Columns") count = catalogData?.columns?.length || 0;
+    if (tab === "Properties") count = propertiesData?.custom_properties?.length || 0;
+    if (tab === "Audit") count = auditData?.total_log_count || 0;
+    if (tab === "Queries") count = queriesData?.user_queries?.length || 0;
+    
+    return { name: tab, count };
   });
 
   const qualityColor =
@@ -253,7 +262,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         : "text-yellow-600";
 
   const handleTabClick = (tab: Tab) => {
-    setActiveTab(tab);
+    setDatasetDetailTab(tab as any);
     if (tab === "Lineage") {
       setSidebarCollapsed(true);
     }
@@ -481,16 +490,16 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
               <button
                 key={name}
                 onClick={() => handleTabClick(name)}
-                className={`flex items-center gap-1 px-3 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
+                className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${activeTab === name
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
               >
                 {name === "DataCard" && <SparkleIcon className={cn(activeTab === name ? "text-indigo-600 fill-indigo-600" : "text-gray-500 fill-gray-500")} strokeWidth={1} size={14} />}
                 {name}
-                {count !== undefined && name !== "Properties" && (
+                {count !== undefined && count > 0 && (
                   <span
-                    className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === name
+                    className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${activeTab === name
                       ? "bg-indigo-100 text-indigo-600"
                       : "bg-gray-100 text-gray-500"
                       }`}
@@ -606,7 +615,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-gray-900">
+                <h2 className="text-md font-bold text-gray-900">
                   Schema Definition
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-bold border border-indigo-100">
@@ -937,7 +946,43 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           </div>
         )}
 
-        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && activeTab !== "Queries" && (
+        {activeTab === "Properties" && (
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <DatasetPropertiesTab catalogId={datasetId} />
+            </div>
+            {/* Right sidebar */}
+            <DatasetDetailSidebar
+              name={detail.name}
+              type={detail.type}
+              sourceName={detail.sourceName}
+              owner={detail.owner}
+              ownerInitials={detail.ownerInitials}
+              tags={detail.tags}
+              lineageWarning={detail.lineageWarning}
+            />
+          </div>
+        )}
+
+        {activeTab === "Audit" && (
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <DatasetAuditTab catalogId={datasetId} />
+            </div>
+            {/* Right sidebar */}
+            <DatasetDetailSidebar
+              name={detail.name}
+              type={detail.type}
+              sourceName={detail.sourceName}
+              owner={detail.owner}
+              ownerInitials={detail.ownerInitials}
+              tags={detail.tags}
+              lineageWarning={detail.lineageWarning}
+            />
+          </div>
+        )}
+
+        {activeTab !== "DataCard" && activeTab !== "Columns" && activeTab !== "Lineage" && activeTab !== "Properties" && activeTab !== "Queries" && activeTab !== "Audit" && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
             <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <svg

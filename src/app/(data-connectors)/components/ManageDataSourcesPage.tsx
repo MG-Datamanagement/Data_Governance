@@ -11,8 +11,10 @@ import ConnectorIcon from "@/app/(data-connectors)/components/ConnectorIcon";
 import AddDataSourceModal from "@/app/(data-connectors)/components/AddDataSourceModal";
 import LiveIngestionPanel from "@/app/(data-connectors)/components/LiveIngestionPanel";
 import IngestionSidebar from "@/app/(data-connectors)/components/IngestionSidebar";
+import ManageSecretsTab from "@/app/(data-connectors)/components/ManageSecretsTab";
 import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory, useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries";
+import { RefreshCcw } from "lucide-react";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
@@ -320,7 +322,7 @@ const SourceRow: React.FC<{
 const TABS = [
     "Sources",
     "Run History",
-    // "Secrets"
+    "Secrets"
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -339,12 +341,12 @@ const ManageDataSourcesPage: React.FC = () => {
     const [historyOffset, setHistoryOffset] = useState(0);
     const HISTORY_LIMIT = 10;
 
-    const { data: apiData = [], isLoading: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
+    const { data: apiData = [], isFetching: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
         status: filter !== "All" ? filter : undefined,
         limit: 20
     });
 
-    const { data: runHistoryData, isLoading: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(HISTORY_LIMIT, historyOffset, historyStatus);
+    const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(HISTORY_LIMIT, historyOffset, historyStatus);
 
     const runHistory = runHistoryData || null;
     const isHistoryLoading = isHistoryFetchLoading;
@@ -394,8 +396,7 @@ const ManageDataSourcesPage: React.FC = () => {
 
     const [sourceToDelete, setSourceToDelete] = useState<DataSource | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-    const { setAddDsConfig } = useAppStore();
+    const { setAddDsConfig, addToast } = useAppStore();
 
     const toggleAll = () => {
         if (allChecked) {
@@ -435,16 +436,12 @@ const ManageDataSourcesPage: React.FC = () => {
         setIsDeleting(true);
         try {
             await dashboardApiServices.deleteSource(sourceToDelete.id);
-            setToast({ message: "Source Deleted Successfully", type: "success" });
+            addToast("Source Deleted Successfully", "success");
             setSourceToDelete(null);
             refetchSources();
-            
-            // Auto-hide toast after 3 seconds
-            setTimeout(() => setToast(null), 3000);
         } catch (err) {
             console.error("Failed to delete source", err);
-            setToast({ message: "Failed to delete source", type: "error" });
-            setTimeout(() => setToast(null), 3000);
+            addToast("Failed to delete source", "error");
         } finally {
             setIsDeleting(false);
         }
@@ -521,28 +518,7 @@ const ManageDataSourcesPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Toast Notification */}
-            {toast && (
-                <div className="fixed bottom-8 right-8 z-[60] flex items-center gap-3 bg-gray-900 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}>
-                        {toast.type === "success" ? (
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                        )}
-                    </div>
-                    <p className="text-sm font-semibold tracking-wide">{toast.message}</p>
-                    <button onClick={() => setToast(null)} className="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-            )}
+
 
             <main className="max-w-7xl mx-auto px-8 py-8">
 
@@ -593,6 +569,7 @@ const ManageDataSourcesPage: React.FC = () => {
                 </div>
 
                 {/* Toolbar */}
+                {activeTab !== "Secrets" && (
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         {/* Search */}
@@ -657,14 +634,16 @@ const ManageDataSourcesPage: React.FC = () => {
                         disabled={isLoading || isHistoryLoading}
                         className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
-                        <svg className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+                        <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
                         Refresh
                     </button>
                 </div>
+                )}
 
-                {/* Table */}
+                {/* Content Layer */}
+                {activeTab === "Secrets" ? (
+                    <ManageSecretsTab />
+                ) : (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <table className="w-full">
                         <thead>
@@ -790,6 +769,7 @@ const ManageDataSourcesPage: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                )}
 
                 {/* Pagination for History */}
                 {activeTab === "Run History" && runHistory && runHistory.total > HISTORY_LIMIT && (
