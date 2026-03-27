@@ -2,10 +2,13 @@
 
 import { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  /** Called before the component resets — use to clear React Query cache or retry */
+  onReset?: () => void;
 }
 
 interface State {
@@ -24,8 +27,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to error reporting service (e.g., Sentry)
-    console.error('Error Boundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an unhandled error', error, {
+      componentStack: errorInfo.componentStack ?? undefined,
+    });
   }
 
   render() {

@@ -13,15 +13,29 @@ class DashboardApiClient {
       headers: {
         "Content-Type": "application/json",
       },
+      /** 30-second timeout on all requests — prevents hanging calls */
+      timeout: 30_000,
     });
 
-    // Request interceptor for auth tokens
+    // ── Request interceptor: auth token + CSRF header ─────────────────────────
     this.restClient.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("auth_token");
+        // Bearer token auth (localStorage — swap for httpOnly cookie in production)
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("auth_token")
+            : null;
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // CSRF mitigation: custom header that cross-origin HTML forms cannot set.
+        // Backends should validate this header is present on all state-changing requests.
+        const method = (config.method ?? "").toUpperCase();
+        if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+          config.headers["X-Requested-With"] = "XMLHttpRequest";
+        }
+
         return config;
       },
       (error) => Promise.reject(error),
