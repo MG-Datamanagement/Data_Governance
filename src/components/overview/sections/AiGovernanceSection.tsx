@@ -7,7 +7,11 @@
 
 import { CheckCircle, AlertTriangle, TrendingUp, Eye } from "lucide-react";
 import { InlineState } from "@/components/ui/InlineState";
-import { ModelRiskChart } from "@/components/charts/ModelRiskChart";
+import dynamic from "next/dynamic";
+const ModelRiskChart = dynamic(
+  () => import("@/components/charts/ModelRiskChart").then((m) => ({ default: m.ModelRiskChart })),
+  { ssr: false, loading: () => <div className="h-32 bg-gray-50 animate-pulse rounded-lg" /> }
+);
 import { OverviewData } from "@/hooks/useOverviewData";
 import { cn } from "@/lib/utils";
 

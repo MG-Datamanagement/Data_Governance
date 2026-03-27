@@ -8,8 +8,29 @@ import { GlobalToastProvider } from "@/components/ui/GlobalToastProvider";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Infinity Governance",
-  description: "Data governance and compliance platform",
+  title: {
+    default: "Infinity Governance",
+    template: "%s | Infinity Governance",
+  },
+  description:
+    "Infinity Governance — AI-powered enterprise data governance, compliance, and lineage platform.",
+  keywords: [
+    "data governance",
+    "data lineage",
+    "compliance",
+    "PII detection",
+    "data catalog",
+    "AI governance",
+  ],
+  metadataBase: new URL("https://infinity-governance.io"),
+  openGraph: {
+    title: "Infinity Governance",
+    description: "AI-powered enterprise data governance and compliance platform.",
+    type: "website",
+    siteName: "Infinity Governance",
+  },
+  robots: { index: false, follow: false }, // set to true once in production
+  themeColor: "#6366f1",
 };
 
 export default function RootLayout({
