@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Home, Tag, Trash2, Edit2, AlertTriangle, ChevronRight, Plus } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
@@ -41,7 +41,7 @@ export default function TagsPage() {
   const deleteTagMutation = useDeleteTag()
 
   const { data: ownersData } = useGetOwnersList()
-  const ownersList = (ownersData as ApiOwner[]) || []
+  const ownersList = useMemo(() => (ownersData as ApiOwner[]) || [], [ownersData])
   
   useEffect(() => {
     if (ownersList.length > 0) {

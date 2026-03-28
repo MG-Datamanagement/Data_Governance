@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     siteName: "Infinity Governance",
   },
   robots: { index: false, follow: false }, // set to true once in production
+};
+
+export const viewport: Viewport = {
   themeColor: "#6366f1",
 };
 
