@@ -149,7 +149,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
   const [scanCount, setScanCount] = useState(0);
 
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: stats, isLoading: isStatsLoading } = useGetSourceStats(sourceId);
 
@@ -288,23 +288,25 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
       list = list.filter((d) => d.name.toLowerCase().includes(q));
     }
     if (typeFilter !== "All") {
-      list = list.filter((d) => d.type === typeFilter);
+      list = list.filter((d) =>
+        d.type.toLowerCase() === typeFilter.toLowerCase()
+      );
     }
     if (statusFilter !== "All") {
-      list = list.filter((d) => d.status === statusFilter);
+      list = list.filter((d) =>
+        d.status.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
     if (piiFilter) {
       list = list.filter((d) => d.hasPII);
     }
     return list;
-  }, [search, typeFilter, statusFilter, piiFilter, allDatasets]);
+  }, [allDatasets, search, typeFilter, statusFilter, piiFilter]);
 
-  // Client-side pagination slice
-  const totalItems = filtered.length;
   const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
-    return filtered.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filtered, page]);
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   // Reset page when filters change
   React.useEffect(() => {
@@ -424,7 +426,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                 {sourceName} Datasets
               </h1>
-              <p className="text-gray-400 mt-0.5 text-sm">
+              <p className="text-sm text-gray-500 mt-0.5">
                 Browse and manage all datasets ingested from this source
               </p>
             </div>
@@ -585,13 +587,17 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             pagination={
                filtered.length > 0 ? (
                 <div className="px-4 py-3 border-t border-gray-100 bg-white shadow-sm rounded-b-xl">
-                  <Pagination 
+                  <Pagination
                     currentPage={page}
                     totalItems={filtered.length}
-                    pageSize={PAGE_SIZE}
-                    showCount
-                    compact
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 20, 50, 100]}
                     onPageChange={setPage}
+                    onPageSizeChange={(newSize) => {
+                      setPageSize(newSize);
+                      setPage(1); // Reset to first page
+                    }}
+                    showCount
                   />
                 </div>
                ) : undefined

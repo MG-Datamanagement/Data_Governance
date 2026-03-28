@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useGetCatalogAuditTrail } from "@/hooks/useDashboardQueries";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,6 @@ import {
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
-import { Select } from "@/components/ui/Select";
 import { Pagination } from "@/components/ui/Pagination";
 
 interface DatasetAuditTabProps {
@@ -30,7 +29,20 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
 
   const { data: auditData, isLoading } = useGetCatalogAuditTrail(catalogId, limit, offset);
 
-  const { summary, activity_log, total_log_count } = auditData || {};
+  const { summary, activity_log: rawActivityLog, total_log_count } = auditData || {};
+
+  const activity_log = useMemo(() => {
+    if (!rawActivityLog) return [];
+    if (!searchQuery.trim()) return rawActivityLog;
+    const q = searchQuery.toLowerCase();
+    return rawActivityLog.filter(
+      (log: any) =>
+        log.who_name?.toLowerCase().includes(q) ||
+        log.what_action?.toLowerCase().includes(q) ||
+        log.details?.toLowerCase().includes(q) ||
+        log.where_location?.toLowerCase().includes(q)
+    );
+  }, [rawActivityLog, searchQuery]);
 
   const totalPages = total_log_count ? Math.ceil(total_log_count / limit) : 1;
 
@@ -264,22 +276,6 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
       <SectionCard
         title="Activity Log"
         badgeCount={`${total_log_count} events`}
-        headerAction={
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">Rows per page:</span>
-            <Select
-              value={limit}
-              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-              className="py-0.5 px-2 bg-white text-gray-600 min-w-[70px] min-h-[28px] text-xs"
-              options={[
-                { value: "10", label: "10" },
-                { value: "20", label: "20" },
-                { value: "50", label: "50" },
-                { value: "100", label: "100" },
-              ]}
-            />
-          </div>
-        }
       >
         <DataGrid
           data={activity_log || []}
@@ -295,8 +291,10 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
               totalPages={totalPages}
               totalItems={total_log_count || 0}
               pageSize={limit}
+              pageSizeOptions={[10, 20, 50, 100]}
               showCount
               onPageChange={(p) => setPage(p)}
+              onPageSizeChange={(size) => { setLimit(size); setPage(1); }}
             />
           }
         />

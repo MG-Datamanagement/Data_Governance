@@ -1,5 +1,5 @@
-import { LoadingFallback } from "@/components/Fallbacks";
+import { GenericPageLoader } from "@/components/ui/GenericPageLoader";
 
 export default function Loading() {
-  return <LoadingFallback />;
+  return <GenericPageLoader />;
 }

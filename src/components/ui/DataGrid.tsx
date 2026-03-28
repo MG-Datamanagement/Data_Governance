@@ -8,6 +8,8 @@ export interface DataGridColumn<T> {
   render?: (row: T) => React.ReactNode;
   align?: "left" | "center" | "right";
   width?: string | number;
+  /** Allow cell content to wrap onto multiple lines */
+  wrapText?: boolean;
 }
 
 export interface DataGridProps<T> {
@@ -113,7 +115,8 @@ export function DataGrid<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "whitespace-nowrap transition-colors",
+                        "transition-colors",
+                        col.wrapText ? "whitespace-normal" : "whitespace-nowrap",
                         cellPadding,
                         col.align === "right"
                           ? "text-right"

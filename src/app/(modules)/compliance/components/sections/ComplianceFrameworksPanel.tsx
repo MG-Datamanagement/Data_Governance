@@ -4,7 +4,8 @@ import { ComplianceFrameworkCard } from "@/app/(modules)/compliance/components/C
 import { ComplianceData } from "@/hooks/useComplianceData";
 import { ApiComplianceFramework } from "@/types";
 import { InfoIcon } from "lucide-react";
-import { InfoIconTooltip } from "@/components/ui/InfoIconTooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { Info } from "lucide-react";
 
 
 type Props = {
@@ -31,7 +32,11 @@ export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
             {frameworks?.length ?? 0} frameworks
           </p>
         </div>
-        <InfoIconTooltip text={frameworkInfographic ?? ""} size={16} className="mt-1" />
+        <Tooltip content={frameworkInfographic ?? ""} position="right">
+          <div className="text-white/60 hover:text-white transition-colors cursor-help mt-1">
+            <Info size={16} />
+          </div>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-1 gap-2 p-2 overflow-y-auto pr-1">

@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { ModelListItem } from "@/types";
 import { BrainCircuit, Edit2, Trash2 } from "lucide-react";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface ModelRegistryTableProps {
   models: ModelListItem[];
@@ -24,6 +26,13 @@ const tagColorMap: Record<string, string> = {
 };
 
 export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableProps) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const paginatedModels = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return models.slice(start, start + pageSize);
+  }, [models, page, pageSize]);
   const columns: DataGridColumn<ModelListItem>[] = [
     {
       key: "name",
@@ -103,12 +112,25 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
 
   return (
     <DataGrid
-      data={models}
+      data={paginatedModels}
       columns={columns}
       keyExtractor={(row) => row.id}
       onRowClick={onModelClick}
       emptyStateMessage="No models registered."
       emptyStateIcon={<BrainCircuit className="w-12 h-12 text-gray-300" strokeWidth={1.5} />}
+      pagination={
+        models.length > pageSize ? (
+          <Pagination
+            currentPage={page}
+            totalItems={models.length}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 20, 50]}
+            showCount
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          />
+        ) : undefined
+      }
     />
   );
 }

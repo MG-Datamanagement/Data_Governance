@@ -1,6 +1,4 @@
-"use client";
-
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Loader2, Sparkles, Settings2 } from "lucide-react";
 import { ApiColumn, ApiTag } from "@/types";
@@ -8,6 +6,7 @@ import { useAiReclassification } from "@/hooks/useAiReclassification";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface DatasetColumnsTabProps {
   catalogData: any;
@@ -24,6 +23,19 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
     aiResults,
     handleReclassificationActionWithAI,
   } = useAiReclassification(datasetId);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  const allColumns = useMemo(
+    () => (catalogData?.columns || []).map((col: ApiColumn, idx: number) => ({ ...col, _index: idx + 1 })),
+    [catalogData?.columns]
+  );
+
+  const paginatedColumns = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return allColumns.slice(start, start + pageSize);
+  }, [allColumns, page, pageSize]);
 
   return (
     <SectionCard
@@ -98,7 +110,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
         )}
 
         <DataGrid
-          data={(catalogData?.columns || []).map((col: ApiColumn, idx: number) => ({ ...col, _index: idx + 1 }))}
+          data={paginatedColumns}
           columns={[
             {
               key: "index",
@@ -188,6 +200,19 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
           keyExtractor={(row: any) => row.name}
           emptyStateMessage="No columns found"
           className="border-none shadow-none"
+          pagination={
+            allColumns.length > pageSize ? (
+              <Pagination
+                currentPage={page}
+                totalItems={allColumns.length}
+                pageSize={pageSize}
+                pageSizeOptions={[20, 50, 100]}
+                showCount
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+              />
+            ) : undefined
+          }
         />
       </div>
     </SectionCard>

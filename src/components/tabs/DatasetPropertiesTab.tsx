@@ -11,9 +11,9 @@ import { formatDistanceToNow } from "date-fns";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
-import { Select } from "@/components/ui/Select";
 import { InlineState } from "@/components/ui/InlineState";
 import { Pagination } from "@/components/ui/Pagination";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function DatasetPropertiesTab({ catalogId }: { catalogId: string }) {
   const { data: propertiesData, isLoading } = useGetCatalogProperties(catalogId);
@@ -28,6 +28,7 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<{ id: string; name: string; value: string } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Filter and pagination logic
   const filteredProperties = useMemo(() => {
@@ -39,7 +40,6 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
   }, [properties, searchQuery]);
 
   const totalItems = filteredProperties.length;
-  const totalPages = Math.ceil(totalItems / limit) || 1;
   const offset = (page - 1) * limit;
   const paginatedProperties = filteredProperties.slice(offset, offset + limit);
 
@@ -55,8 +55,13 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
   };
 
   const handleDeleteProperty = (id: string) => {
-    if(confirm("Are you sure you want to delete this property?")) {
-      deleteMutation.mutate({ catalogId, propertyId: id });
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (confirmDeleteId) {
+      deleteMutation.mutate({ catalogId, propertyId: confirmDeleteId });
+      setConfirmDeleteId(null);
     }
   };
 
@@ -224,29 +229,15 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
             className="border-t border-gray-100 shadow-none border-x-0 border-b-0 rounded-none w-full"
             maxHeight="380px"
             pagination={
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Rows per page:</span>
-                  <Select
-                    value={limit.toString()}
-                    onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                    className="bg-white py-0.5 px-2 text-xs"
-                    options={[
-                      { value: "10", label: "10" },
-                      { value: "20", label: "20" },
-                      { value: "50", label: "50" },
-                    ]}
-                  />
-                </div>
-                <Pagination
-                  currentPage={page}
-                  totalItems={totalItems}
-                  pageSize={limit}
-                  showCount
-                  compact
-                  onPageChange={(p) => setPage(p)}
-                />
-              </div>
+              <Pagination
+                currentPage={page}
+                totalItems={totalItems}
+                pageSize={limit}
+                pageSizeOptions={[10, 20, 50]}
+                showCount
+                onPageChange={(p) => setPage(p)}
+                onPageSizeChange={(size) => { setLimit(size); setPage(1); }}
+              />
             }
           />
         )}
@@ -255,6 +246,17 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveProperty}
           initialData={editingProperty}
+        />
+        <ConfirmModal
+          isOpen={!!confirmDeleteId}
+          onClose={() => setConfirmDeleteId(null)}
+          onConfirm={confirmDelete}
+          title="Delete Property"
+          description="Are you sure you want to delete this property? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          isDestructive
+          isLoading={deleteMutation.isPending}
         />
       </div>
     </SectionCard>

@@ -5,6 +5,7 @@ import { Connector, connectors } from "@/lib/mockConnectors";
 import SearchInput from "@/components/ui/SearchInput";
 import ConnectorCard from "@/components/connectors/ConnectorCard";
 import { logger } from "@/lib/logger";
+import { ChevronRight, Plus } from "lucide-react";
 
 
 const DataConnectorsPage: React.FC = () => {
@@ -31,23 +32,9 @@ const DataConnectorsPage: React.FC = () => {
 
                 {/* Breadcrumb */}
                 <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
-                    <a href="/" className="hover:text-gray-600 transition-colors">
-                        Home
-                    </a>
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                        />
-                    </svg>
-                    <span className="text-gray-600 font-medium">Data Connectors</span>
+                    <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
+                    <ChevronRight className="w-4 h-4" />
+                    <span className="text-gray-700 font-medium">Data Connectors</span>
                 </nav>
 
                 {/* Page Header */}
@@ -56,9 +43,8 @@ const DataConnectorsPage: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                             Connect Data Source
                         </h1>
-                        <p className="text-gray-400 mt-1 text-sm">
-                            Configure connectors to import metadata from your data
-                            infrastructure
+                        <p className="text-sm text-gray-500 mt-1">
+                            Configure connectors to import metadata from your data infrastructure
                         </p>
                     </div>
 
@@ -69,20 +55,8 @@ const DataConnectorsPage: React.FC = () => {
                             placeholder="Search data sources..."
                         />
                         <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 whitespace-nowrap">
-                            <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 4v16m8-8H4"
-                                />
-                            </svg>
-                            Create source
+                            <Plus className="w-4 h-4" />
+                            Create Source
                         </button>
                     </div>
                 </div>

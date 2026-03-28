@@ -26,6 +26,7 @@ import { useGetAgents } from "@/hooks/useDashboardQueries";
 import { InlineState } from "@/components/ui/InlineState";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function AgentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -35,6 +36,8 @@ export default function AgentsPage() {
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [selectedAgentType, setSelectedAgentType] = useState<"byo" | "managed" | null>(null);
     const [modalStep, setModalStep] = useState<1 | 2>(1);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const { data: serverAgents = [], isLoading } = useGetAgents();
     const [localAgents, setLocalAgents] = useState<any[]>([]);
@@ -105,6 +108,11 @@ export default function AgentsPage() {
             return matchesSearch && matchesStatus && matchesType;
         });
     }, [searchQuery, statusFilter, typeFilter]);
+
+    const paginatedAgents = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredAgents.slice(start, start + pageSize);
+    }, [filteredAgents, page, pageSize]);
 
     const columns: DataGridColumn<any>[] = [
         {
@@ -294,11 +302,24 @@ export default function AgentsPage() {
             ) : viewMode === "list" ? (
                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
                     <DataGrid
-                        data={filteredAgents}
+                        data={paginatedAgents}
                         columns={columns}
                         keyExtractor={(agent: any) => agent.id}
                         emptyStateMessage="No agents found matching your filters."
                         className="border-none shadow-none rounded-none"
+                        pagination={
+                            filteredAgents.length > pageSize ? (
+                                <Pagination
+                                    currentPage={page}
+                                    totalItems={filteredAgents.length}
+                                    pageSize={pageSize}
+                                    pageSizeOptions={[10, 20, 50]}
+                                    showCount
+                                    onPageChange={setPage}
+                                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                                />
+                            ) : undefined
+                        }
                     />
                 </div>
             ) : (

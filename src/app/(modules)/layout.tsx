@@ -27,12 +27,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden bg-[#f9fafb]">
       <Sidebar />
-      <div
-        className={cn(
-          "flex-1 flex flex-col overflow-hidden transition-all duration-300",
-          sidebarCollapsed ? "ml-0" : "ml-0",
-        )}
-      >
+      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
         <Header userName={MOCK_USER.name} />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

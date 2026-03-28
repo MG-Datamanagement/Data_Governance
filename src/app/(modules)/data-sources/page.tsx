@@ -53,14 +53,14 @@ const ManageDataSourcesPage: React.FC = () => {
     const [activeJobs, setActiveJobs] = useState<Record<string, string>>({});
     const [historyStatus, setHistoryStatus] = useState("All");
     const [historyOffset, setHistoryOffset] = useState(0);
-    const HISTORY_LIMIT = 10;
+    const [historyLimit, setHistoryLimit] = useState(10);
 
     const { data: apiData = [], isFetching: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
         status: filter !== "All" ? filter : undefined,
         limit: 20
     });
 
-    const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(HISTORY_LIMIT, historyOffset, historyStatus);
+    const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(historyLimit, historyOffset, historyStatus);
 
     const runHistory = runHistoryData || null;
     const isHistoryLoading = isHistoryFetchLoading;
@@ -311,7 +311,7 @@ const ManageDataSourcesPage: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                             Manage Data Sources
                         </h1>
-                        <p className="text-gray-400 mt-1 text-sm">
+                        <p className="text-sm text-gray-500 mt-1">
                             Configure and schedule syncs to import data from your data sources
                         </p>
                     </div>
@@ -488,13 +488,18 @@ const ManageDataSourcesPage: React.FC = () => {
                             className="w-full border-none shadow-none rounded-none"
                             maxHeight="500px"
                             pagination={
-                                runHistory && runHistory.total > HISTORY_LIMIT ? (
+                                runHistory && runHistory.total > 0 ? (
                                     <Pagination
-                                        currentPage={Math.floor(historyOffset / HISTORY_LIMIT) + 1}
+                                        currentPage={Math.floor(historyOffset / historyLimit) + 1}
                                         totalItems={runHistory.total}
-                                        pageSize={HISTORY_LIMIT}
+                                        pageSize={historyLimit}
+                                        pageSizeOptions={[10, 20, 50, 100]}
                                         showCount
-                                        onPageChange={(page) => setHistoryOffset((page - 1) * HISTORY_LIMIT)}
+                                        onPageChange={(page) => setHistoryOffset((page - 1) * historyLimit)}
+                                        onPageSizeChange={(size) => {
+                                            setHistoryLimit(size);
+                                            setHistoryOffset(0);
+                                        }}
                                     />
                                 ) : undefined
                             }

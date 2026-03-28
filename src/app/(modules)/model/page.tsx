@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, BrainCircuit, Search, Filter, X, List, Grid } from "lucide-react";
+import { Home, BrainCircuit, Search, Filter, X, List, Grid, ChevronRight, Plus } from "lucide-react";
 import { ModelRegistryTable } from "@/components/model-registry/ModelRegistryTable";
 import { ModelRegistryGrid } from "@/components/model-registry/ModelRegistryGrid";
 import { ModelDetailModal } from "@/components/model-registry/ModelDetailModal";
@@ -62,29 +62,25 @@ export default function ModelRegistryPage() {
         <div className="flex justify-between items-start mb-6">
           <div>
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-              <Home className="w-4 h-4" />
-              <span>Home</span>
-              <span className="text-gray-400">›</span>
-              <span>Governance</span>
-              <span className="text-gray-400">›</span>
-              <span className="text-gray-900 font-medium">Models</span>
+            <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
+              <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-gray-400">Governance</span>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-gray-700 font-medium">Models</span>
             </nav>
 
-            <div className="flex items-center gap-3 mb-2">
-              <BrainCircuit className="w-8 h-8 text-indigo-600" />
-              <h1 className="text-[26px] font-bold text-[#1e1b4b]">Model Registry</h1>
-            </div>
-            <p className="text-gray-500 text-[15px]">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Model Registry</h1>
+            <p className="text-sm text-gray-500 mt-1">
               Central governance and discovery for all machine learning models across the organization.
             </p>
           </div>
           
           <button 
            onClick={() => setIsRegisterModalOpen(true)}
-           className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-[15px]"
+           className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-semibold"
           >
-            <span className="text-xl leading-none font-light">+</span>
+            <Plus className="w-4 h-4" />
             Register Model
           </button>
         </div>
@@ -185,8 +181,8 @@ export default function ModelRegistryPage() {
         </div>
 
         {/* Results Info */}
-        <p className="text-[14px] text-gray-600 mb-4 font-medium">
-          Showing {filteredModels.length} models
+        <p className="text-sm text-gray-500 mb-4 font-medium">
+          Showing <span className="font-semibold text-gray-800">{filteredModels.length}</span> model{filteredModels.length !== 1 ? 's' : ''}
         </p>
 
         {/* Results Container */}

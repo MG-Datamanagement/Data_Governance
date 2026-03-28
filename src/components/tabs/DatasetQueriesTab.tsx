@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { LayoutGrid, List, Plus, X, Info } from "lucide-react";
 import { datasourceApiServices } from "@/services/datasourceApiServices";
 import { ApiQuery, CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
@@ -35,10 +35,12 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
   const [queryToDelete, setQueryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 20;
+  const [pageSize, setPageSize] = useState(20);
 
-  const totalPages = Math.max(1, Math.ceil(queries.length / PAGE_SIZE));
-  const paginatedQueries = queries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginatedQueries = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return queries.slice(start, start + pageSize);
+  }, [queries, page, pageSize]);
 
   const handleCreateQuery = async (data: CreateQueryRequest) => {
     try {
@@ -116,14 +118,16 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
             <QueryGridView queries={paginatedQueries} onDelete={setQueryToDelete} datasetName={datasetName} />
           )}
 
-          {queries.length > 0 && (
-            <div className="mt-3 bg-white rounded-lg border border-gray-100 shadow-sm">
+          {queries.length > pageSize && (
+            <div className="border-t border-gray-100 mt-3">
               <Pagination
                 currentPage={page}
                 totalItems={queries.length}
-                pageSize={PAGE_SIZE}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 20, 50]}
                 showCount
-                onPageChange={(p) => setPage(p)}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
               />
             </div>
           )}

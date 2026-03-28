@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./Button";
+import { Select } from "./Select";
 import { cn } from "@/lib/utils";
 
 export interface PaginationProps {
@@ -11,7 +12,11 @@ export interface PaginationProps {
   totalItems?: number;
   /** Items per page — used with totalItems to calculate totalPages */
   pageSize?: number;
+  /** Available page size options */
+  pageSizeOptions?: number[];
   onPageChange: (page: number) => void;
+  /** Callback when page size changes */
+  onPageSizeChange?: (size: number) => void;
   /** Show "Showing X–Y of Z items" label */
   showCount?: boolean;
   /** Compact mode: smaller text and tighter layout */
@@ -24,7 +29,9 @@ export function Pagination({
   totalPages: totalPagesProp,
   totalItems,
   pageSize,
+  pageSizeOptions,
   onPageChange,
+  onPageSizeChange,
   showCount = false,
   compact = false,
   className,
@@ -49,29 +56,47 @@ export function Pagination({
         className,
       )}
     >
-      {/* Count label */}
-      {showCount && totalItems != null ? (
-        <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
-          {start != null && end != null ? (
-            <>
-              Showing{" "}
-              <span className="font-semibold text-gray-800">{start}–{end}</span> of{" "}
-              <span className="font-semibold text-gray-800">{totalItems}</span> items
-            </>
-          ) : (
-            <>
-              Page{" "}
-              <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
-              <span className="font-semibold text-gray-800">{totalPages}</span>
-            </>
-          )}
-        </span>
-      ) : (
-        <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
-          Page <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
-          <span className="font-semibold text-gray-800">{totalPages}</span>
-        </span>
-      )}
+      <div className="flex items-center gap-4">
+        {/* Count label */}
+        {showCount && totalItems != null ? (
+          <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
+            {start != null && end != null ? (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-gray-800">{start}–{end}</span> of{" "}
+                <span className="font-semibold text-gray-800">{totalItems}</span> items
+              </>
+            ) : (
+              <>
+                Page{" "}
+                <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
+                <span className="font-semibold text-gray-800">{totalPages}</span>
+              </>
+            )}
+          </span>
+        ) : (
+          <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
+            Page <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
+            <span className="font-semibold text-gray-800">{totalPages}</span>
+          </span>
+        )}
+
+        {/* Page Size Selector */}
+        {pageSizeOptions && onPageSizeChange && pageSize != null && (
+          <div className="flex items-center gap-2">
+            <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>Rows per page:</span>
+            <Select
+              value={pageSize.toString()}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              options={pageSizeOptions.map((size) => ({
+                value: size.toString(),
+                label: size.toString(),
+              }))}
+              className={compact ? "h-7 py-0.5 text-xs" : "h-8 py-1 text-sm"}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Prev / Next */}
       <div className="flex items-center gap-1.5">

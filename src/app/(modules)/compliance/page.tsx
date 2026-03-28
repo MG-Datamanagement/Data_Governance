@@ -12,26 +12,28 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import QuickActionsDropdown from "@/components/ui/QuickActionsDropdown";
 import { Button } from "@/components/ui/Button";
-import { Download, Play, Loader2 } from "lucide-react";
+import { Download, Play } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 import { useState } from "react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
 import { useAppStore } from "@/store/appStore";
 
 function ComplianceContent() {
-  const { addToast } = useAppStore();
+  const { addToast, updateToast } = useAppStore();
   const [isExporting, setIsExporting] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
   
   const handleExportReport = async () => {
     if (isExporting) return;
     setIsExporting(true);
+    const toastId = addToast("Exporting compliance report...", "loading");
     try {
       await dashboardApiServices.exportComplianceReport();
-      addToast("Details successfully exported", "success");
+      updateToast(toastId, "Report exported successfully", "success");
     } catch (err) {
       console.error("Failed to export compliance report:", err);
-      addToast("Failed to export report. Please try again.", "error");
+      updateToast(toastId, "Failed to export report. Please try again.", "error");
     } finally {
       setIsExporting(false);
     }
@@ -68,7 +70,7 @@ function ComplianceContent() {
         variant="outline"
         onClick={handleExportReport}
         disabled={isExporting}
-        icon={isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+        icon={isExporting ? <Spinner size={16} /> : <Download size={16} />}
       >
         {isExporting ? "Exporting..." : "Export Report"}
       </Button>

@@ -1,15 +1,15 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Home, Tag, Trash2, Edit2, AlertTriangle } from 'lucide-react'
+import { Home, Tag, Trash2, Edit2, AlertTriangle, ChevronRight, Plus } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
 import { CreateTagRequest } from '@/types/tagTypes'
 import { ApiOwner } from '@/services/dashboardApiServices'
 import { useAppStore } from '@/store/appStore'
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
-
 import { Select } from '@/components/ui/Select'
+import { Pagination } from '@/components/ui/Pagination'
 
 export default function TagsPage() {
   const { addToast, updateToast } = useAppStore()
@@ -28,6 +28,8 @@ export default function TagsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [owners, setOwners] = useState<ApiOwner[]>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   // React Query hooks
   const { data: tags = [], isLoading, error } = useGetTags({
@@ -254,29 +256,25 @@ export default function TagsPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-          <Home className="w-4 h-4 text-indigo-600" />
-          <span className="text-indigo-600">Home</span>
-          <span>&gt;</span>
-          <span>Governance</span>
-          <span>&gt;</span>
-          <span className="text-gray-900">Tags</span>
+        <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
+          <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-400">Governance</span>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-700 font-medium">Tags</span>
         </nav>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Tag className="w-6 h-6 text-gray-700" />
-              <h1 className="text-3xl font-semibold text-gray-900">Tag Management</h1>
-            </div>
-            <p className="text-gray-600">Configure and manage global tags for data classification, privacy, and retention.</p>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tag Management</h1>
+            <p className="text-sm text-gray-500 mt-1">Configure and manage global tags for data classification, privacy, and retention.</p>
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-semibold"
           >
-            <span className="text-lg">+</span>
+            <Plus className="w-4 h-4" />
             Create Tag
           </button>
         </div>
@@ -334,12 +332,25 @@ export default function TagsPage() {
         {!error && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <DataGrid
-              data={filteredTags}
+              data={filteredTags.slice((page - 1) * pageSize, page * pageSize)}
               columns={columns}
               isLoading={isLoading}
               keyExtractor={(tag: any) => tag.id}
               emptyStateMessage="No tags found. Create your first tag to get started."
               className="border-none shadow-none rounded-none"
+              pagination={
+                filteredTags.length > pageSize ? (
+                  <Pagination
+                    currentPage={page}
+                    totalItems={filteredTags.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 20, 50]}
+                    showCount
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                  />
+                ) : undefined
+              }
             />
           </div>
         )}

@@ -12,11 +12,14 @@ import { SectionCard } from '@/components/ui/SectionCard';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/logger';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
+import { Pagination } from '@/components/ui/Pagination';
 
 const ManageSecretsTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSecret, setEditingSecret] = useState<any>(null);
   const [secretToDelete, setSecretToDelete] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { addToast, updateToast } = useAppStore();
   const { data: secretsList, isLoading: isFetching } = useGetSecrets();
@@ -26,6 +29,8 @@ const ManageSecretsTab: React.FC = () => {
 
   const secrets = secretsList || [];
   const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+  const paginatedSecrets = secrets.slice((page - 1) * pageSize, page * pageSize);
 
   const formatType = (type: string) => {
     const map: Record<string, string> = {
@@ -161,7 +166,7 @@ const ManageSecretsTab: React.FC = () => {
         }
       >
         <DataGrid
-          data={secrets}
+          data={paginatedSecrets}
           columns={columns}
           keyExtractor={(row) => row.id}
           isLoading={isFetching}
@@ -178,6 +183,19 @@ const ManageSecretsTab: React.FC = () => {
             </div>
           }
           className="border-none shadow-none"
+          pagination={
+            secrets.length > pageSize ? (
+              <Pagination
+                currentPage={page}
+                totalItems={secrets.length}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 20, 50]}
+                showCount
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+              />
+            ) : undefined
+          }
         />
       </SectionCard>
 

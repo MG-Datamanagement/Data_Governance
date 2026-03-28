@@ -1,11 +1,12 @@
 import { ApiComplianceIssue } from "@/types";
 import { cn, getSeverityColor } from "@/lib/utils";
 import { AlertCircle, Search, ChevronDown, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { InlineState } from "@/components/ui/InlineState";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface ComplianceIssuesTableProps {
   issues: ApiComplianceIssue[];
@@ -13,12 +14,19 @@ interface ComplianceIssuesTableProps {
 
 export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const filteredIssues = issues.filter(
+  const filteredIssues = useMemo(() => issues.filter(
     (issue) =>
       issue.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issue.dataset.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  ), [issues, searchTerm]);
+
+  const paginatedIssues = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredIssues.slice(start, start + pageSize);
+  }, [filteredIssues, page, pageSize]);
 
   const columns: DataGridColumn<ApiComplianceIssue>[] = [
     {
@@ -116,10 +124,23 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
 
       <div className="hidden md:block">
         <DataGrid
-          data={filteredIssues}
+          data={paginatedIssues}
           columns={columns}
           keyExtractor={(issue: ApiComplianceIssue) => `${issue.framework}-${issue.issue}-${issue.dataset}`}
           emptyStateMessage={searchTerm ? "No issues match your search." : "No open compliance issues."}
+          pagination={
+            filteredIssues.length > pageSize ? (
+              <Pagination
+                currentPage={page}
+                totalItems={filteredIssues.length}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 20, 50]}
+                showCount
+                onPageChange={(p) => { setPage(p); }}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+              />
+            ) : undefined
+          }
         />
       </div>
 
