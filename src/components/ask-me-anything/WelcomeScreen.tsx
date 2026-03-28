@@ -1,10 +1,5 @@
 import React from "react";
-import { FiDatabase } from "react-icons/fi";
-import { IoGlobeOutline } from "react-icons/io5";
-import { BsStars } from "react-icons/bs";
-import { FiFileText } from "react-icons/fi";
-import { RiRobot2Line } from "react-icons/ri";
-import { GiScreenImpact } from "react-icons/gi";
+import { Database, Globe, Sparkles, FileText, Zap, Bot } from "lucide-react";
 
 interface WelcomeScreenProps {
   onPromptClick: (prompt: string) => void;
@@ -12,14 +7,14 @@ interface WelcomeScreenProps {
 
 const SUGGESTED_PROMPTS = [
   {
-    icon: FiDatabase,
+    icon: Database,
     title: "List Snowflake Assets",
     description:
       "List all assets in the Snowflake platform related to finance.",
     prompt: "List all assets in the Snowflake platform related to finance.",
   },
   {
-    icon: IoGlobeOutline,
+    icon: Globe,
     title: "Domain Overview",
     description:
       'Give me an overview of the "Customer 360" domain and its critical assets.',
@@ -27,14 +22,14 @@ const SUGGESTED_PROMPTS = [
       'Give me an overview of the "Customer 360" domain and its critical assets.',
   },
   {
-    icon: FiFileText,
+    icon: FileText,
     title: "Policy Check",
     description:
       "Which datasets are currently violating the GDPR retention policy?",
     prompt: "Which datasets are currently violating the GDPR retention policy?",
   },
   {
-    icon: GiScreenImpact,
+    icon: Zap,
     title: "Impact Analysis",
     description:
       'What would be the downstream impact if I deprecate the "orders_master" table?',
@@ -49,7 +44,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   return (
     <div className="mx-auto text-center space-y-3">
       <div className="p-2 rounded-lg bg-indigo-200 w-16 h-w-16 flex items-center justify-center mx-auto">
-        <RiRobot2Line size={35} className="text-indigo-700" />
+        <Bot size={35} className="text-indigo-700" />
       </div>
       <h1 className="text-xl font-bold text-gray-900">
         Welcome to Ask Me Anything!
@@ -71,7 +66,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               onClick={() => onPromptClick(prompt.prompt)}
             >
               <div className="flex items-center gap-2 space-y-1">
-                <Icon className="text-base text-indigo-600" />
+                <Icon size={14} className="text-indigo-600" />
                 <div className="text-sm font-medium text-gray-900">
                   {prompt.title}
                 </div>

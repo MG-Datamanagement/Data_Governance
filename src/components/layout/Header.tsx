@@ -1,11 +1,7 @@
 "use client";
 
-import { Search, Menu, Database } from "lucide-react";
+import { Search, Menu, Database, SlidersHorizontal, Bot, HelpCircle, Bell } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { LuSlidersHorizontal } from "react-icons/lu";
-import { RiRobot2Line } from "react-icons/ri";
-import { LuCircleHelp } from "react-icons/lu";
-import { LuBell } from "react-icons/lu";
 import { cn } from "@/lib/utils";
 import { NotificationsModal } from "../ui/NotificationsModal";
 import { Button } from "../ui/Button";
@@ -92,7 +88,7 @@ export function Header({ userName }: HeaderProps) {
                 className="p-1 transition-colors hidden md:block"
                 onClick={() => router.push("/ask-me-anything")}
               >
-                <RiRobot2Line size={20} className="text-slate-500" />
+                <Bot size={20} className="text-slate-500" />
               </Button>
             </div>
             {/* <div>
@@ -100,7 +96,7 @@ export function Header({ userName }: HeaderProps) {
                 variant="transparent"
                 className="p-1 transition-colors hidden md:block"
               >
-                <LuCircleHelp size={20} className="text-slate-500" />
+                <HelpCircle size={20} className="text-slate-500" />
               </Button>
             </div> */}
             <div>
@@ -109,7 +105,7 @@ export function Header({ userName }: HeaderProps) {
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className="p-1 transition-colors hidden md:block hover:bg-gray-200"
               >
-                <LuBell size={20} className="text-slate-500" />
+                <Bell size={20} className="text-slate-500" />
               </Button>
             </div>
           </div>

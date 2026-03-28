@@ -1,4 +1,6 @@
 import React, { useEffect } from "react";
+import { X } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,9 +100,7 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
             disabled={isLoading}
             className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -189,7 +189,7 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <Spinner size={14} className="text-white" />
                   {isEditMode ? "Updating..." : "Saving..."}
                 </>
               ) : isEditMode ? (

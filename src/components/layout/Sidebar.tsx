@@ -16,8 +16,7 @@ import {
   Bot,
   Building2
 } from "lucide-react";
-import { LuMessageSquare, LuCable, LuSparkles } from "react-icons/lu";
-import { GiMicrochip } from "react-icons/gi";
+import { MessageSquare, Cable, Sparkles, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { BrandLogo } from "../ui/BrandLogo";
@@ -31,7 +30,7 @@ const GOVERN_ITEMS = [
   { icon: Tag, label: "Tags", href: "/tags" },
   // { icon: Book, label: "Glossary", href: "/glossary" },
   { icon: Bot, label: "Agents", href: "/agents" },
-  { icon: GiMicrochip, label: "Models", href: "/model" },
+  { icon: Cpu, label: "Models", href: "/model" },
   { icon: Building2, label: "Line of Business", href: "/line-of-business" },
 ];
 
@@ -41,7 +40,9 @@ const ADMIN_ITEMS = [
 ];
 
 const AI_ASSISTANT_ITEMS = [
-  { icon: LuMessageSquare, label: "Ask Me Anything", href: "/ask-me-anything" },
+  // { icon: MessageSquare, label: "Inbox", href: "/inbox" },
+  // { icon: Cable, label: "Connectors", href: "/connectors" },
+  { icon: Sparkles, label: "Ask Me Anything", href: "/ask-me-anything" },
 ];
 
 

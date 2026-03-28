@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Tag, User2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Tag, User2, Zap } from "lucide-react";
 import { ApiTag } from "@/types";
 import { cn } from "@/lib/utils";
-import { SlEnergy } from "react-icons/sl";
 import { useAppStore } from "@/store/appStore";
 
 interface DatasetDetailSidebarProps {
@@ -86,7 +85,7 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
             )}
           >
             <div className="flex items-center justify-center mt-1">
-              <SlEnergy className={cn("w-4 h-4 text-gray-600 stroke-2")} />
+              <Zap className={cn("w-4 h-4 text-gray-600 stroke-2")} />
             </div>
           </div>
 
@@ -123,7 +122,7 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
           {/* Lineage */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-              <SlEnergy className="w-4 h-4 text-gray-400" />
+              <Zap className="w-4 h-4 text-gray-400" />
               Lineage
             </div>
             {lineageWarning ? (

@@ -5,15 +5,10 @@
  * This is the single source of truth for platform icons — import ONLY from
  * UI components, never from service / lib / types files.
  */
-import { DiPostgresql } from "react-icons/di";
-import { FaRegSnowflake } from "react-icons/fa";
-import { SiMongodb } from "react-icons/si";
-import { BiLogoPostgresql } from "react-icons/bi";
 import { Database } from "lucide-react";
-import type { IconType } from "react-icons/lib";
 import type { LucideIcon } from "lucide-react";
 
-export type PlatformIcon = IconType | LucideIcon;
+export type PlatformIcon = LucideIcon;
 
 export interface PlatformDisplayConfig {
   icon: PlatformIcon;
@@ -21,11 +16,11 @@ export interface PlatformDisplayConfig {
 }
 
 const PLATFORM_DISPLAY_MAP: Record<string, PlatformDisplayConfig> = {
-  postgres:    { icon: BiLogoPostgresql, iconColor: "text-slate-600" },
-  postgresql:  { icon: DiPostgresql,     iconColor: "text-slate-600" },
-  snowflake:   { icon: FaRegSnowflake,   iconColor: "text-sky-600" },
-  mongodb:     { icon: SiMongodb,        iconColor: "text-green-600" },
-  mongo:       { icon: SiMongodb,        iconColor: "text-green-600" },
+  postgres:    { icon: Database, iconColor: "text-slate-600" },
+  postgresql:  { icon: Database,     iconColor: "text-slate-600" },
+  snowflake:   { icon: Database,   iconColor: "text-sky-600" },
+  mongodb:     { icon: Database,        iconColor: "text-green-600" },
+  mongo:       { icon: Database,        iconColor: "text-green-600" },
   redshift:    { icon: Database,         iconColor: "text-red-700" },
 };
 

@@ -1,4 +1,4 @@
-import { IconType } from "react-icons/lib";
+import { LucideIcon } from "lucide-react";
 
 // Core Types
 export interface Message {
@@ -99,7 +99,7 @@ export interface Agent {
   id: string;
   name: string;
   description: string;
-  icon: string | IconType;
+  icon: string | LucideIcon;
   alert?: string;
   tag?: string;
   disabled: boolean;

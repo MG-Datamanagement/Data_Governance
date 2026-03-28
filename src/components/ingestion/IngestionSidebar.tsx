@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Bell, History, Check, Loader2, Database, Shield, Zap, Search, AlertCircle, ShieldCheckIcon, ArrowRight, CheckCircle2, Circle, Tag, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Bell, History, Check, Loader2, Database, Shield, Zap, Search, AlertCircle, ShieldCheckIcon, ArrowRight, CheckCircle2, Circle, Tag, ArrowDown, ChevronUp, ChevronDown, Bot } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import { Button } from '@/components/ui/Button';
 import { CONSTANTS } from '@/lib/constants';
 import { dashboardApiServices, SourceAiSummaryResponse } from '@/services/dashboardApiServices';
 import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from '@/hooks/useDashboardQueries';
-import { RiRobot2Fill } from 'react-icons/ri';
+
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -150,7 +150,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                                 </div>
                             ) : (
                                 <div className="relative flex flex-col items-center justify-center translate-y-2">
-                                    <RiRobot2Fill className="w-8 h-8 text-indigo-500" />
+                                    <Bot className="w-8 h-8 text-indigo-500" />
                                     <div className="flex gap-1 mt-1.5 h-1.5 items-center">
                                         <span className="w-1 h-1 bg-indigo-400 rounded-full isp-dot-1" />
                                         <span className="w-1 h-1 bg-indigo-400 rounded-full isp-dot-2" />
@@ -345,7 +345,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                     {(isComplete || (isSourceAiSummaryLoading && hasAttemptedPhase2) || summaryError) && (sourceAiSummary?.ai_summary || isSourceAiSummaryLoading || summaryError) &&
                         <div className='bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg transition-all space-y-3'>
                             <div className='text-indigo-600 flex items-center gap-2'>
-                                {isSourceAiSummaryLoading ? <Loader2 size={14} className='animate-spin' /> : <RiRobot2Fill size={14} />}
+                                {isSourceAiSummaryLoading ? <Loader2 size={14} className='animate-spin' /> : <Bot size={14} />}
                                 {isSourceAiSummaryLoading 
                                     ? <span className='text-xs font-medium'>Generating Ingestion Insights...</span> 
                                     : <span className='text-xs font-medium'>Summary</span>}

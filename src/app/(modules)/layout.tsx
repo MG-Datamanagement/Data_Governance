@@ -5,7 +5,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { useAppStore } from "@/store/appStore";
-import { cn } from "@/lib/utils";
 import { MOCK_USER } from "@/lib/mockData";
 
 export default function DashboardLayout({

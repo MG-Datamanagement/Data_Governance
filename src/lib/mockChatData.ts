@@ -1,45 +1,40 @@
 import { Agent, ChatDataset } from "@/types";
-import { GoWorkflow } from "react-icons/go";
-import { FiGitBranch } from "react-icons/fi";
-import { GoDatabase } from "react-icons/go";
-import { TbZoomScan } from "react-icons/tb";
-import { LuShieldCheck } from "react-icons/lu";
-import { MdOutlinePolicy } from "react-icons/md";
+import { Workflow, GitBranch, Database, Search, ShieldCheck, ScrollText } from "lucide-react";
 
 export const MOCK_AGENTS: Agent[] = [
   {
     id: "schema_scout",
     name: "Schema Scout",
     description: "Analyzes table schemas and column types",
-    icon: TbZoomScan,
+    icon: Search,
     disabled: false,
   },
   {
     id: "pii_detective",
     name: "PII Detective",
     description: "Detects sensitive & personal data",
-    icon: LuShieldCheck,
+    icon: ShieldCheck,
     disabled: false,
   },
   {
     id: "compliance_guardian",
     name: "Compliance Guardian",
     description: "Checks policy violations & enforcement",
-    icon: MdOutlinePolicy,
+    icon: ScrollText,
     disabled: false,
   },
   {
     id: "lineage_tracker",
     name: "Lineage Tracker",
     description: "Maps upstream & downstream dependencies",
-    icon: FiGitBranch,
+    icon: GitBranch,
     disabled: false,
   },
   {
     id: "sql_agent",
     name: "SQL Agent",
     description: "Generates & runs SQL queries",
-    icon: GoDatabase,
+    icon: Database,
     disabled: false,
   },
   {
@@ -48,7 +43,7 @@ export const MOCK_AGENTS: Agent[] = [
     description: "Coordinates multi-agent workflows",
     alert: `Enable "Multi-Agent" in preference`,
     tag: "Multi",
-    icon: GoWorkflow,
+    icon: Workflow,
     disabled: true,
   },
 ];

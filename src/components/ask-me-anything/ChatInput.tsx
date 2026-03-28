@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { TbTableSpark } from "react-icons/tb";
-import { RiRobot2Line } from "react-icons/ri";
-import { FiSend } from "react-icons/fi";
+import { Table2, Bot, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { IoClose } from "react-icons/io5";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -72,7 +69,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             className="opacity-60 hover:opacity-100 transition-opacity"
             onClick={() => handleReplyTo(null)}
           >
-            <IoClose size={14} />
+            <X size={14} />
           </button>
         </div>
       )}
@@ -91,13 +88,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               key={datasetId}
               className="flex items-center bg-indigo-50 border border-indigo-200 text-indigo-600 rounded-3xl px-1.5 py-1 gap-1.5"
             >
-              <TbTableSpark size={10} />
+              <Table2 size={10} />
               <span className="text-[10px] font-semibold">{datasetId}</span>
               <button
                 onClick={() => onRemoveDataset(datasetId)}
                 className="opacity-60 hover:opacity-100 transition-opacity"
               >
-                <IoClose size={10} />
+                <X size={10} />
               </button>
             </span>
           ))}
@@ -106,13 +103,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               key={agentId}
               className="flex items-center bg-purple-50 border border-purple-200 text-purple-600 rounded-3xl px-1.5 py-1 gap-1.5"
             >
-              <RiRobot2Line size={10} />
+              <Bot size={10} />
               <span className="text-[10px] font-semibold">{agentId}</span>
               <button
                 onClick={() => onRemoveAgent(agentId)}
                 className="opacity-60 hover:opacity-100 transition-opacity"
               >
-                <IoClose size={10} />
+                <X size={10} />
               </button>
             </span>
           ))}
@@ -135,7 +132,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onClick={onOpenDatasetModal}
           title="Add datasets to context"
         >
-          <TbTableSpark size={16} />
+          <Table2 size={16} />
         </button> */}
 
         <button
@@ -146,7 +143,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onClick={onOpenAgentModal}
           title="Call agents"
         >
-          <RiRobot2Line size={16} />
+          <Bot size={16} />
         </button>
 
         <textarea
@@ -168,7 +165,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onClick={handleSubmit}
           disabled={disabled || !message.trim()}
         >
-          <FiSend size={16} />
+          <Send size={16} />
         </button>
       </div>
 

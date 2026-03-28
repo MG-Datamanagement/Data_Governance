@@ -17,7 +17,7 @@ import {
   Source,
   ToolDetail,
 } from "../../../types";
-import { RiRobot2Line } from "react-icons/ri";
+import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/Fallbacks";
@@ -385,7 +385,7 @@ const AskMeAnything: React.FC = () => {
               {isThinking && (
                 <div className="flex gap-4 items-start">
                   <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <RiRobot2Line size={16} />
+                    <Bot size={32} />
                   </div>
                   <div
                     className={cn(

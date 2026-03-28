@@ -1,5 +1,4 @@
-import { BellIcon, Database } from "lucide-react";
-import { IoClose } from "react-icons/io5";
+import { BellIcon, Database, X } from "lucide-react";
 import { Button } from "./Button";
 import { RecentActivity } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -58,7 +57,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             className="text-xl opacity-60 hover:opacity-100 transition-opacity"
             onClick={onClose}
           >
-            <IoClose size={16} />
+            <X size={16} />
           </button>
         </div>
 

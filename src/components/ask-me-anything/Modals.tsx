@@ -1,8 +1,5 @@
 import React from "react";
-import { TbTableSpark } from "react-icons/tb";
-import { RiRobot2Line } from "react-icons/ri";
-import { IoClose } from "react-icons/io5";
-import { Search } from "lucide-react";
+import { Table2, Bot, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Agent, ChatDataset } from "@/types";
 
@@ -44,14 +41,14 @@ export const AgentModal: React.FC<AgentModalProps> = ({
       >
         <div className="flex justify-between items-center px-4 py-2 rounded-tl-lg rounded-tr-lg bg-[#f1f5f9] border-b border-gray-200">
           <div className="flex items-center gap-2.5 text-sm font-medium">
-            <RiRobot2Line size={18} className="text-[#a754f4] font-bold" />
+            <Bot size={18} className="text-[#a754f4] font-bold" />
             <span className="text-gray-700">Call Agents</span>
           </div>
           <button
             className="text-xl opacity-60 hover:opacity-100 transition-opacity"
             onClick={onClose}
           >
-            <IoClose size={16} />
+            <X size={16} />
           </button>
         </div>
 
@@ -168,14 +165,14 @@ export const DatasetModal: React.FC<DatasetModalProps> = ({
       >
         <div className="flex justify-between items-center px-4 py-2 rounded-tl-lg rounded-tr-lg bg-[#f1f5f9] border-b border-gray-200">
           <div className="flex items-center gap-2.5 text-sm font-medium">
-            <TbTableSpark size={16} className="text-[#4e45e3] font-bold" />
+            <Table2 size={16} className="text-[#4e45e3] font-bold" />
             <span className="text-gray-700">Add Datasets</span>
           </div>
           <button
             className="text-xl opacity-60 hover:opacity-100 transition-opacity"
             onClick={onClose}
           >
-            <IoClose size={16} />
+            <X size={16} />
           </button>
         </div>
 

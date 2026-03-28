@@ -28,6 +28,7 @@ import { TabNavigation } from "@/components/ui/TabNavigation";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
+import { Spinner } from "@/components/ui/Spinner";
 import { logger } from "@/lib/logger";
 
 
@@ -282,7 +283,7 @@ const ManageDataSourcesPage: React.FC = () => {
                             >
                                 {isDeleting ? (
                                     <>
-                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                        <Spinner size={14} className="text-white" />
                                         Deleting...
                                     </>
                                 ) : (

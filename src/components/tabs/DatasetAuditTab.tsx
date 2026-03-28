@@ -25,6 +25,9 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
 
+  // Reset to page 1 whenever search query changes
+  React.useEffect(() => { setPage(1); }, [searchQuery]);
+
   const offset = (page - 1) * limit;
 
   const { data: auditData, isLoading } = useGetCatalogAuditTrail(catalogId, limit, offset);
@@ -166,6 +169,7 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     {
       key: "what",
       header: "What",
+      wrapText: true,
       render: (log) => {
         const { badge, text } = parseAction(log.what_action);
         return (
@@ -173,7 +177,7 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
             <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border", getBadgeColor(badge))}>
               {badge}
             </span>
-            <p className="text-xs text-gray-700 line-clamp-2 max-w-[180px]">{text}</p>
+            <p className="text-xs text-gray-700 whitespace-normal">{text}</p>
           </div>
         );
       },
@@ -198,8 +202,9 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     {
       key: "details",
       header: "Details",
+      wrapText: true,
       render: (log) => (
-        <p className="text-xs text-gray-500 italic max-w-[200px] line-clamp-2">
+        <p className="text-xs text-gray-500 italic whitespace-normal">
           {log.details}
         </p>
       ),

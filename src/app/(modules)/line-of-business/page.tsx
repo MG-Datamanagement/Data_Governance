@@ -3,28 +3,12 @@
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
-import {
-    FiHome,
-    FiChevronRight,
-    FiSearch,
-    FiFilter,
-    FiList,
-    FiGrid,
-    FiPlus,
-    FiX,
-    FiChevronDown,
-    FiUser,
-    FiDatabase,
-    FiLayers,
-    FiAlertCircle,
-    FiEdit2,
-    FiTrash2,
-    FiLink,
-    FiMoreVertical,
-} from "react-icons/fi";
-import { LuLayoutDashboard } from "react-icons/lu";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
-import { FolderTree } from "lucide-react";
+import { 
+    Home, ChevronRight, Search, Filter, List, Grid, Plus, X, 
+    ChevronDown, User, Database, Layers, AlertCircle, Pencil, 
+    Trash2, Link, MoreVertical, LayoutDashboard, FolderTree 
+} from "lucide-react";
 import { 
     useGetAllLineOfBusiness, 
     useGetLobOwners, 
@@ -132,11 +116,11 @@ function Breadcrumb() {
     const router = useRouter();
     return (
         <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-3" aria-label="Breadcrumb">
-            <FiHome className="w-3.5 h-3.5" />
+            <Home className="w-3.5 h-3.5" />
             <span className="hover:text-gray-700 cursor-pointer" onClick={() => router.push("/")}>Home</span>
-            <FiChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-3.5 h-3.5" />
             <span className="hover:text-gray-700">Governance</span>
-            <FiChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-gray-900 font-medium">Line of Business</span>
         </nav>
     );
@@ -154,16 +138,16 @@ function DomainCard({ domain }: { domain: Domain }) {
             <p className="text-sm text-gray-500 leading-relaxed min-h-[40px]">{domain.description}</p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 border-t border-gray-100 pt-3">
                 <span className="flex items-center gap-1.5">
-                    <FiUser className="w-3.5 h-3.5" />
+                    <User className="w-3.5 h-3.5" />
                     <span className="truncate max-w-[130px]" title={domain.owner}>{domain.owner}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                    <FiDatabase className="w-3.5 h-3.5" />
+                    <Database className="w-3.5 h-3.5" />
                     {domain.assets.toLocaleString()} assets
                 </span>
                 {domain.subdomains.length > 0 && (
                     <span className="flex items-center gap-1.5">
-                        <FiLayers className="w-3.5 h-3.5" />
+                        <Layers className="w-3.5 h-3.5" />
                         {domain.subdomains.length} sub-domain{domain.subdomains.length !== 1 ? "s" : ""}
                     </span>
                 )}
@@ -228,8 +212,8 @@ function DomainRow({
                     >
                         {domain.subdomains.length > 0 ? (
                             expanded
-                                ? <FiChevronDown className="w-4 h-4 text-gray-400" />
-                                : <FiChevronRight className="w-4 h-4 text-gray-400" />
+                                ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                                : <ChevronRight className="w-4 h-4 text-gray-400" />
                         ) : (
                             <span className="w-4 h-4 inline-block" />
                         )}
@@ -248,7 +232,7 @@ function DomainRow({
                             className="p-1 rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             aria-label="More options"
                         >
-                            <FiMoreVertical className="w-4 h-4 text-gray-500" />
+                            <MoreVertical className="w-4 h-4 text-gray-500" />
                         </button>
                         {menuOpen && (
                             <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-md shadow-lg py-1 w-32">
@@ -256,13 +240,13 @@ function DomainRow({
                                     onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEditDomain(); }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                 >
-                                    <FiEdit2 className="w-3.5 h-3.5" /> Edit
+                                    <Pencil className="w-3.5 h-3.5" /> Edit
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDeleteDomain(); }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                                 >
-                                    <FiTrash2 className="w-3.5 h-3.5" /> Delete
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
                                 </button>
                             </div>
                         )}
@@ -296,7 +280,7 @@ function DomainRow({
                                 className="p-1 rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none"
                                 aria-label="More options"
                             >
-                                <FiMoreVertical className="w-4 h-4 text-gray-500" />
+                                <MoreVertical className="w-4 h-4 text-gray-500" />
                             </button>
                         </div>
                     </div>
@@ -385,7 +369,7 @@ function DetailsPanel({
                         />
                     </div>
                     <button onClick={cancelEdit} className="p-1.5 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-shrink-0" aria-label="Close">
-                        <FiX className="w-4 h-4 text-gray-400" />
+                        <X className="w-4 h-4 text-gray-400" />
                     </button>
                 </div>
 
@@ -426,7 +410,7 @@ function DetailsPanel({
                     <div>
                         <SectionLabel>Asset Count</SectionLabel>
                         <div className="flex items-center gap-1.5 text-indigo-600 text-sm font-medium">
-                            <FiDatabase className="w-4 h-4" />
+                            <Database className="w-4 h-4" />
                             {isSubdomain ? subdomain!.assets : domain.assets} assets
                         </div>
                     </div>
@@ -449,11 +433,11 @@ function DetailsPanel({
                         <SectionLabel>External Links</SectionLabel>
                         {(isSubdomain ? subdomain!.externalLinks ?? [] : domain.externalLinks ?? []).map((link, i) => (
                             <a key={i} href={link.url} className="flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-                                <FiLink className="w-3.5 h-3.5 flex-shrink-0" /> {link.label}
+                                <Link className="w-3.5 h-3.5 flex-shrink-0" /> {link.label}
                             </a>
                         ))}
                         <button className="mt-1.5 text-sm text-indigo-600 hover:underline flex items-center gap-1">
-                            <FiPlus className="w-3.5 h-3.5" /> Add Link
+                            <Plus className="w-3.5 h-3.5" /> Add Link
                         </button>
                     </div>
                 </div>
@@ -486,7 +470,7 @@ function DetailsPanel({
                     )}
                 </div>
                 <button onClick={onClose} className="p-1.5 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-shrink-0 ml-2" aria-label="Close panel">
-                    <FiX className="w-4 h-4 text-gray-400" />
+                    <X className="w-4 h-4 text-gray-400" />
                 </button>
             </div>
 
@@ -498,7 +482,7 @@ function DetailsPanel({
                 <div>
                     <SectionLabel>Owner</SectionLabel>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <FiUser className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         {isSubdomain ? (subdomain!.owner || "—") : domain.owner}
                     </div>
                 </div>
@@ -506,7 +490,7 @@ function DetailsPanel({
                 <div>
                     <SectionLabel>Asset Count</SectionLabel>
                     <div className="flex items-center gap-1.5 text-indigo-600 text-sm font-medium">
-                        <FiDatabase className="w-4 h-4" />
+                        <Database className="w-4 h-4" />
                         {isSubdomain ? subdomain!.assets : domain.assets} assets
                     </div>
                 </div>
@@ -534,7 +518,7 @@ function DetailsPanel({
                     {(isSubdomain ? subdomain!.externalLinks ?? [] : domain.externalLinks ?? []).length > 0 ? (
                         (isSubdomain ? subdomain!.externalLinks! : domain.externalLinks!).map((link, i) => (
                             <a key={i} href={link.url} className="flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-                                <FiLink className="w-3.5 h-3.5 flex-shrink-0" /> {link.label}
+                                <Link className="w-3.5 h-3.5 flex-shrink-0" /> {link.label}
                             </a>
                         ))
                     ) : (
@@ -568,17 +552,17 @@ function DetailsPanel({
                         onClick={startEdit}
                         className="flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
-                        <FiEdit2 className="w-3 h-3" /> Edit
+                        <Pencil className="w-3 h-3" /> Edit
                     </button>
                     <button className="flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <FiLink className="w-3 h-3" /> Assign Assets
+                        <Link className="w-3 h-3" /> Assign Assets
                     </button>
                 </div>
                 <button
                     onClick={() => onDelete(domain.id)}
                     className="flex items-center justify-center gap-1.5 py-1 text-xs font-medium text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 rounded-md hover:bg-red-50"
                 >
-                    <FiTrash2 className="w-3 h-3" /> Delete domain
+                    <Trash2 className="w-3 h-3" /> Delete domain
                 </button>
             </div>
         </div>
@@ -647,13 +631,13 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-gray-900">New Line of Business</h2>
                     <button onClick={onClose} className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close modal">
-                        <FiX className="w-5 h-5" />
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {error && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 flex items-center gap-2">
-                        <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         {error}
                     </div>
                 )}
@@ -701,7 +685,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
 
                 <div className="flex flex-col gap-2">
                     <button onClick={() => setAdvancedOpen((v) => !v)} className="flex items-center gap-1.5 text-slate-500 text-sm font-medium focus:outline-none rounded-md w-fit" aria-expanded={advancedOpen}>
-                        {advancedOpen ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                        {advancedOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         Advanced
                     </button>
                     {advancedOpen && (
@@ -728,7 +712,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                     />
                                 )}
                                 <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
-                                    <FiAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                                     Select a parent domain to create this as a sub-domain.
                                 </p>
                             </div>
@@ -759,7 +743,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                     </div>
                                 )}
                                 <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
-                                    <FiAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                                     Select a catalog to associate with this domain. This can be updated later.
                                 </p>
                             </div>
@@ -791,7 +775,7 @@ function OwnerDropdown({ value, onChange }: { value: string; onChange: (v: strin
                 aria-expanded={open}
             >
                 <span className="text-gray-700">{value || "All Owners"}</span>
-                <FiChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
             {open && (
                 <div className="absolute z-20 top-full left-0 mt-1 w-full min-w-[220px] bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
@@ -930,7 +914,7 @@ export default function LineOfBusiness() {
                         Collapse All
                     </button>
                     <button onClick={() => setModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Create new domain">
-                        <FiPlus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" />
                         New Domain
                     </button>
                 </div>
@@ -939,7 +923,7 @@ export default function LineOfBusiness() {
             {/* Toolbar */}
             <div className="bg-white border border-gray-200 rounded-md p-4 mb-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                    <FiSearch className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <input
                         type="text"
                         placeholder="Search domains and sub-domains..."
@@ -952,7 +936,7 @@ export default function LineOfBusiness() {
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="flex items-center gap-2.5">
                         <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                            <FiFilter className="w-4 h-4" />
+                            <Filter className="w-4 h-4" />
                             <span className="font-medium">Filters:</span>
                         </div>
                         <OwnerDropdown value={ownerFilter} onChange={setOwnerFilter} />
@@ -967,7 +951,7 @@ export default function LineOfBusiness() {
                             aria-label="List view"
                             aria-pressed={viewMode === "list"}
                         >
-                            <FiList className="w-4 h-4" />
+                            <List className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode("grid")}
@@ -975,7 +959,7 @@ export default function LineOfBusiness() {
                             aria-label="Grid view"
                             aria-pressed={viewMode === "grid"}
                         >
-                            <FiGrid className="w-4 h-4" />
+                            <Grid className="w-4 h-4" />
                         </button>
                     </div>
                 </div>

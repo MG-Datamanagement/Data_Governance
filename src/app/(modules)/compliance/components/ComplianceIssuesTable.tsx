@@ -32,6 +32,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
     {
       key: "issue",
       header: "Issue",
+      wrapText: true,
       render: (issue) => <div className="text-xs font-medium text-gray-800">{issue.issue}</div>
     },
     {
@@ -57,8 +58,9 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
     {
       key: "dataset",
       header: "Dataset",
+      wrapText: true,
       render: (issue) => (
-        <div className="text-xs text-gray-500 font-medium font-mono overflow-x-hidden overflow-y-auto max-h-20 w-auto">
+        <div className="text-xs text-gray-500 font-medium font-mono">
           {issue.dataset}
         </div>
       )

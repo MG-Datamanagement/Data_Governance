@@ -41,6 +41,7 @@ const QueryListView: React.FC<QueryListViewProps> = ({
     {
       key: "description",
       header: "Description",
+      wrapText: true,
       render: (row) => (
         <p className="text-sm text-gray-500 max-w-[250px] whitespace-normal">
           {row.description}

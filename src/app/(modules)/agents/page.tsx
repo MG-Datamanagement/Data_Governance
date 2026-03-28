@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Bot,
     Plus,
@@ -27,6 +27,8 @@ import { InlineState } from "@/components/ui/InlineState";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
 import { Pagination } from "@/components/ui/Pagination";
+
+
 
 export default function AgentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -108,6 +110,9 @@ export default function AgentsPage() {
             return matchesSearch && matchesStatus && matchesType;
         });
     }, [searchQuery, statusFilter, typeFilter]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => { setPage(1); }, [filteredAgents.length]);
 
     const paginatedAgents = useMemo(() => {
         const start = (page - 1) * pageSize;
@@ -200,11 +205,8 @@ export default function AgentsPage() {
             {/* Header section */}
             <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Bot size={28} className="text-indigo-600" />
-                        <h1 className="text-2xl font-bold text-gray-900">AI Agents</h1>
-                    </div>
-                    <p className="text-gray-500 text-sm">
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">AI Agents</h1>
+                    <p className="text-sm text-gray-500">
                         Manage, govern, and monitor autonomous AI agents operating on your data platform.
                     </p>
                 </div>

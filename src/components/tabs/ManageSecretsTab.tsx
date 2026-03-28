@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/logger';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Pagination } from '@/components/ui/Pagination';
+import { Spinner } from '@/components/ui/Spinner';
 
 const ManageSecretsTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -240,13 +241,13 @@ const ManageSecretsTab: React.FC = () => {
                 disabled={deleteMutation.isPending}
                 className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-lg transition-colors shadow-sm disabled:opacity-50"
               >
-                {deleteMutation.isPending ? (
+                {isMutating ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    Deleting...
+                    <Spinner size={14} className="text-white" />
+                    Saving...
                   </>
                 ) : (
-                  "Delete"
+                  'Save Secret'
                 )}
               </button>
             </div>

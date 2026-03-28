@@ -1,22 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Message, Source, ReasoningTool, ToolDetail } from "@/types";
-import { RiRobot2Line } from "react-icons/ri";
-import { FiUser } from "react-icons/fi";
-import { FiEdit2 } from "react-icons/fi";
-import { LuReply } from "react-icons/lu";
-import { MdOutlineContentCopy } from "react-icons/md";
-import { AiOutlineDislike } from "react-icons/ai";
-import { AiOutlineLike } from "react-icons/ai";
-import { IoRefreshSharp } from "react-icons/io5";
+import {
+  Bot, User, Pencil, CornerUpLeft, Copy, ThumbsDown, ThumbsUp,
+  RefreshCcw, Lightbulb, ChevronDown, ChevronRight, BookOpen,
+  Cpu, Database, ArrowRight, Circle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GoLightBulb } from "react-icons/go";
-import { FaChevronDown } from "react-icons/fa6";
-import { FaChevronRight } from "react-icons/fa6";
-import { FiBookOpen } from "react-icons/fi";
-import { IoHardwareChipOutline } from "react-icons/io5";
-import { FiDatabase } from "react-icons/fi";
-import { GoArrowRight } from "react-icons/go";
-import { GoDotFill } from "react-icons/go";
 
 interface ChatMessageProps {
   message: Message;
@@ -105,7 +94,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     >
       {message.role === "ai" && (
         <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
-          <RiRobot2Line size={16} />
+          <Bot size={16} />
         </div>
       )}
 
@@ -160,7 +149,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     onClick={handleEdit}
                     className="absolute -bottom-6 right-0 text-sm text-gray-500 hover:text-indigo-600 transition-all flex items-center gap-1"
                   >
-                    <FiEdit2 size={14} />
+                    <Pencil size={14} />
                     <span>Edit</span>
                   </button>
                 )}
@@ -181,12 +170,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 >
                   <span className="text-gray-400">
                     {showReasoning ? (
-                      <FaChevronDown size={10} />
+                      <ChevronDown size={10} />
                     ) : (
-                      <FaChevronRight size={10} />
+                      <ChevronRight size={10} />
                     )}
                   </span>
-                  <GoLightBulb size={12} className="text-indigo-600" />
+                  <Lightbulb size={12} className="text-indigo-600" />
                   <span className="text-[10px]">Show Reasoning</span>
                 </button>
 
@@ -210,7 +199,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                             key={idx}
                             className="inline-flex items-center gap-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-1 py-0.5 rounded-md"
                           >
-                            <IoHardwareChipOutline size={10} />
+                            <Cpu size={10} />
                             <span className="text-[10px]">
                               Tool: {tool.label}
                             </span>
@@ -230,11 +219,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     key={idx}
                     className="inline-flex items-center gap-1 bg-slate-50 border border-gray-200 px-2 py-1 rounded-md"
                   >
-                    <FiDatabase size={10} />
+                    <Database size={10} />
                     <span className="text-gray-800 font-medium text-[10px]">
                       {source.label}
                     </span>
-                    <GoDotFill size={5} className="text-gray-800 h-3" />
+                    <Circle size={4} className="text-gray-500 fill-gray-400" />
 
                     <span className="text-gray-500 text-[10px] ">
                       {source.type}
@@ -250,21 +239,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 title="Like"
                 aria-label="Like"
               >
-                <AiOutlineLike size={16} />
+                <ThumbsUp size={16} />
               </button>
               <button
                 className="rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-gray-50 hover:border-indigo-600 transition-all"
                 title="Dislike"
                 aria-label="Dislike"
               >
-                <AiOutlineDislike size={14} />
+                <ThumbsDown size={14} />
               </button>
               <button
                 className="rounded-md px-2.5 py-1.5 text-sm text-slate-600 hover:bg-gray-50 hover:border-indigo-600 transition-all"
                 title="Copy"
                 aria-label="Copy message"
               >
-                <MdOutlineContentCopy size={14} />
+                <Copy size={14} />
               </button>
 
               {message.error ? (
@@ -273,7 +262,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   title="Retry"
                   aria-label="Retry"
                 >
-                  <IoRefreshSharp size={14} />
+                  <RefreshCcw size={14} />
                 </button>
               ) : (
                 <button
@@ -284,7 +273,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     message.role === "ai" && handleReplyTo(message.content)
                   }
                 >
-                  <LuReply size={14} />
+                  <CornerUpLeft size={14} />
                 </button>
               )}
             </div>
@@ -300,7 +289,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <span className="text-[10px] font-medium">
                       {suggestion}
                     </span>
-                    <GoArrowRight size={12} />
+                    <ArrowRight size={12} />
                   </button>
                 ))}
               </div>
@@ -311,7 +300,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
       {message.role === "human" && (
         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <FiUser size={16} />
+          <User size={16} />
         </div>
       )}
     </div>

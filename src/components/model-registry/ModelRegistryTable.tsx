@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ModelListItem } from "@/types";
 import { BrainCircuit, Edit2, Trash2 } from "lucide-react";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
@@ -29,8 +29,12 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Reset to page 1 when filter results change
+  useEffect(() => { setPage(1); }, [models.length]);
+
   const paginatedModels = useMemo(() => {
-    const start = (page - 1) * pageSize;
+    const safePage = Math.min(page, Math.max(1, Math.ceil(models.length / pageSize)));
+    const start = (safePage - 1) * pageSize;
     return models.slice(start, start + pageSize);
   }, [models, page, pageSize]);
   const columns: DataGridColumn<ModelListItem>[] = [

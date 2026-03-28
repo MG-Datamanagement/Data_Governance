@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, BrainCircuit, Search, Filter, X, List, Grid, ChevronRight, Plus } from "lucide-react";
+import { BrainCircuit, Search, Filter, X, List, Grid, ChevronRight, Plus } from "lucide-react";
 import { ModelRegistryTable } from "@/components/model-registry/ModelRegistryTable";
 import { ModelRegistryGrid } from "@/components/model-registry/ModelRegistryGrid";
 import { ModelDetailModal } from "@/components/model-registry/ModelDetailModal";
