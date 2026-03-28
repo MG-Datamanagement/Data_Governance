@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
 import { 
-    Home, ChevronRight, Search, Filter, List, Grid, Plus, X, 
+    ChevronRight, Search, Filter, List, Grid, Plus, X, 
     ChevronDown, User, Database, Layers, AlertCircle, Pencil, 
     Trash2, Link, MoreVertical, LayoutDashboard, FolderTree 
 } from "lucide-react";
@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useLineOfBusinessQueries";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,20 +111,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
             {children}
         </p>
-    );
-}
-
-function Breadcrumb() {
-    const router = useRouter();
-    return (
-        <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-3" aria-label="Breadcrumb">
-            <Home className="w-3.5 h-3.5" />
-            <span className="hover:text-gray-700 cursor-pointer" onClick={() => router.push("/")}>Home</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="hover:text-gray-700">Governance</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-gray-900 font-medium">Line of Business</span>
-        </nav>
     );
 }
 
@@ -900,10 +887,16 @@ export default function LineOfBusiness() {
 
     return (
         <div className="min-h-screen bg-gray-50 px-6 py-6">
+            {/* Breadcrumb */}
+            <Breadcrumb items={[
+                { label: 'Home', href: '/' },
+                { label: 'Governance' },
+                { label: 'Line of Business' },
+            ]} />
+
             {/* Header */}
             <div className="flex items-start justify-between mb-5">
                 <div>
-                    <Breadcrumb />
                     <div className="flex items-center gap-2.5">
                         <FolderTree className="w-6 h-6 text-indigo-600" />
                         <h1 className="text-2xl font-semibold text-gray-900">Line of Business</h1>

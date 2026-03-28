@@ -441,6 +441,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             <Button
               onClick={exportList}
               isLoading={isExportListLoading}
+              variant="outline"
               icon={
                 !isExportListLoading ? (
                   <Download className="w-4 h-4" />

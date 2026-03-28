@@ -5,7 +5,8 @@ import { Connector, connectors } from "@/lib/mockConnectors";
 import SearchInput from "@/components/ui/SearchInput";
 import ConnectorCard from "@/components/connectors/ConnectorCard";
 import { logger } from "@/lib/logger";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 
 const DataConnectorsPage: React.FC = () => {
@@ -31,11 +32,11 @@ const DataConnectorsPage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-8 py-8">
 
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
-                    <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-gray-700 font-medium">Data Connectors</span>
-                </nav>
+                <Breadcrumb items={[
+                    { label: 'Home', href: '/' },
+                    { label: 'Governance' },
+                    { label: 'Data Connectors' },
+                ]} />
 
                 {/* Page Header */}
                 <div className="flex items-start justify-between mb-8">

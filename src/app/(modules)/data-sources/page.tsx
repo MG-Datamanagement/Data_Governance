@@ -11,25 +11,27 @@ import dynamic from "next/dynamic";
 import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 // ─── Lazy-loaded heavy modals (Phase 10.2) ────────────────────────────────────
 const AddDataSourceModal = dynamic(
-  () => import("@/components/modals/AddDataSourceModal"),
-  { ssr: false, loading: () => null },
+    () => import("@/components/modals/AddDataSourceModal"),
+    { ssr: false, loading: () => null },
 );
 const IngestionSidebar = dynamic(
-  () => import("@/components/ingestion/IngestionSidebar"),
-  { ssr: false, loading: () => null },
+    () => import("@/components/ingestion/IngestionSidebar"),
+    { ssr: false, loading: () => null },
 );
 import LiveIngestionPanel from "@/components/ingestion/LiveIngestionPanel";
 import ManageSecretsTab from "@/components/tabs/ManageSecretsTab";
 import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory } from "@/hooks/useDashboardQueries";
-import { RefreshCcw, AlertTriangle, ChevronRight, Plus, Search, ChevronDown } from "lucide-react";
+import { RefreshCcw, AlertTriangle, Plus, Search, ChevronDown } from "lucide-react";
 import { DataSourceTableRow, StatusBadge } from "@/components/data-sources/DataSourceTableRow";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
 import { Spinner } from "@/components/ui/Spinner";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { logger } from "@/lib/logger";
+
 
 
 
@@ -247,8 +249,8 @@ const ManageDataSourcesPage: React.FC = () => {
                     isOpen={showSidebar}
                     jobId={sidebarJobId}
                     sourceName={sidebarSourceName}
-                    onClose={(viewIngestedDataset: boolean = false) => { 
-                        setShowSidebar(false); 
+                    onClose={(viewIngestedDataset: boolean = false) => {
+                        setShowSidebar(false);
                         setAddDsConfig({});
                     }}
                 />
@@ -265,7 +267,7 @@ const ManageDataSourcesPage: React.FC = () => {
                             <h3 className="text-lg font-bold text-gray-900">Delete Data Source</h3>
                         </div>
                         <p className="text-sm text-gray-500 mb-6 font-medium">
-                            Are you sure you want to delete <span className="text-gray-900 font-bold">&quot;{sourceToDelete.name}&quot;</span>? 
+                            Are you sure you want to delete <span className="text-gray-900 font-bold">&quot;{sourceToDelete.name}&quot;</span>?
                             This action cannot be undone and will remove all associated metadata.
                         </p>
                         <div className="flex items-center justify-end gap-3">
@@ -300,11 +302,11 @@ const ManageDataSourcesPage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-8 py-8">
 
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
-                    <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-gray-600 font-medium">Data Sources</span>
-                </nav>
+                <Breadcrumb items={[
+                    { label: 'Home', href: '/' },
+                    { label: 'Governance' },
+                    { label: 'Data Sources' },
+                ]} />
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
@@ -343,170 +345,177 @@ const ManageDataSourcesPage: React.FC = () => {
 
                 {/* Toolbar */}
                 {activeTab !== "Secrets" && (
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        {/* Search */}
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search..."
-                                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                            />
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            {/* Search */}
+                            {activeTab === "Sources" && (
+                                <>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            placeholder="Search..."
+                                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+
+                             {/* Filter dropdown for Sources */}
+
+                                    <Select
+                                        value={filter}
+                                        onChange={(e) => setFilter(e.target.value)}
+                                        className="w-32 bg-white"
+                                        options={[
+                                            { value: "All", label: "All" },
+                                            { value: "Success", label: "Success" },
+                                            { value: "Failed", label: "Failed" },
+                                            { value: "Running", label: "Running" }
+                                        ]}
+                                    />
+                                </>
+                            )}
+
+                            {/* Filter dropdown for History */}
+                            {activeTab === "Run History" && (
+                                // <Select
+                                //     value={historyStatus}
+                                //     onChange={(e) => {
+                                //         setHistoryStatus(e.target.value);
+                                //         setHistoryOffset(0); // reset page on filter change
+                                //     }}
+                                //     className="w-36 bg-white"
+                                //     options={[
+                                //         { value: "All", label: "All Statuses" },
+                                //         { value: "Success", label: "Success" },
+                                //         { value: "Failed", label: "Failed" },
+                                //         { value: "Running", label: "Running" }
+                                //     ]}
+                                // />
+                                <>
+
+                                    <div className="text-xs text-gray-500 font-medium">View past ingestion and reingestion runs across all data sources</div>
+                                </>
+                            )}
                         </div>
 
-                        {/* Filter dropdown for Sources */}
-                        {activeTab === "Sources" && (
-                            <Select
-                                value={filter}
-                                onChange={(e) => setFilter(e.target.value)}
-                                className="w-32 bg-white"
-                                options={[
-                                    { value: "All", label: "All" },
-                                    { value: "Success", label: "Success" },
-                                    { value: "Failed", label: "Failed" },
-                                    { value: "Running", label: "Running" }
-                                ]}
-                            />
-                        )}
-
-                        {/* Filter dropdown for History */}
-                        {activeTab === "Run History" && (
-                            <Select
-                                value={historyStatus}
-                                onChange={(e) => {
-                                    setHistoryStatus(e.target.value);
-                                    setHistoryOffset(0); // reset page on filter change
-                                }}
-                                className="w-36 bg-white"
-                                options={[
-                                    { value: "All", label: "All Statuses" },
-                                    { value: "Success", label: "Success" },
-                                    { value: "Failed", label: "Failed" },
-                                    { value: "Running", label: "Running" }
-                                ]}
-                            />
-                        )}
+                        {/* Refresh */}
+                        <button
+                            onClick={() => activeTab === "Sources" ? refetchSources() : refetchHistory()}
+                            disabled={isLoading || isHistoryLoading}
+                            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+                            Refresh
+                        </button>
                     </div>
-
-                    {/* Refresh */}
-                    <button
-                        onClick={() => activeTab === "Sources" ? refetchSources() : refetchHistory()}
-                        disabled={isLoading || isHistoryLoading}
-                        className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-                        Refresh
-                    </button>
-                </div>
                 )}
 
                 {/* Content Layer */}
                 {activeTab === "Secrets" ? (
                     <ManageSecretsTab />
                 ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b border-gray-100">
-                                <th className="pl-4 pr-2 py-3 w-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={allChecked}
-                                        onChange={toggleAll}
-                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                </th>
-                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "Name" : "Source"}
-                                </th>
-                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "Schedule" : "Started"}
-                                </th>
-                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "Owner" : "Owner"}
-                                </th>
-                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "Last Run" : "Duration"}
-                                </th>
-                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "Status" : "Status"}
-                                </th>
-                                <th className="py-3 pr-4 w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                    {activeTab === "Sources" ? "" : "Details"}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeTab === "Sources" ? (
-                                isLoading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <tr key={i} className="border-b border-gray-100 animate-pulse">
-                                            <td className="p-4" colSpan={7}>
-                                                <div className="h-5 bg-gray-100 rounded w-full"></div>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <table className="w-full">
+                            {activeTab === "Sources" && <thead>
+                                <tr className="border-b border-gray-100">
+                                    <th className="pl-4 pr-2 py-3 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={allChecked}
+                                            onChange={toggleAll}
+                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                    </th>
+                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Name
+                                    </th>
+                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Schedule
+                                    </th>
+                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Owner
+                                    </th>
+                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Last Run
+                                    </th>
+                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Status
+                                    </th>
+                                    <th className="py-3 pr-4 w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        Details
+                                    </th>
+                                </tr>
+                            </thead>}
+                            <tbody>
+                                {activeTab === "Sources" ? (
+                                    isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <tr key={i} className="border-b border-gray-100 animate-pulse">
+                                                <td className="p-4" colSpan={7}>
+                                                    <div className="h-5 bg-gray-100 rounded w-full"></div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : sources.length > 0 ? (
+                                        sources.map((source: any) => (
+                                            <DataSourceTableRow
+                                                key={source.id}
+                                                source={source}
+                                                checked={checkedIds.has(source.id)}
+                                                activeJobId={activeJobs[source.id]}
+                                                onCheck={toggleOne}
+                                                onIngest={handleIngest}
+                                                onDelete={(s) => setSourceToDelete(s)}
+                                                onLiveError={(id) => {
+                                                    setActiveJobs(prev => {
+                                                        const next = { ...prev };
+                                                        delete next[id];
+                                                        return next;
+                                                    });
+                                                }}
+                                            />
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
+                                                {error || "No data sources found"}
                                             </td>
                                         </tr>
-                                    ))
-                                ) : sources.length > 0 ? (
-                                    sources.map((source: any) => (
-                                        <DataSourceTableRow
-                                            key={source.id}
-                                            source={source}
-                                            checked={checkedIds.has(source.id)}
-                                            activeJobId={activeJobs[source.id]}
-                                            onCheck={toggleOne}
-                                            onIngest={handleIngest}
-                                            onDelete={(s) => setSourceToDelete(s)}
-                                            onLiveError={(id) => {
-                                                setActiveJobs(prev => {
-                                                    const next = { ...prev };
-                                                    delete next[id];
-                                                    return next;
-                                                });
+                                    )
+                                ) : null}
+                            </tbody>
+                        </table>
+
+                        {activeTab === "Run History" && (
+                            <DataGrid
+                                data={runHistory?.results || []}
+                                columns={runHistoryColumns}
+                                isLoading={isHistoryLoading}
+                                keyExtractor={(run: any) => run.job_id}
+                                emptyStateMessage="No run history found"
+                                className="w-full border-none shadow-none rounded-none"
+                                maxHeight="500px"
+                                pagination={
+                                    runHistory && runHistory.total > 0 ? (
+                                        <Pagination
+                                            currentPage={Math.floor(historyOffset / historyLimit) + 1}
+                                            totalItems={runHistory.total}
+                                            pageSize={historyLimit}
+                                            pageSizeOptions={[10, 20, 50, 100]}
+                                            showCount
+                                            onPageChange={(page) => setHistoryOffset((page - 1) * historyLimit)}
+                                            onPageSizeChange={(size) => {
+                                                setHistoryLimit(size);
+                                                setHistoryOffset(0);
                                             }}
                                         />
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
-                                            {error || "No data sources found"}
-                                        </td>
-                                    </tr>
-                                )
-                            ) : null}
-                        </tbody>
-                    </table>
-
-                    {activeTab === "Run History" && (
-                        <DataGrid
-                            data={runHistory?.results || []}
-                            columns={runHistoryColumns}
-                            isLoading={isHistoryLoading}
-                            keyExtractor={(run: any) => run.job_id}
-                            emptyStateMessage="No run history found"
-                            className="w-full border-none shadow-none rounded-none"
-                            maxHeight="500px"
-                            pagination={
-                                runHistory && runHistory.total > 0 ? (
-                                    <Pagination
-                                        currentPage={Math.floor(historyOffset / historyLimit) + 1}
-                                        totalItems={runHistory.total}
-                                        pageSize={historyLimit}
-                                        pageSizeOptions={[10, 20, 50, 100]}
-                                        showCount
-                                        onPageChange={(page) => setHistoryOffset((page - 1) * historyLimit)}
-                                        onPageSizeChange={(size) => {
-                                            setHistoryLimit(size);
-                                            setHistoryOffset(0);
-                                        }}
-                                    />
-                                ) : undefined
-                            }
-                        />
-                    )}
-                </div>
+                                    ) : undefined
+                                }
+                            />
+                        )}
+                    </div>
                 )}
             </main>
         </div>

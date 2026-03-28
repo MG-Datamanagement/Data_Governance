@@ -14,13 +14,13 @@ import {
     X,
     ChevronRight,
     ChevronLeft,
-    Home as HomeIcon,
     BrainCircuit,
     User2,
     Clock,
     Upload,
     Settings
 } from 'lucide-react';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 import { useGetAgents } from "@/hooks/useDashboardQueries";
 import { InlineState } from "@/components/ui/InlineState";
@@ -193,19 +193,19 @@ export default function AgentsPage() {
         <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-6 bg-white min-h-screen text-gray-900">
 
             {/* Breadcrumb */}
-            <div className="flex items-center text-sm text-gray-500 gap-2">
-                <HomeIcon size={14} />
-                <span>Home</span>
-                <ChevronRight size={14} className="text-gray-400" />
-                <span>Governance</span>
-                <ChevronRight size={14} className="text-gray-400" />
-                <span className="font-semibold text-gray-900">Agents</span>
-            </div>
+            <Breadcrumb items={[
+                { label: 'Home', href: '/' },
+                { label: 'Governance' },
+                { label: 'Agents' },
+            ]} />
 
             {/* Header section */}
             <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">AI Agents</h1>
+                    <div className="flex items-center gap-2">
+                        <Bot size={24} className="text-indigo-600" />
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">AI Agents</h1>
+                    </div>
                     <p className="text-sm text-gray-500">
                         Manage, govern, and monitor autonomous AI agents operating on your data platform.
                     </p>

@@ -124,7 +124,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             : "",
         )}
       >
-        {/* <button
+        <button
           className={cn(
             "p-2 rounded-md hover:bg-gray-200 transition-colors flex-shrink-0",
             isDatasetModalOpen ? "bg-indigo-100 text-indigo-600 font-bold" : "",
@@ -133,7 +133,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           title="Add datasets to context"
         >
           <Table2 size={16} />
-        </button> */}
+        </button>
 
         <button
           className={cn(

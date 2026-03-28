@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, Search, Filter, X, List, Grid, ChevronRight, Plus } from "lucide-react";
+import { BrainCircuit, Search, Filter, X, List, Grid, Plus } from "lucide-react";
 import { ModelRegistryTable } from "@/components/model-registry/ModelRegistryTable";
 import { ModelRegistryGrid } from "@/components/model-registry/ModelRegistryGrid";
 import { ModelDetailModal } from "@/components/model-registry/ModelDetailModal";
 import { RegisterModelModal } from "@/components/model-registry/RegisterModelModal";
 import { MOCK_MODEL_LIST, MOCK_MODEL_METADATA } from "@/lib/mockData";
 import { Select } from "@/components/ui/Select";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 export default function ModelRegistryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,19 +59,20 @@ export default function ModelRegistryPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Governance' },
+          { label: 'Models' },
+        ]} />
+
         {/* Header container */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
-              <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-gray-400">Governance</span>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-gray-700 font-medium">Models</span>
-            </nav>
-
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Model Registry</h1>
+            <div className="flex items-center gap-2">
+              <BrainCircuit className="w-6 h-6 text-indigo-600" />
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Model Registry</h1>
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               Central governance and discovery for all machine learning models across the organization.
             </p>
@@ -95,7 +97,7 @@ export default function ModelRegistryPage() {
               placeholder="Search models by name, description, or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-sm transition-all"
+              className="w-full pl-11 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-sm transition-all"
             />
           </div>
 

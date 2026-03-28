@@ -14,29 +14,24 @@ import {
   DashboardEntityMetricsResponse,
   DashboardStats,
   DomainAsset,
-  DomainWithCount,
   NewRecentActivity,
   PlatformUsage,
   PlatformWithCount,
   RecentActivity,
-  RecentAssetsActivityResponse,
   RecentlyViewed,
-  RecentlyViewedDataset,
-  RecentlyViewedDatasetsResponse,
-  RecommendationContentItem,
-  RecommendationModule,
   TopDomainsWithCountsResponse,
   TopPlatformsWithCountsResponse,
-  DataSource,
-  DataSourceStatus,
-  DataSourceStats,
-  IngestionLog,
+} from "@/types/overview.types";
+import {
   ApiTag,
   ApiColumn,
+  CatalogTag,
+} from "@/types/catalog.types";
+import {
   ApiComplianceRunResponse,
   ApiComplianceFramework,
   ApiComplianceIssue,
-} from "@/types";
+} from "@/types/compliance.types";
 import { TopTagsResponse, TopTag } from "@/types/tagTypes";
 
 export interface ApiComplianceHealth {
@@ -385,11 +380,9 @@ export interface Catalog {
   tags: CatalogTag[];
 }
 
-export interface CatalogTag {
-  name: string;
-  color: string;
-  tag_id: string;
-}
+// CatalogTag is now defined in @/types/catalog.types and imported above.
+// Re-exported here for any consumers that still import it from this file.
+export type { CatalogTag } from "@/types/catalog.types";
 
 const config: AxiosRequestConfig = {
   headers: {

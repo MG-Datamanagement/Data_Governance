@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid';
 import { Pagination } from '@/components/ui/Pagination';
 import { Spinner } from '@/components/ui/Spinner';
+import { cn } from '@/lib/utils';
 
 const ManageSecretsTab: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -148,8 +149,9 @@ const ManageSecretsTab: React.FC = () => {
   return (
     <div className="animate-in fade-in duration-300">
       <SectionCard
-        title="Manage Secrets"
+        title=""
         description="Manage secrets used by data source connections"
+        className={cn('bg-transparent border-none shadow-none')}
         headerAction={
           <Button
             onClick={() => {
@@ -183,7 +185,7 @@ const ManageSecretsTab: React.FC = () => {
               <p className="text-sm text-gray-500">Add a new secret to manage your data source connections securely.</p>
             </div>
           }
-          className="border-none shadow-none"
+          className="shadow-none"
           pagination={
             secrets.length > pageSize ? (
               <Pagination

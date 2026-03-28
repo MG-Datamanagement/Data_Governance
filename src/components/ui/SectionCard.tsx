@@ -22,7 +22,7 @@ export function SectionCard({
 }: SectionCardProps) {
   return (
     <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden", className)}>
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+      <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <h2 className="text-md font-bold text-gray-900">{title}</h2>

@@ -1,7 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { Home, Tag, Trash2, Edit2, AlertTriangle, ChevronRight, Plus } from 'lucide-react'
+import {
+  Trash2, Edit2, AlertTriangle, Plus, Filter, TagIcon,
+  List, LayoutGrid, CheckCircle2, XCircle, Shield, Tag as TagIconLucide
+} from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
 import { CreateTagRequest } from '@/types/tagTypes'
@@ -10,7 +13,107 @@ import { useAppStore } from '@/store/appStore'
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
 import { Select } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { logger } from '@/lib/logger'
+
+// ─── Tag Grid Card ────────────────────────────────────────────────────────────
+
+function TagStatusBadge({ status }: { status: string }) {
+  if (status === 'active') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+        <CheckCircle2 className="w-3 h-3" />
+        Active
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+      <XCircle className="w-3 h-3" />
+      Inactive
+    </span>
+  )
+}
+
+function TagGridCard({
+  tag,
+  onEdit,
+  onDelete,
+}: {
+  tag: any
+  onEdit: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col gap-3">
+      {/* Card Header: colored dot + name + status badge */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className="inline-block w-3 h-3 rounded-full flex-shrink-0 mt-0.5"
+            style={{ backgroundColor: tag.color }}
+          />
+          <h3 className="text-base font-bold text-gray-900 leading-tight truncate">{tag.name}</h3>
+        </div>
+        <TagStatusBadge status={tag.status} />
+      </div>
+
+      {/* Description */}
+      <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 min-h-[40px]">
+        {tag.description || 'No description provided.'}
+      </p>
+
+      {/* Type + Security pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2.5 py-1">
+          <Shield className="w-3 h-3 text-gray-500 flex-shrink-0" />
+          {tag.tag_type.charAt(0).toUpperCase() + tag.tag_type.slice(1)}
+        </span>
+        <span className={`inline-flex items-center text-xs font-medium rounded-full px-2.5 py-1 ${
+          tag.security_policy === 'high'
+            ? 'bg-red-100 text-red-700'
+            : tag.security_policy === 'medium'
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-green-100 text-green-700'
+        }`}>
+          {tag.security_policy.charAt(0).toUpperCase() + tag.security_policy.slice(1)} Sensitivity
+        </span>
+      </div>
+
+      {/* Footer: dataset + column counts + actions */}
+      <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full px-2.5 py-1">
+            {tag.dataset_count ?? 0} Datasets
+          </span>
+          <span className="text-sm text-gray-500">
+            {tag.column_count ?? 0} Columns
+          </span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => onEdit(tag.id)}
+            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+            title="Edit tag"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(tag.id)}
+            className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+            title="Delete tag"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TagsPage() {
   const { addToast, updateToast } = useAppStore()
@@ -31,6 +134,7 @@ export default function TagsPage() {
   const [owners, setOwners] = useState<ApiOwner[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 
   // React Query hooks
   const { data: tags = [], isLoading, error } = useGetTags({
@@ -43,7 +147,7 @@ export default function TagsPage() {
 
   const { data: ownersData } = useGetOwnersList()
   const ownersList = useMemo(() => (ownersData as ApiOwner[]) || [], [ownersData])
-  
+
   useEffect(() => {
     if (ownersList.length > 0) {
       setOwners(ownersList)
@@ -169,6 +273,14 @@ export default function TagsPage() {
     return matchesSearch
   })
 
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1) }, [filteredTags.length])
+
+  const paginatedTags = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredTags.slice(start, start + pageSize)
+  }, [filteredTags, page, pageSize])
+
   const columns: DataGridColumn<any>[] = [
     {
       key: "name",
@@ -176,7 +288,7 @@ export default function TagsPage() {
       render: (tag: any) => (
         <div className="flex items-center gap-3">
           <span
-            className="inline-block w-3 h-3 rounded-full"
+            className="inline-block w-3 h-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: tag.color }}
           />
           <span className="text-sm font-medium text-gray-900">{tag.name}</span>
@@ -205,8 +317,8 @@ export default function TagsPage() {
       header: "Status",
       render: (tag: any) => (
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-          tag.status === 'active' 
-            ? 'bg-green-100 text-green-700' 
+          tag.status === 'active'
+            ? 'bg-green-100 text-green-700'
             : 'bg-gray-100 text-gray-600'
         }`}>
           <span className={`w-1.5 h-1.5 rounded-full ${
@@ -256,19 +368,21 @@ export default function TagsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
+
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
-          <a href="/" className="hover:text-gray-600 transition-colors">Home</a>
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-gray-400">Governance</span>
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-gray-700 font-medium">Tags</span>
-        </nav>
+        <Breadcrumb items={[
+          { label: 'Home', href: '/' },
+          { label: 'Governance' },
+          { label: 'Tags' },
+        ]} />
 
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tag Management</h1>
+            <div className="flex items-center gap-2">
+              <TagIcon className="w-6 h-6 text-indigo-600" />
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Tag Management</h1>
+            </div>
             <p className="text-sm text-gray-500 mt-1">Configure and manage global tags for data classification, privacy, and retention.</p>
           </div>
           <button
@@ -280,22 +394,28 @@ export default function TagsPage() {
           </button>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search, Filters, and View Toggle */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6 border border-gray-200">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1 relative">
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Search tags by name or description..."
-              />
-              <svg className="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+          {/* Search row */}
+          <div className="flex-1 relative w-full mb-4">
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              placeholder="Search tags by name or description..."
+            />
+            <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          {/* Filters + view toggle row */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Filters:</span>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-600">Filters:</span>
+              </div>
               <Select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -319,21 +439,39 @@ export default function TagsPage() {
                 ]}
               />
             </div>
+
+            {/* List / Grid toggle */}
+            <div className="flex items-center border border-gray-200 rounded-lg p-0.5 bg-gray-50">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                title="Grid view"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Loading and Error States */}
+        {/* Error state */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
             Error loading tags. Please try again.
           </div>
         )}
 
-        {/* Table */}
-        {!error && (
+        {/* Content: List view */}
+        {!error && viewMode === 'list' && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <DataGrid
-              data={filteredTags.slice((page - 1) * pageSize, page * pageSize)}
+              data={paginatedTags}
               columns={columns}
               isLoading={isLoading}
               keyExtractor={(tag: any) => tag.id}
@@ -354,6 +492,73 @@ export default function TagsPage() {
               }
             />
           </div>
+        )}
+
+        {/* Content: Grid view */}
+        {!error && viewMode === 'grid' && (
+          isLoading ? (
+            /* Loading skeleton grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm animate-pulse">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-200" />
+                      <div className="h-4 bg-gray-200 rounded w-24" />
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded-full w-16" />
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="h-3 bg-gray-200 rounded w-full" />
+                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    <div className="h-6 bg-gray-200 rounded-full w-20" />
+                    <div className="h-6 bg-gray-200 rounded-full w-28" />
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded-full w-24" />
+                      <div className="h-4 bg-gray-200 rounded w-20" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredTags.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+              <TagIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
+              <p className="text-gray-500 font-medium">No tags found.</p>
+              <p className="text-gray-400 text-sm mt-1">Create your first tag to get started.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginatedTags.map((tag: any) => (
+                  <TagGridCard
+                    key={tag.id}
+                    tag={tag}
+                    onEdit={handleOpenModal}
+                    onDelete={handleDeleteTag}
+                  />
+                ))}
+              </div>
+              {/* Grid pagination */}
+              {filteredTags.length > pageSize && (
+                <div className="mt-5 bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-2">
+                  <Pagination
+                    currentPage={page}
+                    totalItems={filteredTags.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 20, 50]}
+                    showCount
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                  />
+                </div>
+              )}
+            </>
+          )
         )}
       </div>
 
@@ -515,8 +720,8 @@ export default function TagsPage() {
                         type="button"
                         onClick={() => setSelectedColor(color.hex)}
                         className={`w-8 h-8 rounded-full ${color.class} ${
-                          selectedColor === color.hex 
-                            ? 'ring-2 ring-offset-2 ring-gray-400' 
+                          selectedColor === color.hex
+                            ? 'ring-2 ring-offset-2 ring-gray-400'
                             : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-300'
                         } transition-all`}
                       />
