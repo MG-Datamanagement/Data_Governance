@@ -1,5 +1,6 @@
 import React from "react";
 import { InlineState } from "@/components/ui/InlineState";
+import { TableSkeleton } from "@/components/ui/Skeletons";
 import { cn } from "@/lib/utils";
 
 export interface DataGridColumn<T> {
@@ -88,8 +89,8 @@ export function DataGrid<T>({
           <tbody className="divide-y divide-gray-100 bg-white">
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length}>
-                  <InlineState type="loading" message="Loading data..." />
+                <td colSpan={columns.length} className="p-0 border-0">
+                  <TableSkeleton columns={columns.length} rows={5} />
                 </td>
               </tr>
             ) : data.length === 0 ? (

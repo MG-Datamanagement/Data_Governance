@@ -1,9 +1,10 @@
 import { Shield, Sparkles, ChevronUp } from "lucide-react";
 import dynamic from "next/dynamic";
+import { ChartSkeleton } from "@/components/ui/Skeletons";
 import { ComplianceScoreCard } from "@/components/ui/ComplianceScoreCard";
 const ComplianceTrendsChart = dynamic(
   () => import("@/components/charts/ComplianceTrendsChart").then((m) => ({ default: m.ComplianceTrendsChart })),
-  { ssr: false, loading: () => <div className="h-32 bg-gray-50 animate-pulse rounded-lg" /> }
+  { ssr: false, loading: () => <ChartSkeleton /> }
 );
 import { InlineState } from "@/components/ui/InlineState";
 import { ComplianceData } from "@/hooks/useComplianceData";

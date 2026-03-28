@@ -24,6 +24,7 @@ import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory } from "@/hooks/useDashboardQueries";
 import { RefreshCcw, AlertTriangle, Plus, Search, ChevronDown } from "lucide-react";
 import { DataSourceTableRow, StatusBadge } from "@/components/data-sources/DataSourceTableRow";
+import { TableSkeleton } from "@/components/ui/Skeletons";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
@@ -451,13 +452,11 @@ const ManageDataSourcesPage: React.FC = () => {
                             <tbody>
                                 {activeTab === "Sources" ? (
                                     isLoading ? (
-                                        Array.from({ length: 5 }).map((_, i) => (
-                                            <tr key={i} className="border-b border-gray-100 animate-pulse">
-                                                <td className="p-4" colSpan={7}>
-                                                    <div className="h-5 bg-gray-100 rounded w-full"></div>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        <tr>
+                                            <td colSpan={7} className="p-0 border-0">
+                                                <TableSkeleton columns={7} rows={5} />
+                                            </td>
+                                        </tr>
                                     ) : sources.length > 0 ? (
                                         sources.map((source: any) => (
                                             <DataSourceTableRow

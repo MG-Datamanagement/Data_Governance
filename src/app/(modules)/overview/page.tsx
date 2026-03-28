@@ -24,6 +24,7 @@ import {
   PlatformsSection,
 } from "@/components/overview/sections";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
 
 // ---------------------------------------------------------------------------
 // Inner content — rendered only after the critical stats fetch resolves
@@ -77,18 +78,27 @@ function OverviewContent() {
             <OverviewStatsGrid stats={stats.data!} />
 
             <div className="grid lg:grid-cols-12 gap-5">
-              <ComplianceSection query={frameworks} overviewQuery={complianceOverview} />
-              <AIGovernanceSection aiQuery={aiSnapshot} trendsQuery={riskTrends} />
-              <ActivitySection
-                activityQuery={activity}
-                recentlyViewedQuery={recentlyViewed}
-              />
+              <QueryErrorBoundary label="Compliance Section">
+                <ComplianceSection query={frameworks} overviewQuery={complianceOverview} />
+              </QueryErrorBoundary>
+              <QueryErrorBoundary label="AI Governance Section">
+                <AIGovernanceSection aiQuery={aiSnapshot} trendsQuery={riskTrends} />
+              </QueryErrorBoundary>
+              <QueryErrorBoundary label="Activity Section">
+                <ActivitySection
+                  activityQuery={activity}
+                  recentlyViewedQuery={recentlyViewed}
+                />
+              </QueryErrorBoundary>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {/* <DomainsSection query={domains} /> */}
-              <TopTagsSection query={topTags} />
-              <PlatformsSection query={platforms} />
+              <QueryErrorBoundary label="Top Tags Section">
+                <TopTagsSection query={topTags} />
+              </QueryErrorBoundary>
+              <QueryErrorBoundary label="Platforms Section">
+                <PlatformsSection query={platforms} />
+              </QueryErrorBoundary>
             </div>
           </div>
         </>

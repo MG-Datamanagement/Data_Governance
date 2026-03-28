@@ -40,38 +40,11 @@ function hasValidSession(request: NextRequest): boolean {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // ── Dev bypass ──────────────────────────────────────────────────────────────
-  // Remove this block once next-auth is fully configured.
-  const isDev = process.env.NODE_ENV !== "production";
-  if (isDev) {
-    const response = NextResponse.next();
-    // Still inject security headers even in dev
-    response.headers.set("X-Content-Type-Options", "nosniff");
-    response.headers.set("X-Frame-Options", "DENY");
-    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    return response;
-  }
-  // ── End dev bypass ──────────────────────────────────────────────────────────
-
-  // ── Production auth check ───────────────────────────────────────────────────
-  if (!hasValidSession(request)) {
-    const loginUrl = new URL("/login", request.url);
-    // Preserve the original destination so the login page can redirect back
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // ── Authenticated: add security headers ────────────────────────────────────
+  // ── Auth Disconnected ───────────────────────────────────────────────────────
+  // Authentication is currently disconnected. Bypass all auth checks and just inject security headers.
   const response = NextResponse.next();
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
-  );
-
   return response;
 }

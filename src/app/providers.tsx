@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
+// import { SessionProvider } from 'next-auth/react'; // disconnected — connect when auth is ready
 import { useState } from 'react';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -23,8 +23,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <SessionProvider>
+    // <SessionProvider>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </SessionProvider>
+    // </SessionProvider>
   );
 }

@@ -5,7 +5,8 @@ import {
   useUpdateSecret,
   useDeleteSecret
 } from '@/hooks/useDashboardQueries';
-import AddSecretModal from "../modals/AddSecretModal";
+import dynamic from 'next/dynamic';
+const AddSecretModal = dynamic(() => import('../modals/AddSecretModal'), { ssr: false });
 import { format } from 'date-fns';
 import { useAppStore } from '@/store/appStore';
 import { SectionCard } from '@/components/ui/SectionCard';

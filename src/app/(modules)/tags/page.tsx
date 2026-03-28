@@ -14,6 +14,7 @@ import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
 import { Select } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { CardSkeleton } from '@/components/ui/Skeletons'
 import { logger } from '@/lib/logger'
 
 // ─── Tag Grid Card ────────────────────────────────────────────────────────────
@@ -493,29 +494,7 @@ export default function TagsPage() {
             /* Loading skeleton grid */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm animate-pulse">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gray-200" />
-                      <div className="h-4 bg-gray-200 rounded w-24" />
-                    </div>
-                    <div className="h-6 bg-gray-200 rounded-full w-16" />
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="h-3 bg-gray-200 rounded w-full" />
-                    <div className="h-3 bg-gray-200 rounded w-3/4" />
-                  </div>
-                  <div className="flex gap-2 mb-4">
-                    <div className="h-6 bg-gray-200 rounded-full w-20" />
-                    <div className="h-6 bg-gray-200 rounded-full w-28" />
-                  </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex gap-2">
-                      <div className="h-6 bg-gray-200 rounded-full w-24" />
-                      <div className="h-4 bg-gray-200 rounded w-20" />
-                    </div>
-                  </div>
-                </div>
+                <CardSkeleton key={i} />
               ))}
             </div>
           ) : filteredTags.length === 0 ? (
