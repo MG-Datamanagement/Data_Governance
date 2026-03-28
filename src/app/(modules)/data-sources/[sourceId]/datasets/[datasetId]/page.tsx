@@ -21,6 +21,7 @@ import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import DatasetDataCardTab from "@/components/tabs/DatasetDataCardTab";
 import DatasetColumnsTab from "@/components/tabs/DatasetColumnsTab";
+import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import {
   useGetCatalogDetail,
@@ -382,26 +383,40 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         {/* Tab Body Container */}
         <div className="flex gap-4 mt-5">
           <div className="flex-1 min-w-0">
-            {activeTab === "DataCard" && <DatasetDataCardTab detail={detail} />}
+            {activeTab === "DataCard" && (
+              <QueryErrorBoundary label="DataCard Summary">
+                <DatasetDataCardTab detail={detail} />
+              </QueryErrorBoundary>
+            )}
             {activeTab === "Columns" && (
-              <DatasetColumnsTab catalogData={catalogData} datasetId={datasetId} />
+              <QueryErrorBoundary label="Columns Mapping">
+                <DatasetColumnsTab catalogData={catalogData} datasetId={datasetId} />
+              </QueryErrorBoundary>
             )}
             {activeTab === "Lineage" && (
-              <div
-                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
-                style={{ height: "600px" }}
-              >
-                <DatasetLineage datasetId={datasetId} datasetName={detail.name} />
-              </div>
+              <QueryErrorBoundary label="Data Lineage Graph">
+                <div
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                  style={{ height: "600px" }}
+                >
+                  <DatasetLineage datasetId={datasetId} datasetName={detail.name} />
+                </div>
+              </QueryErrorBoundary>
             )}
             {activeTab === "Properties" && (
-              <DatasetPropertiesTab catalogId={datasetId} />
+              <QueryErrorBoundary label="Extended Properties">
+                <DatasetPropertiesTab catalogId={datasetId} />
+              </QueryErrorBoundary>
             )}
             {activeTab === "Queries" && (
-              <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
+              <QueryErrorBoundary label="Dataset Queries">
+                <DatasetQueriesTab catalogId={datasetId} datasetName={catalogData?.table_name || ""} />
+              </QueryErrorBoundary>
             )}
             {activeTab === "Audit" && (
-              <DatasetAuditTab catalogId={datasetId} />
+              <QueryErrorBoundary label="Audit Trail">
+                <DatasetAuditTab catalogId={datasetId} />
+              </QueryErrorBoundary>
             )}
             {activeTab !== "DataCard" &&
               activeTab !== "Columns" &&

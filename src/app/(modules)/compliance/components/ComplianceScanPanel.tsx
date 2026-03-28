@@ -5,6 +5,7 @@ import { X, CheckCircle2, Bot, ChevronDown, ChevronUp, Loader2, DownloadIcon } f
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
+import { logger } from "@/lib/logger";
 
 type ScanSummary = {
   frameworks_scanned: number;
@@ -157,7 +158,7 @@ export function ComplianceScanPanel({
     try {
       await dashboardApiServices.exportComplianceReport();
     } catch (err) {
-      console.error("Failed to export compliance report:", err);
+      logger.error("Failed to export compliance report:", err);
       addToast("Failed to export report. Please try again.", "error");
       setIsDownloadingReport(false);
     } finally {

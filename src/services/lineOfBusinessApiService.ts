@@ -1,5 +1,6 @@
 import { dashboardApiClient } from "@/lib/api-clients/dashboardApiClient";
 import { AxiosRequestConfig } from "axios";
+import { logger } from "@/lib/logger";
 
 // ─── Types & Interfaces ──────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ export const lineOfBusinessApiService = {
     try {
       return await this.fetchLineOfBusinessList({ limit: 1000 });
     } catch (error) {
-      console.error("Failed to fetch domains:", error);
+      logger.error("Failed to fetch domains:", error);
       return [];
     }
   },
@@ -136,7 +137,7 @@ export const lineOfBusinessApiService = {
     try {
       return await this.fetchLineOfBusinessList({ limit: 1000 });
     } catch (error) {
-      console.error("Failed to fetch all Line of Business:", error);
+      logger.error("Failed to fetch all Line of Business:", error);
       return [];
     }
   },
@@ -205,7 +206,7 @@ export const lineOfBusinessApiService = {
       const domains = await this.fetchLineOfBusinessList({ limit: 1000 });
       return domains.filter(d => d.id && d.name);
     } catch (error) {
-      console.error("Failed to fetch domains for parent selection:", error);
+      logger.error("Failed to fetch domains for parent selection:", error);
       return [];
     }
   },
@@ -231,7 +232,7 @@ export const lineOfBusinessApiService = {
 
       return [];
     } catch (error) {
-      console.error("Failed to fetch catalogs:", error);
+      logger.error("Failed to fetch catalogs:", error);
       return [];
     }
   },

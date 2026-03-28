@@ -43,6 +43,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="http://172.188.2.173:8005" />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ErrorBoundary>
           <Providers>

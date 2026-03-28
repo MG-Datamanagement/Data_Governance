@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/appStore'
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
 import { Select } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
+import { logger } from '@/lib/logger'
 
 export default function TagsPage() {
   const { addToast, updateToast } = useAppStore()
@@ -133,7 +134,7 @@ export default function TagsPage() {
       updateToast(toastId, isUpdating ? "Tag updated successfully" : "Tag created successfully", "success")
       handleCloseModal()
     } catch (error) {
-      console.error('Error saving tag:', error)
+      logger.error('Error saving tag:', error)
       updateToast(toastId, 'Failed to save tag. Please try again.', 'error')
     }
   }
@@ -152,7 +153,7 @@ export default function TagsPage() {
       setShowDeleteModal(false)
       setTagToDelete(null)
     } catch (error) {
-      console.error('Error deleting tag:', error)
+      logger.error('Error deleting tag:', error)
       updateToast(toastId, 'Failed to delete tag. Please try again.', 'error')
     }
   }

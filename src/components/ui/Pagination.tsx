@@ -106,6 +106,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           icon={<ChevronLeft size={compact ? 14 : 16} />}
+          aria-label="Previous Page"
         >
           {compact ? "" : "Previous"}
         </Button>
@@ -122,6 +123,8 @@ export function Pagination({
                 <button
                   key={p}
                   onClick={() => onPageChange(p as number)}
+                  aria-label={`Go to page ${p}`}
+                  aria-current={p === currentPage ? "page" : undefined}
                   className={cn(
                     "w-7 h-7 rounded-md text-xs font-medium transition-colors",
                     p === currentPage
@@ -143,6 +146,7 @@ export function Pagination({
           disabled={currentPage >= totalPages}
           icon={<ChevronRight size={compact ? 14 : 16} />}
           className="flex-row-reverse"
+          aria-label="Next Page"
         >
           {compact ? "" : "Next"}
         </Button>

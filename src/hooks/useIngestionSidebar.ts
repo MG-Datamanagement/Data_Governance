@@ -13,6 +13,7 @@ import { useAppStore } from "@/store/appStore";
 import { CONSTANTS } from "@/lib/constants";
 import { dashboardApiServices, SourceAiSummaryResponse } from "@/services/dashboardApiServices";
 import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from "@/hooks/useDashboardQueries";
+import { logger } from "@/lib/logger";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface IngestionLog {
@@ -120,7 +121,7 @@ export function useIngestionSidebar(
         });
       }, 0);
     } catch (e) {
-      console.error(e);
+      logger.error("Error fetching ingestion steps:", e);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ingestionStagesData, postIngestionStagesData, addDsConfig?.piiApproval, advanceStep]);
@@ -150,7 +151,7 @@ export function useIngestionSidebar(
         return combined;
       });
     } catch (e) {
-      console.error(e);
+      logger.error("Error appending post-ingestion steps:", e);
     }
   }, [steps, ingestionStepsCount, postIngestionStagesData, advanceStep]);
 
@@ -214,7 +215,7 @@ export function useIngestionSidebar(
         handleFetchIngestionSourceAiSummary(),
       ]);
     } catch (err) {
-      console.error("Error during classification and AI summary:", err);
+      logger.error("Error during classification and AI summary:", err);
     } finally {
       setIsSourceAiSummaryLoading(false);
     }
@@ -229,7 +230,7 @@ export function useIngestionSidebar(
         min_confidence: CONSTANTS.minConfidence,
       });
     } catch (err) {
-      console.error("Error during PII classification:", err);
+      logger.error("Error during PII classification (table):", err);
     }
   };
 
@@ -242,7 +243,7 @@ export function useIngestionSidebar(
         min_confidence: CONSTANTS.minConfidence,
       });
     } catch (err) {
-      console.error("Error during PII classification:", err);
+      logger.error("Error during PII classification (column):", err);
     }
   };
 
@@ -253,7 +254,7 @@ export function useIngestionSidebar(
       const response: SourceAiSummaryResponse = await dashboardApiServices.fetchIngestionAiSummary(addDsConfig?.sourceId);
       setSourceAiSummary(response);
     } catch (err) {
-      console.error("Error fetching AI summary:", err);
+      logger.error("Error fetching AI summary:", err);
       setSummaryError(true);
     } finally {
       setIsSourceAiSummaryLoading(false);
@@ -264,7 +265,7 @@ export function useIngestionSidebar(
     try {
       await dashboardApiServices.generateBulkSourceDatacards(addDsConfig?.sourceId);
     } catch (err) {
-      console.error("Error during bulk data cards generation:", err);
+      logger.error("Error during bulk data cards generation:", err);
     }
   };
 

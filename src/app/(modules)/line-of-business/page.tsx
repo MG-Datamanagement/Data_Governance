@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
 import { 
@@ -618,7 +619,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
             onCreate(form);
             onClose();
         } catch (err: any) {
-            console.error("Failed to create domain:", err);
+            logger.error("Failed to create domain:", err);
             setError(err.message || "Failed to create domain. Please try again.");
         } finally {
             setIsSubmitting(false);

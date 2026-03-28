@@ -19,6 +19,7 @@ import type { NewComplianceRule, NewComplianceSummary, NewComplianceResponse } f
 import { CompliantRule } from "../compliance-report/CompliantRule";
 import { ViolationRule } from "../compliance-report/ViolationRule";
 import { ComplianceScoreCards } from "../compliance-report/ComplianceScoreCards";
+import { logger } from "@/lib/logger";
 
 interface ComplianceReportModalProps {
   datasetName?: string;
@@ -66,7 +67,7 @@ const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
       });
       refetchCatalogDetails();
     } catch (err) {
-      console.error(err);
+      logger.error("Remediation request failed:", err);
     } finally {
       setIsRemediating(false);
     }

@@ -136,6 +136,7 @@ export function Sidebar() {
             <div className="space-y-1">
               {GOVERN_ITEMS.map((item) => (
                 <Link
+                  prefetch={false}
                   key={item.href}
                   href={item.href}
                   className={cn(
@@ -161,6 +162,7 @@ export function Sidebar() {
             <div className="space-y-1">
               {ADMIN_ITEMS.map((item) => (
                 <Link
+                  prefetch={false}
                   key={item.href}
                   href={item.href}
                   className={cn(
@@ -186,6 +188,7 @@ export function Sidebar() {
             <div className="space-y-1">
               {AI_ASSISTANT_ITEMS.map((item) => (
                 <Link
+                  prefetch={false}
                   key={item.href}
                   href={item.href}
                   className={cn(

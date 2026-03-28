@@ -1,5 +1,6 @@
 import { tagsApiClient } from '@/lib/api-clients/tagsApiClient'
 import { Tag, CreateTagRequest, UpdateTagRequest, GetTagsParams } from '@/types/tagTypes'
+import { logger } from '@/lib/logger'
 
 export const tagsApiService = {
   // Get all tags with optional filters
@@ -8,7 +9,7 @@ export const tagsApiService = {
       const tags = await tagsApiClient.getTags(params)
       return tags
     } catch (error) {
-      console.error('Error fetching tags:', error)
+      logger.error('Error fetching tags:', error)
       throw error
     }
   },
@@ -19,7 +20,7 @@ export const tagsApiService = {
       const tag = await tagsApiClient.createTag(data)
       return tag
     } catch (error) {
-      console.error('Error creating tag:', error)
+      logger.error('Error creating tag:', error)
       throw error
     }
   },
@@ -30,7 +31,7 @@ export const tagsApiService = {
       const tag = await tagsApiClient.updateTag(tagId, data)
       return tag
     } catch (error) {
-      console.error('Error updating tag:', error)
+      logger.error('Error updating tag:', error)
       throw error
     }
   },
@@ -40,9 +41,8 @@ export const tagsApiService = {
     try {
       await tagsApiClient.deleteTag(tagId)
     } catch (error) {
-      console.error('Error deleting tag:', error)
+      logger.error('Error deleting tag:', error)
       throw error
     }
   },
 }
-

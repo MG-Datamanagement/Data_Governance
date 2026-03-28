@@ -56,6 +56,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           <button
             className="text-xl opacity-60 hover:opacity-100 transition-opacity"
             onClick={onClose}
+            aria-label="Close notifications"
           >
             <X size={16} />
           </button>

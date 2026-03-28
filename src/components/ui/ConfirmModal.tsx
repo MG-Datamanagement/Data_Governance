@@ -43,6 +43,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onClose}
             className="p-2 -mr-2 -mt-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
             disabled={isLoading}
+            aria-label="Close"
+            type="button"
           >
             <X size={20} />
           </button>

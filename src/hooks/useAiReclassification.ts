@@ -2,6 +2,7 @@ import { useState } from "react";
 import { dashboardApiServices, ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
+import { logger } from "@/lib/logger";
 
 export function useAiReclassification(datasetId: string) {
   const [isReclassifyAiLoading, setIsReclassifyAiLoading] = useState(false);
@@ -30,7 +31,7 @@ export function useAiReclassification(datasetId: string) {
       setAiResults(map);
       setReclassifyAiScanPhase("complete");
     } catch (err) {
-      console.error("Error during AI reclassification:", err);
+      logger.error("Error during AI reclassification:", err);
       setReclassifyAiScanPhase("never");
     } finally {
       setIsReclassifyAiLoading(false);

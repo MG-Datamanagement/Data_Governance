@@ -7,7 +7,9 @@ import {
   MOCK_AI_SNAPSHOT,
   MOCK_MODEL_RISK_TRENDS,
 } from "@/lib/mockData";
+import { AxiosRequestConfig } from "axios";
 import { dashboardApiClient } from "@/lib/api-clients/dashboardApiClient";
+import { logger } from "@/lib/logger";
 import {
   DashboardEntityMetricsResponse,
   DashboardStats,
@@ -36,7 +38,6 @@ import {
   ApiComplianceIssue,
 } from "@/types";
 import { TopTagsResponse, TopTag } from "@/types/tagTypes";
-import { AxiosRequestConfig } from "axios";
 
 export interface ApiComplianceHealth {
   overall_compliance?: {
@@ -616,7 +617,7 @@ export const dashboardApiServices = {
         };
       });
     } catch (e) {
-      console.error(e);
+      logger.error("Failed to fetch recently viewed items:", e);
       return [];
     }
   },
@@ -891,7 +892,7 @@ export const dashboardApiServices = {
       }
       return await response.json();
     } catch (error) {
-      console.error(`Failed to trigger ReClassification with Ai for source ${reClassifyPayload?.source_id}:`, error);
+      logger.error(`Failed to trigger ReClassification with AI for source ${reClassifyPayload?.source_id}:`, error);
       throw error;
     }
   },
@@ -913,7 +914,7 @@ export const dashboardApiServices = {
       }
       return await response.json();
     } catch (error) {
-      console.error(`Failed to trigger ReClassification with Ai for source ${reClassificationActionPayload?.catalog_id}:`, error);
+      logger.error(`Failed to trigger ReClassification Action with AI for catalog ${reClassificationActionPayload?.catalog_id}:`, error);
       throw error;
     }
   },

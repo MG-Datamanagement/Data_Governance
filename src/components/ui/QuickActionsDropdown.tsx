@@ -64,6 +64,7 @@ export default function QuickActionsDropdown() {
     <div className="relative inline-block" ref={ref}>
       {/* Trigger Button */}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className={cn(
           "flex items-center gap-2 h-9 px-4 rounded-lg",
@@ -94,6 +95,7 @@ export default function QuickActionsDropdown() {
               ({ id, title, description, icon: Icon, iconBg, iconColor }) => (
                 <button
                   key={id}
+                  type="button"
                   className={cn(
                     "w-full flex items-start gap-4",
                     "p-3 rounded-md",

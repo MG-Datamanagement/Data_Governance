@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { useRouter } from "next/navigation";
 import { CONSTANTS } from "@/lib/constants";
 import { useRecentActivity } from "@/hooks/useDashboardQueries";
+import { logger } from "@/lib/logger";
 
 interface HeaderProps {
   userName: string;
@@ -45,7 +46,7 @@ export function Header({ userName }: HeaderProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
+    logger.debug("Searching for:", { query: searchQuery });
     // Implement search functionality
   };
 

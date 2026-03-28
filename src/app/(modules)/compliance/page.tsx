@@ -18,6 +18,7 @@ import { useState } from "react";
 import { dashboardApiServices } from "@/services/dashboardApiServices";
 import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
 import { useAppStore } from "@/store/appStore";
+import { logger } from "@/lib/logger";
 
 function ComplianceContent() {
   const { addToast, updateToast } = useAppStore();
@@ -32,7 +33,7 @@ function ComplianceContent() {
       await dashboardApiServices.exportComplianceReport();
       updateToast(toastId, "Report exported successfully", "success");
     } catch (err) {
-      console.error("Failed to export compliance report:", err);
+      logger.error("Failed to export compliance report:", err);
       updateToast(toastId, "Failed to export report. Please try again.", "error");
     } finally {
       setIsExporting(false);

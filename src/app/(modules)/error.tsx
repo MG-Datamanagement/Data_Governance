@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { ErrorFallback } from "@/components/Fallbacks";
+import { logger } from "@/lib/logger";
 
 export default function ErrorBoundary({
   error,
@@ -11,7 +12,7 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    logger.error("Uncaught route error:", error, { digest: error.digest });
   }, [error]);
 
   return <ErrorFallback error={error} resetErrorBoundary={reset} />;
