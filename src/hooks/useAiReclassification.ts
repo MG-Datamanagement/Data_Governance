@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { dashboardApiServices, ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
+import { dashboardApiServices, ReclassificationActionWithAiRequest } from "@/services/dashboardApi.service";
 import { CONSTANTS } from "@/lib/constants";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { logger } from "@/lib/logger";

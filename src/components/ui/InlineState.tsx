@@ -24,7 +24,7 @@ export const InlineState = ({ type, message, onRetry }: InlineStateProps) => {
 
       <p className="text-xs text-gray-500 max-w-xs">{message}</p>
 
-      {type === "error" && onRetry && (
+      {onRetry && (
         <button
           onClick={onRetry}
           className="mt-2 text-xs text-primary font-medium hover:underline"

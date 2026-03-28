@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { LayoutGrid, List, Plus, X, Info } from "lucide-react";
-import { datasourceApiServices } from "@/services/datasourceApiServices";
+import { datasourceApiServices } from "@/services/datasourceApi.service";
 import { ApiQuery, CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 import QueryListView from "../queries/QueryListView";
 import QueryGridView from "../queries/QueryGridView";

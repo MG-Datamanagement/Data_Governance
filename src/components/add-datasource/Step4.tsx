@@ -3,7 +3,7 @@
 import React from "react";
 import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 import { ConnectorDefinition } from "@/lib/connectors";
-import { ApiOwner } from "@/services/dashboardApiServices";
+import { ApiOwner } from "@/services/dashboardApi.service";
 import { Select } from "@/components/ui/Select";
 import { Checkbox } from "@/components/ui/Checkbox";
 import type { DataSourceConfig } from "./Step2";

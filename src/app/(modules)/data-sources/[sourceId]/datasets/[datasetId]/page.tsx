@@ -7,7 +7,7 @@ import {
   ClassificationResponse,
   ApiCatalogDetail,
   ApiCatalogDatacard,
-} from "@/services/dashboardApiServices";
+} from "@/services/dashboardApi.service";
 import { Dataset, ApiTag, ApiColumn } from "@/types";
 import dynamic from "next/dynamic";
 
@@ -64,8 +64,8 @@ import DatasetQueriesTab from "@/components/tabs/DatasetQueriesTab";
 import DatasetDetailSidebar from "@/components/datasets/DatasetDetailSidebar";
 import DatasetAuditTab from "@/components/tabs/DatasetAuditTab";
 import DatasetPropertiesTab from "@/components/tabs/DatasetPropertiesTab";
-import { ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
-import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
+import { ReclassificationActionWithAiRequest } from "@/services/dashboardApi.service";
+import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApi.service";
 import { useAppStore } from "@/store/appStore";
 const TABS = [
   "DataCard",

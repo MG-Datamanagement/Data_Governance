@@ -21,7 +21,7 @@ import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/Fallbacks";
-import { chatApiServices } from "@/services/chatApiServices";
+import { chatApiServices } from "@/services/chatApi.service";
 import { MOCK_AGENTS, MOCK_DATASETS } from "@/lib/mockChatData";
 import { CONSTANTS, MD_BREAKPOINT } from "@/lib/constants";
 import { useGetChatHistory } from "@/hooks/useDashboardQueries";

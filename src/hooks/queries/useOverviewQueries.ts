@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 
 export const STALE_1MIN = 60_000;
 export const STALE_5MIN = 5 * 60_000;

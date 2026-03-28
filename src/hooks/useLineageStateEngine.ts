@@ -4,7 +4,7 @@ import {
   LineageCentricResponse,
   LineageApiNodeCentric,
   LineageApiQueryExecution,
-} from "@/services/dashboardApiServices";
+} from "@/services/dashboardApi.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

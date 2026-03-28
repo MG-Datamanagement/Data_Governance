@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ClassificationResponse,
   SourceCatalogResponse,
-} from "@/services/dashboardApiServices";
+} from "@/services/dashboardApi.service";
 import { Dataset, ApiTag } from "@/types";
 import { downloadFileFromResponse, formatDateTime } from "@/lib/utils";
 import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Search, Filter, Table2, LayoutGrid, Sparkles } from "lucide-react";
@@ -190,7 +190,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
     setIsExportListLoading(true);
     const toastId = addToast("Exporting datasets...", "loading");
     try {
-      const { dashboardApiServices } = await import("@/services/dashboardApiServices");
+      const { dashboardApiServices } = await import("@/services/dashboardApi.service");
 
       const response: any = await dashboardApiServices.downloadSourceStats(
         sourceId,
@@ -221,7 +221,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
     setScannedDatasets(initialScanMap);
 
     try {
-      const { dashboardApiServices } = await import("@/services/dashboardApiServices");
+      const { dashboardApiServices } = await import("@/services/dashboardApi.service");
 
       const payload = {
         source_id: sourceId,

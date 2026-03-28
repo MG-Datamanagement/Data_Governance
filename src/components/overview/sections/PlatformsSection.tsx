@@ -31,8 +31,8 @@ export function PlatformsSection({ query }: Props) {
 
       {error && (
         <InlineState
-          type="error"
-          message="Failed to load platforms."
+          type="empty"
+          message="No platform activity detected currently."
           onRetry={refetch}
         />
       )}

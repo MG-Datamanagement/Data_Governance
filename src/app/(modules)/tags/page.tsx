@@ -8,7 +8,7 @@ import {
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
 import { CreateTagRequest } from '@/types/tagTypes'
-import { ApiOwner } from '@/services/dashboardApiServices'
+import { ApiOwner } from '@/services/dashboardApi.service'
 import { useAppStore } from '@/store/appStore'
 import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
 import { Select } from '@/components/ui/Select'
@@ -137,7 +137,7 @@ export default function TagsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 
   // React Query hooks
-  const { data: tags = [], isLoading, error } = useGetTags({
+  const { data: tags = [], isLoading, error, refetch } = useGetTags({
     tag_type: typeFilter || undefined,
     status: statusFilter || undefined,
   })
@@ -460,22 +460,15 @@ export default function TagsPage() {
           </div>
         </div>
 
-        {/* Error state */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 mb-6">
-            Error loading tags. Please try again.
-          </div>
-        )}
-
         {/* Content: List view */}
-        {!error && viewMode === 'list' && (
+        {viewMode === 'list' && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <DataGrid
               data={paginatedTags}
               columns={columns}
               isLoading={isLoading}
               keyExtractor={(tag: any) => tag.id}
-              emptyStateMessage="No tags found. Create your first tag to get started."
+              emptyStateMessage={error ? "Failed to load tags." : "No tags found. Create your first tag to get started."}
               className="border-none shadow-none rounded-none"
               pagination={
                 filteredTags.length > pageSize ? (
@@ -495,7 +488,7 @@ export default function TagsPage() {
         )}
 
         {/* Content: Grid view */}
-        {!error && viewMode === 'grid' && (
+        {viewMode === 'grid' && (
           isLoading ? (
             /* Loading skeleton grid */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -528,8 +521,8 @@ export default function TagsPage() {
           ) : filteredTags.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
               <TagIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
-              <p className="text-gray-500 font-medium">No tags found.</p>
-              <p className="text-gray-400 text-sm mt-1">Create your first tag to get started.</p>
+              <p className="text-gray-500 font-medium">{error ? "Failed to load tags." : "No tags found."}</p>
+              <p className="text-gray-400 text-sm mt-1">{error ? "Please try refreshing the page." : "Create your first tag to get started."}</p>
             </div>
           ) : (
             <>

@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 import type { NewComplianceRule, NewComplianceSummary, NewComplianceResponse } from "../compliance-report/compliance.types";
 import { CompliantRule } from "../compliance-report/CompliantRule";
 import { ViolationRule } from "../compliance-report/ViolationRule";

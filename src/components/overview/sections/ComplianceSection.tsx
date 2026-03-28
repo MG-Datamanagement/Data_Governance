@@ -59,8 +59,8 @@ function ComplianceContent({ query, overviewQuery }: Props) {
 
       {error && (
         <InlineState
-          type="error"
-          message="Failed to load compliance data."
+          type="empty"
+          message="No compliance data available at this time."
           onRetry={refetch}
         />
       )}

@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
 import { dataSources } from "@/lib/mockDataSources";
-import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from "@/services/dashboardApiServices";
+import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from "@/services/dashboardApi.service";
 import { DataSource } from "@/types";
 
 import dynamic from "next/dynamic";

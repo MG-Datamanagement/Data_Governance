@@ -66,7 +66,7 @@ export function TabNavigation({
         })}
       </nav>
       {rightAction && (
-        <div className="flex items-center gap-2 pb-2">
+        <div className="flex items-center gap-2 pb-1">
           {rightAction}
         </div>
       )}

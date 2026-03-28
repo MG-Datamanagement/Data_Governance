@@ -30,8 +30,8 @@ export function TopTagsSection({ query }: Props) {
 
       {error && (
         <InlineState
-          type="error"
-          message="Failed to load tags."
+          type="empty"
+          message="No tags available right now."
           onRetry={refetch}
         />
       )}

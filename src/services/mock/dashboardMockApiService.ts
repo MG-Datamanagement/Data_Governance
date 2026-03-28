@@ -1,4 +1,4 @@
-import { SourceCatalogResponse } from "../dashboardApiServices";
+import { SourceCatalogResponse } from "../dashboardApi.service";
 
 export interface Connector {
   id: string;

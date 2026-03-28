@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tagsApiService } from '@/services/tagsApiService'
+import { tagsApiService } from '@/services/tagsApi.service'
 import { CreateTagRequest, UpdateTagRequest, GetTagsParams } from '@/types/tagTypes'
 
 // Query keys

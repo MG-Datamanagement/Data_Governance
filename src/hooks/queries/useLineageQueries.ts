@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 
 const STALE_1MIN = 60_000;
 const STALE_INF = Infinity;

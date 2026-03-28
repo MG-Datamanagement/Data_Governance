@@ -8,7 +8,8 @@
 
 "use client";
 
-import { LoadingFallback, DataErrorFallback } from "@/components/Fallbacks";
+import { DataErrorFallback, EmptyState } from "@/components/Fallbacks";
+import { OverviewSkeleton } from "@/components/overview/OverviewSkeleton";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import QuickActionsDropdown from "@/components/ui/QuickActionsDropdown";
 import { useOverviewData } from "../../../hooks/useOverviewData";
@@ -44,10 +45,6 @@ function OverviewContent() {
     complianceOverview,
   } = useOverviewData();
 
-  // Stats is the page's "critical path" — block only on this one query
-  if (stats.isLoading) return <LoadingFallback />;
-  if (stats.error) return <DataErrorFallback retry={stats.refetch} />;
-
   const tabs = [
     { id: "overview", name: "Overview", href: "/overview" },
     { id: "compliance", name: "Compliance", href: "/compliance" },
@@ -58,31 +55,44 @@ function OverviewContent() {
       <TabNavigation 
         tabs={tabs} 
         activeTabId="overview" 
-        rightAction={<QuickActionsDropdown />} 
+        rightAction={<div className={stats.isLoading || !!stats.error ? "opacity-50 pointer-events-none" : ""}><QuickActionsDropdown /></div>} 
       />
-      <OverviewHeader />
-
-      {/* Main two-column layout */}
-      <div className="flex flex-col gap-5">
-        <OverviewStatsGrid
-          stats={stats.data!}
-        />
-
-        <div className="grid lg:grid-cols-12 gap-5">
-          <ComplianceSection query={frameworks} overviewQuery={complianceOverview} />
-          <AIGovernanceSection aiQuery={aiSnapshot} trendsQuery={riskTrends} />
-          <ActivitySection
-            activityQuery={activity}
-            recentlyViewedQuery={recentlyViewed}
+      
+      {stats.isLoading ? (
+        <OverviewSkeleton />
+      ) : stats.error ? (
+        <div className="pt-10">
+          <EmptyState 
+            title="Overview Unavailable" 
+            description="We couldn't load overview data at this time." 
+            action={{ label: "Retry", onClick: () => stats.refetch() }} 
           />
         </div>
+      ) : (
+        <>
+          <OverviewHeader />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* <DomainsSection query={domains} /> */}
-          <TopTagsSection query={topTags} />
-          <PlatformsSection query={platforms} />
-        </div>
-      </div>
+          {/* Main two-column layout */}
+          <div className="flex flex-col gap-5">
+            <OverviewStatsGrid stats={stats.data!} />
+
+            <div className="grid lg:grid-cols-12 gap-5">
+              <ComplianceSection query={frameworks} overviewQuery={complianceOverview} />
+              <AIGovernanceSection aiQuery={aiSnapshot} trendsQuery={riskTrends} />
+              <ActivitySection
+                activityQuery={activity}
+                recentlyViewedQuery={recentlyViewed}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* <DomainsSection query={domains} /> */}
+              <TopTagsSection query={topTags} />
+              <PlatformsSection query={platforms} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

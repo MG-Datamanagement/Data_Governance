@@ -44,7 +44,7 @@ export const dashboardKeys = {
 
 // ─── Chat hook (standalone — not yet split into its own module) ───────────────
 import { useQuery } from "@tanstack/react-query";
-import { chatApiServices } from "@/services/chatApiServices";
+import { chatApiServices } from "@/services/chatApi.service";
 
 const STALE_30S = 30_000;
 
@@ -57,7 +57,7 @@ export const useGetChatHistory = () =>
   });
 
 // ─── Top tags hook (overview-adjacent, kept here for compat) ─────────────────
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 
 const STALE_5MIN = 5 * 60_000;
 

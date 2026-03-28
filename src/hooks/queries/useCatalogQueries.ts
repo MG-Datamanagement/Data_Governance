@@ -5,8 +5,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
-import { datasourceApiServices } from "@/services/datasourceApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
+import { datasourceApiServices } from "@/services/datasourceApi.service";
 
 const STALE_1MIN = 60_000;
 const STALE_5MIN = 5 * 60_000;

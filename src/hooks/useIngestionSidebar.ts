@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
 import { CONSTANTS } from "@/lib/constants";
-import { dashboardApiServices, SourceAiSummaryResponse } from "@/services/dashboardApiServices";
+import { dashboardApiServices, SourceAiSummaryResponse } from "@/services/dashboardApi.service";
 import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from "@/hooks/useDashboardQueries";
 import { logger } from "@/lib/logger";
 

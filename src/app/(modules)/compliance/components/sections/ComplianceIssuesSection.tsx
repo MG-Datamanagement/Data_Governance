@@ -13,7 +13,7 @@ function IssuesContent({ issuesQuery }: Props) {
   const issues = runData?.open_issues?.items;
 
   if (isLoading) return <InlineState type="loading" message="Loading compliance issues..." />;
-  if (error) return <InlineState type="error" message="Failed to load compliance issues." onRetry={refetch} />;
+  if (error) return <InlineState type="empty" message="No open compliance issues found." onRetry={refetch} />;
   if (!issues || issues.length === 0) return <InlineState type="empty" message="No open compliance issues." />;
 
   return <ComplianceIssuesTable issues={issues} />;

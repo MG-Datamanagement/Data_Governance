@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
-import { lineOfBusinessApiService } from "@/services/lineOfBusinessApiService";
+import { lineOfBusinessApiService } from "@/services/lineOfBusinessApi.service";
 import { 
     ChevronRight, Search, Filter, List, Grid, Plus, X, 
     ChevronDown, User, Database, Layers, AlertCircle, Pencil, 

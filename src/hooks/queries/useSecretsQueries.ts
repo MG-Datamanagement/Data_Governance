@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 
 export const secretsQueryKeys = {
   all: ["secrets"] as const,

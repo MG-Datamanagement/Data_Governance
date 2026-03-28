@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, CheckCircle2, Bot, ChevronDown, ChevronUp, Loader2, DownloadIcon } from "lucide-react";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { logger } from "@/lib/logger";

@@ -44,7 +44,7 @@ export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
           <InlineState type="loading" message="Loading compliance frameworks..." />
         )}
         {error && (
-          <InlineState type="error" message="Failed to load frameworks." onRetry={refetch} />
+          <InlineState type="empty" message="No compliance frameworks configured." onRetry={refetch} />
         )}
         {!isLoading && !error && frameworks?.length === 0 && (
           <InlineState type="empty" message="No compliance frameworks configured." />

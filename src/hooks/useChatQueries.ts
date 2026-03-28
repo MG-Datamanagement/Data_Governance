@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { chatApiServices } from "@/services/chatApiServices";
+import { chatApiServices } from "@/services/chatApi.service";
 import { ChatRequest } from "@/types";
 
 export const useChatHistory = () => {

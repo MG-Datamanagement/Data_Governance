@@ -5,7 +5,7 @@ import { X, Bell, History, Check, Loader2, Database, Shield, Zap, Search, AlertC
 import { useAppStore } from '@/store/appStore';
 import { Button } from '@/components/ui/Button';
 import { CONSTANTS } from '@/lib/constants';
-import { dashboardApiServices, SourceAiSummaryResponse } from '@/services/dashboardApiServices';
+import { dashboardApiServices, SourceAiSummaryResponse } from '@/services/dashboardApi.service';
 import { useGetIngestionLoadingStages, useGetPostIngestionLoadingStages } from '@/hooks/useDashboardQueries';
 
 import { useRouter } from 'next/navigation';

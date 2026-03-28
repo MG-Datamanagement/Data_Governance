@@ -268,12 +268,8 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
 
           {!isLoading && hasError && (
             <InlineState
-              type="error"
-              message={
-                isRecent
-                  ? "Failed to load recent activity."
-                  : "Failed to load recently viewed."
-              }
+              type="empty"
+              message="No recent activity available."
               onRetry={onRetry}
             />
           )}

@@ -80,8 +80,8 @@ export function AIGovernanceSection({ aiQuery, trendsQuery }: Props) {
 
       {error && (
         <InlineState
-          type="error"
-          message="Unable to fetch AI metrics."
+          type="empty"
+          message="No AI metrics available at this time."
           onRetry={refetch}
         />
       )}

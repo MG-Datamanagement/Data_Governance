@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useState, useMemo } from "react";
-import { ApiOwner } from "@/services/dashboardApiServices";
+import { ApiOwner } from "@/services/dashboardApi.service";
 import { useAppStore } from "@/store/appStore";
 import { useGetOwnersList } from "@/hooks/useDashboardQueries";
 import { useCreateDataSource } from "@/hooks/useCreateDataSource";

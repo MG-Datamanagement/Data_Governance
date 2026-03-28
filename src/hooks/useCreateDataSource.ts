@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { dashboardApiServices } from "@/services/dashboardApiServices";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 import { useAppStore } from "@/store/appStore";
 
 export const useCreateDataSource = () => {

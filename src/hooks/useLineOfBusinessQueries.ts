@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { lineOfBusinessApiService } from '@/services/lineOfBusinessApiService';
+import { lineOfBusinessApiService } from '@/services/lineOfBusinessApi.service';
 
 export const lobKeys = {
   all: ['lineOfBusiness'] as const,

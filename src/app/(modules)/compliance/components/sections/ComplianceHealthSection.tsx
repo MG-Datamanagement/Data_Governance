@@ -98,8 +98,8 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
               )}
               {error && (
                 <InlineState
-                  type="error"
-                  message="Failed to load trends."
+                  type="empty"
+                  message="No trends data available right now."
                   onRetry={refetch}
                 />
               )}
