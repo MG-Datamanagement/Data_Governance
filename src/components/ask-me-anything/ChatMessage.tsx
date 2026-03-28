@@ -60,7 +60,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       textareaRef.current.style.height =
         textareaRef.current.scrollHeight + "px";
     }
-  }, [editedContent]);
+  }, [editedContent, isEditing]);
 
   const handleEdit = () => {
     setIsEditing(true);

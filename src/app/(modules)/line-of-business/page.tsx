@@ -200,7 +200,7 @@ function DomainRow({
                 onClick={onSelect}
                 role="button"
                 aria-expanded={expanded}
-                aria-selected={selected}
+                aria-pressed={selected}
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === "Enter") onSelect(); }}
             >
@@ -265,7 +265,7 @@ function DomainRow({
                             }`}
                         onClick={() => onSelectSubdomain(sd.id)}
                         role="button"
-                        aria-selected={isSelectedSd}
+                        aria-pressed={isSelectedSd}
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter") onSelectSubdomain(sd.id); }}
                     >
@@ -817,7 +817,7 @@ export default function LineOfBusiness() {
         if (domains.length > 0 && expandedDomains.size === 0) {
             setExpandedDomains(new Set(domains.map((d) => d.id)));
         }
-    }, [domains]);
+    }, [domains, expandedDomains.size]);
 
     // ─── Mock Data ────────────────────────────────────────────────────────────────
 

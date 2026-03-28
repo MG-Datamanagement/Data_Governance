@@ -21,7 +21,7 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
   const updateMutation = useUpdateCatalogProperty();
   const deleteMutation = useDeleteCatalogProperty();
 
-  const properties = propertiesData?.custom_properties || [];
+  const properties = useMemo(() => propertiesData?.custom_properties || [], [propertiesData]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -119,7 +119,7 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
           </div>
           <h3 className="text-base font-bold text-gray-900">No results found</h3>
           <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-            We couldn't find any properties matching "{searchQuery}".
+            We couldn&apos;t find any properties matching &quot;{searchQuery}&quot;.
           </p>
           <button
             onClick={() => setSearchQuery("")}

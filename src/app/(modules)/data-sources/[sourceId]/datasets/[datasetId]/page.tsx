@@ -209,7 +209,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           </div>
           <p className="text-gray-700 font-semibold">Dataset not found</p>
           <p className="text-gray-400 text-sm mt-1">
-            The dataset "{datasetId}" was not found or failed to load.
+            The dataset &quot;{datasetId}&quot; was not found or failed to load.
           </p>
           <button
             onClick={() => router.back()}

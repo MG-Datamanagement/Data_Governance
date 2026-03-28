@@ -265,7 +265,7 @@ const ManageDataSourcesPage: React.FC = () => {
                             <h3 className="text-lg font-bold text-gray-900">Delete Data Source</h3>
                         </div>
                         <p className="text-sm text-gray-500 mb-6 font-medium">
-                            Are you sure you want to delete <span className="text-gray-900 font-bold">"{sourceToDelete.name}"</span>? 
+                            Are you sure you want to delete <span className="text-gray-900 font-bold">&quot;{sourceToDelete.name}&quot;</span>? 
                             This action cannot be undone and will remove all associated metadata.
                         </p>
                         <div className="flex items-center justify-end gap-3">

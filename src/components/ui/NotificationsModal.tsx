@@ -22,12 +22,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   isError,
   isLoading,
 }) => {
-  if (!isOpen) return null;
-
   const isNotificationsEmpty = useMemo(
     () => !(notifications && notifications?.length),
     [notifications],
   );
+
+  if (!isOpen) return null;
 
 //   {
 //     !isLoading && !isError && isNotificationsEmpty && (

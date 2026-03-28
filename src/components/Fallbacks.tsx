@@ -81,7 +81,7 @@ export function DataErrorFallback({ retry }: { retry?: () => void }) {
           Failed to Load Data
         </h2>
         <p className="text-gray-600 mb-4">
-          We couldn't load the data. This might be a temporary issue.
+          We couldn&apos;t load the data. This might be a temporary issue.
         </p>
         {retry && (
           <button

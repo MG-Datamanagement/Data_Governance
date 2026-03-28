@@ -159,6 +159,7 @@ const LiveIngestionPanel: React.FC<LiveIngestionPanelProps> = ({ jobId, sourceId
             es.close();
             eventSourceRef.current = null;
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobId]);
 
     const handleNewLog = (log: IngestionLog) => {

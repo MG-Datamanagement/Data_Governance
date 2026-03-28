@@ -108,7 +108,7 @@ const IngestionSidebar: React.FC<IngestionSidebarProps> = ({ jobId, sourceName, 
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-gray-900">Ingestion started</p>
-                                <p className="text-xs text-gray-500 truncate">"{sourceName}" · {steps.length} steps identified</p>
+                                <p className="text-xs text-gray-500 truncate">&quot;{sourceName}&quot; · {steps.length} steps identified</p>
                             </div>
                         </div>
                     )}

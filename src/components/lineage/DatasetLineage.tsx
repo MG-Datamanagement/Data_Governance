@@ -82,7 +82,7 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
       setFixedNodeIds(prev => new Set(prev).add(nodeId));
       setShowSqlSidebar(false);
     }, 4000);
-  }, []);
+  }, [setFixedNodeIds]);
 
   const handleHeightChange = useCallback((id: string, h: number) => {
     setNodeHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }));
@@ -357,10 +357,10 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
         {/* Zoom controls */}
         <div className="absolute bottom-2 right-2 flex flex-col gap-1 z-10">
           {([
-            [<ZoomIn size={14} />, () => setScale((s) => Math.min(2, s + 0.1))],
-            [<ZoomOut size={14} />, () => setScale((s) => Math.max(0.25, s - 0.1))],
-            [<RotateCcw size={14} />, resetView],
-            [<Maximize2 size={14} />, fitToView],
+            [<ZoomIn key="in" size={14} />, () => setScale((s) => Math.min(2, s + 0.1))],
+            [<ZoomOut key="out" size={14} />, () => setScale((s) => Math.max(0.25, s - 0.1))],
+            [<RotateCcw key="reset" size={14} />, resetView],
+            [<Maximize2 key="fit" size={14} />, fitToView],
           ] as [React.ReactNode, () => void][]).map(([icon, handler], i) => (
             <button key={i} onClick={handler} className="w-8 h-8 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
               {icon}

@@ -25,7 +25,7 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
   const { data: queriesData, isLoading: isQueriesLoading, refetch: refetchQueries } = useGetDatasourceQueries(catalogId);
   const { data: ownersData, isLoading: isOwnersLoading } = useGetOwnersList();
 
-  const queries = queriesData?.user_queries || [];
+  const queries = useMemo(() => queriesData?.user_queries || [], [queriesData]);
   const ownersList = (ownersData as QueryOwner[]) || [];
   const isLoading = isQueriesLoading || isOwnersLoading;
 

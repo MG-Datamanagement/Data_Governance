@@ -109,7 +109,7 @@ export default function AgentsPage() {
 
             return matchesSearch && matchesStatus && matchesType;
         });
-    }, [searchQuery, statusFilter, typeFilter]);
+    }, [agents, searchQuery, statusFilter, typeFilter]);
 
     // Reset to page 1 when filters change
     useEffect(() => { setPage(1); }, [filteredAgents.length]);

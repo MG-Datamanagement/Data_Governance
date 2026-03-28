@@ -225,7 +225,7 @@ const ManageSecretsTab: React.FC = () => {
               <h3 className="text-lg font-bold text-gray-900">Delete Secret</h3>
             </div>
             <p className="text-sm text-gray-500 mb-6 font-medium">
-              Are you sure you want to delete <span className="text-gray-900 font-bold">"{secretToDelete.name}"</span>? 
+              Are you sure you want to delete <span className="text-gray-900 font-bold">&quot;{secretToDelete.name}&quot;</span>? 
               This action cannot be undone and may break connections relying on this secret.
             </p>
             <div className="flex items-center justify-end gap-3">

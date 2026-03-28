@@ -14,7 +14,7 @@
  *  - add-datasource/Step4.tsx       — Finish Up (summary, name, owner, PII, notifications)
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { ApiOwner } from "@/services/dashboardApiServices";
 import { useAppStore } from "@/store/appStore";
 import { useGetOwnersList } from "@/hooks/useDashboardQueries";
@@ -57,7 +57,7 @@ const AddDataSourceModal: React.FC<AddDataSourceModalProps> = ({ onClose, onSucc
 
   const { setAddDsConfig } = useAppStore();
   const { data: ownersData } = useGetOwnersList();
-  const owners = (ownersData as ApiOwner[]) || [];
+  const owners = useMemo(() => (ownersData as ApiOwner[]) || [], [ownersData]);
 
   useEffect(() => {
     if (owners.length > 0 && !finish.owner_id) {

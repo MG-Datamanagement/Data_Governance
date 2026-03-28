@@ -50,7 +50,7 @@ export default function TagsPage() {
         setOwnerId(ownersList[0].id)
       }
     }
-  }, [ownersList])
+  }, [ownersList, ownerId])
 
   const colors = [
     { name: 'blue', hex: '#3B82F6', class: 'bg-blue-500' },
