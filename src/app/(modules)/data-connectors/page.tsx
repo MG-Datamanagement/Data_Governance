@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Connector, connectors } from "@/lib/mockConnectors";
 import SearchInput from "@/components/ui/SearchInput";
-import ConnectorCard from "@/app/(data-connectors)/components/connectors/ConnectorCard";
+import ConnectorCard from "@/components/connectors/ConnectorCard";
 import { logger } from "@/lib/logger";
 
 

@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
+import { useAppStore } from "@/store/appStore";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: Dataset["status"] }> = ({ status }) => {
@@ -130,6 +132,7 @@ export interface DatasetScanState {
 
 const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } }) => {
   const router = useRouter();
+  const { addToast, updateToast } = useAppStore();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -144,6 +147,9 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
     Record<string, "scanning" | "pii" | "clean">
   >({});
   const [scanCount, setScanCount] = useState(0);
+
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const { data: stats, isLoading: isStatsLoading } = useGetSourceStats(sourceId);
 
@@ -182,6 +188,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
 
   const exportList = async () => {
     setIsExportListLoading(true);
+    const toastId = addToast("Exporting datasets...", "loading");
     try {
       const { dashboardApiServices } = await import("@/services/dashboardApiServices");
 
@@ -191,8 +198,10 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
         // statusFilter?.toLowerCase()
       );
       await downloadFileFromResponse(response);
+      updateToast(toastId, "Export successful", "success");
     } catch (err) {
       logger.error("Error exporting catalogs", { error: err });
+      updateToast(toastId, "Failed to export datasets", "error");
     } finally {
       setIsExportListLoading(false);
     }
@@ -202,6 +211,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
     setIsPiiScanLoading(true);
     setPiiScanPhase("scanning");
     setScanCount(0);
+    const toastId = addToast("Initiating PII classification scan...", "loading");
 
     // Mark all datasets as scanning
     const initialScanMap: Record<string, "scanning" | "pii" | "clean"> = {};
@@ -260,10 +270,12 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
       );
 
       setPiiScanPhase("complete");
+      updateToast(toastId, "PII scan completed successfully", "success");
     } catch (err) {
       logger.error("Error during PII classification", { error: err });
       setPiiScanPhase("never");
       setScannedDatasets({});
+      updateToast(toastId, "Failed to run PII classification", "error");
     } finally {
       setIsPiiScanLoading(false);
     }
@@ -286,6 +298,18 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
     }
     return list;
   }, [search, typeFilter, statusFilter, piiFilter, allDatasets]);
+
+  // Client-side pagination slice
+  const totalItems = filtered.length;
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filtered, page]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter, statusFilter, piiFilter]);
 
   const goToDetail = (datasetId: string) => {
     router.push(`/data-sources/${sourceId}/datasets/${datasetId}`);
@@ -551,35 +575,28 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
         {/* Table & Footer Wrapper */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
           <DataGrid
-            data={filtered}
+            data={paginatedData}
             columns={columns}
             isLoading={isLoading}
             keyExtractor={(dataset: any) => dataset.id}
             emptyStateMessage="No datasets found"
             className="border-none shadow-none rounded-none"
+            maxHeight="600px"
+            pagination={
+               filtered.length > 0 ? (
+                <div className="px-4 py-3 border-t border-gray-100 bg-white shadow-sm rounded-b-xl">
+                  <Pagination 
+                    currentPage={page}
+                    totalItems={filtered.length}
+                    pageSize={PAGE_SIZE}
+                    showCount
+                    compact
+                    onPageChange={setPage}
+                  />
+                </div>
+               ) : undefined
+            }
           />
-
-          {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white">
-            <span className="text-xs text-gray-400">
-              Showing {filtered.length} dataset
-              {filtered.length !== 1 ? "s" : ""}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40"
-                disabled
-              >
-                Previous
-              </button>
-              <button
-                className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40"
-                disabled
-              >
-                Next
-              </button>
-            </div>
-          </div>
         </div>
       </main>
     </div>

@@ -12,7 +12,7 @@ import { DataGrid, DataGridColumn } from '@/components/ui/DataGrid'
 import { Select } from '@/components/ui/Select'
 
 export default function TagsPage() {
-  const { addToast } = useAppStore()
+  const { addToast, updateToast } = useAppStore()
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [tagToDelete, setTagToDelete] = useState<string | null>(null)
@@ -120,16 +120,19 @@ export default function TagsPage() {
       owner_id: ownerId,
     }
 
+    const isUpdating = !!editingTag;
+    const toastId = addToast(isUpdating ? "Updating tag..." : "Creating tag...", "loading");
     try {
       if (editingTag) {
         await updateTagMutation.mutateAsync({ tagId: editingTag, data: tagData })
       } else {
         await createTagMutation.mutateAsync(tagData)
       }
+      updateToast(toastId, isUpdating ? "Tag updated successfully" : "Tag created successfully", "success")
       handleCloseModal()
     } catch (error) {
       console.error('Error saving tag:', error)
-      addToast('Failed to save tag. Please try again.', 'error')
+      updateToast(toastId, 'Failed to save tag. Please try again.', 'error')
     }
   }
 
@@ -140,14 +143,15 @@ export default function TagsPage() {
 
   const confirmDeleteTag = async () => {
     if (!tagToDelete) return
-
+    const toastId = addToast('Deleting tag...', 'loading')
     try {
       await deleteTagMutation.mutateAsync(tagToDelete)
+      updateToast(toastId, 'Tag deleted successfully', 'success')
       setShowDeleteModal(false)
       setTagToDelete(null)
     } catch (error) {
       console.error('Error deleting tag:', error)
-      addToast('Failed to delete tag. Please try again.', 'error')
+      updateToast(toastId, 'Failed to delete tag. Please try again.', 'error')
     }
   }
 
@@ -320,13 +324,6 @@ export default function TagsPage() {
         </div>
 
         {/* Loading and Error States */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p className="mt-2 text-gray-600">Loading tags...</p>
-          </div>
-        )}
-
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
             Error loading tags. Please try again.
@@ -334,11 +331,12 @@ export default function TagsPage() {
         )}
 
         {/* Table */}
-        {!isLoading && !error && (
+        {!error && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <DataGrid
               data={filteredTags}
               columns={columns}
+              isLoading={isLoading}
               keyExtractor={(tag: any) => tag.id}
               emptyStateMessage="No tags found. Create your first tag to get started."
               className="border-none shadow-none rounded-none"

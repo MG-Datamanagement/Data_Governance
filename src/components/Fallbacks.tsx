@@ -1,12 +1,13 @@
 'use client';
 
 import { AlertCircle, RefreshCcw, WifiOff, Database } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <Spinner size={48} className="mx-auto mb-4 text-primary" />
         <p className="text-gray-600">Loading...</p>
       </div>
     </div>

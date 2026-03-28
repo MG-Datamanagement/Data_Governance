@@ -1,27 +1,21 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useGetCatalogAuditTrail } from "@/hooks/useDashboardQueries";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { 
+import {
   Search,
   Filter,
   Download,
   Activity,
-  Database,
-  Shield,
-  Key,
   CheckCircle2,
   AlertTriangle,
   AlertCircle,
-  ShieldCheck,
-  DatabaseZap,
-  ChevronLeft,
-  ChevronRight
 } from "lucide-react";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface DatasetAuditTabProps {
   catalogId: string;
@@ -117,13 +111,6 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-8 flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 rounded-full border-4 border-t-indigo-500 border-indigo-100 animate-spin"></div>
-      </div>
-    );
-  }
 
   const columns: DataGridColumn<any>[] = [
     {
@@ -274,71 +261,45 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
       </div>
 
       {/* Activity Log Table */}
-      <SectionCard 
-        title="Activity Log" 
+      <SectionCard
+        title="Activity Log"
         badgeCount={`${total_log_count} events`}
         headerAction={
-          <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-            Showing all event types
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">Rows per page:</span>
+            <Select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+              className="py-0.5 px-2 bg-white text-gray-600 min-w-[70px] min-h-[28px] text-xs"
+              options={[
+                { value: "10", label: "10" },
+                { value: "20", label: "20" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" },
+              ]}
+            />
+          </div>
         }
       >
-
-        <div className="overflow-y-auto max-h-[500px] relative custom-scrollbar">
-          <DataGrid
-            data={activity_log || []}
-            columns={columns}
-            keyExtractor={(log: any) => log.id}
-            emptyStateMessage="No activity events found."
-            className="border-none shadow-none"
-          />
-        </div>
-
-        {/* Pagination */}
-        <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-xs bg-gray-50/50">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-gray-500 uppercase tracking-widest">
-              Showing {offset + 1}-{Math.min(offset + limit, total_log_count || 0)} of {total_log_count || 0} events
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">Rows per page:</span>
-              <Select 
-                value={limit}
-                onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                className="py-0.5 px-2 bg-white text-gray-600 min-w-[70px] min-h-[28px]"
-                options={[
-                  { value: "10", label: "10" },
-                  { value: "20", label: "20" },
-                  { value: "50", label: "50" },
-                  { value: "100", label: "100" }
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button 
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="p-1.5 border border-gray-200 text-gray-500 bg-white hover:bg-gray-50 rounded disabled:opacity-50 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-1">
-              <span className="px-3 py-1.5 rounded-md bg-indigo-50 text-indigo-600 font-bold">
-                {page}
-              </span>
-              <span className="text-gray-400 mx-1">of {totalPages}</span>
-            </div>
-            <button 
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="p-1.5 border border-gray-200 text-gray-500 bg-white hover:bg-gray-50 rounded disabled:opacity-50 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <DataGrid
+          data={activity_log || []}
+          columns={columns}
+          isLoading={isLoading}
+          keyExtractor={(log: any) => log.id}
+          emptyStateMessage="No activity events found."
+          className="border-none shadow-none rounded-none"
+          maxHeight="460px"
+          pagination={
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={total_log_count || 0}
+              pageSize={limit}
+              showCount
+              onPageChange={(p) => setPage(p)}
+            />
+          }
+        />
       </SectionCard>
     </div>
   );

@@ -18,7 +18,7 @@ const ManageSecretsTab: React.FC = () => {
   const [editingSecret, setEditingSecret] = useState<any>(null);
   const [secretToDelete, setSecretToDelete] = useState<any>(null);
 
-  const { addToast } = useAppStore();
+  const { addToast, updateToast } = useAppStore();
   const { data: secretsList, isLoading: isFetching } = useGetSecrets();
   const createMutation = useCreateSecret();
   const updateMutation = useUpdateSecret();
@@ -47,6 +47,8 @@ const ManageSecretsTab: React.FC = () => {
   };
 
   const handleSave = async (data: { name: string; type: string; value: string; description?: string }) => {
+    const isUpdate = !!editingSecret;
+    const toastId = addToast(isUpdate ? "Updating secret..." : "Adding secret...", "loading");
     try {
       if (editingSecret) {
         // Update
@@ -57,29 +59,30 @@ const ManageSecretsTab: React.FC = () => {
             description: data.description,
           }
         });
-        addToast("Secret updated successfully", "success");
+        updateToast(toastId, "Secret updated successfully", "success");
       } else {
         // Create
         await createMutation.mutateAsync(data);
-        addToast("Secret created successfully", "success");
+        updateToast(toastId, "Secret created successfully", "success");
       }
       setIsModalOpen(false);
       setEditingSecret(null);
     } catch (err) {
       logger.error("Failed to save secret", { error: err });
-      addToast("Failed to save secret. Please try again.", "error");
+      updateToast(toastId, "Failed to save secret. Please try again.", "error");
     }
   };
 
   const handleDelete = async () => {
     if (!secretToDelete) return;
+    const toastId = addToast(`Deleting secret "${secretToDelete.name}"...`, "loading");
     try {
       await deleteMutation.mutateAsync(secretToDelete.id);
-      addToast("Secret deleted successfully", "success");
+      updateToast(toastId, "Secret deleted successfully", "success");
       setSecretToDelete(null);
     } catch (err) {
       logger.error("Failed to delete secret", { error: err });
-      addToast("Failed to delete secret", "error");
+      updateToast(toastId, "Failed to delete secret", "error");
     }
   };
 

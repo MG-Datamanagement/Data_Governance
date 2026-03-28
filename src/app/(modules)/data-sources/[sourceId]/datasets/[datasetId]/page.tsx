@@ -14,13 +14,13 @@ import dynamic from "next/dynamic";
 // ─── Lazy-loaded heavy components (Phase 10.1 / 10.2) ────────────────────────
 // ComplianceReportModal: only needed when user clicks "Run Compliance Check"
 const ComplianceReportModal = dynamic(
-  () => import("@/app/(data-connectors)/components/modals/ComplianceReportModal"),
+  () => import("@/components/modals/ComplianceReportModal"),
   { ssr: false, loading: () => null },
 );
 import { formatDateTime, formatIST } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
-import DatasetDataCardTab from "@/app/(data-connectors)/components/tabs/DatasetDataCardTab";
-import DatasetColumnsTab from "@/app/(data-connectors)/components/tabs/DatasetColumnsTab";
+import DatasetDataCardTab from "@/components/tabs/DatasetDataCardTab";
+import DatasetColumnsTab from "@/components/tabs/DatasetColumnsTab";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import {
   useGetCatalogDetail,
@@ -37,7 +37,7 @@ import { TabNavigation } from "@/components/ui/TabNavigation";
 
 // DatasetLineage: heavy SVG + positioning engine — only needed on Lineage tab
 const DatasetLineage = dynamic(
-  () => import("@/app/(data-connectors)/components/lineage/DatasetLineage"),
+  () => import("@/components/lineage/DatasetLineage"),
   {
     ssr: false,
     loading: () => (
@@ -58,10 +58,10 @@ const DatasetLineage = dynamic(
     ),
   },
 );
-import DatasetQueriesTab from "@/app/(data-connectors)/components/tabs/DatasetQueriesTab";
-import DatasetDetailSidebar from "@/app/(data-connectors)/components/datasets/DatasetDetailSidebar";
-import DatasetAuditTab from "@/app/(data-connectors)/components/tabs/DatasetAuditTab";
-import DatasetPropertiesTab from "@/app/(data-connectors)/components/tabs/DatasetPropertiesTab";
+import DatasetQueriesTab from "@/components/tabs/DatasetQueriesTab";
+import DatasetDetailSidebar from "@/components/datasets/DatasetDetailSidebar";
+import DatasetAuditTab from "@/components/tabs/DatasetAuditTab";
+import DatasetPropertiesTab from "@/components/tabs/DatasetPropertiesTab";
 import { ReclassificationActionWithAiRequest } from "@/services/dashboardApiServices";
 import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApiServices";
 import { useAppStore } from "@/store/appStore";

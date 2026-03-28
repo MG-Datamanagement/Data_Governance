@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Search, Plus, Tag, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, Plus, Tag, Pencil, Trash2 } from "lucide-react";
 import AddPropertyModal from "../modals/AddPropertyModal";
-import { 
-  useGetCatalogProperties, 
-  useCreateCatalogProperty, 
-  useUpdateCatalogProperty, 
-  useDeleteCatalogProperty 
+import {
+  useGetCatalogProperties,
+  useCreateCatalogProperty,
+  useUpdateCatalogProperty,
+  useDeleteCatalogProperty
 } from "@/hooks/useDashboardQueries";
 import { formatDistanceToNow } from "date-fns";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
 import { InlineState } from "@/components/ui/InlineState";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function DatasetPropertiesTab({ catalogId }: { catalogId: string }) {
   const { data: propertiesData, isLoading } = useGetCatalogProperties(catalogId);
@@ -221,48 +222,30 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
             keyExtractor={(prop: any) => prop.id}
             emptyStateMessage="No properties found"
             className="border-t border-gray-100 shadow-none border-x-0 border-b-0 rounded-none w-full"
+            maxHeight="380px"
             pagination={
-              <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-xs bg-gray-50/50">
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-500 uppercase tracking-widest">
-                    Showing {offset + 1} to {Math.min(offset + limit, totalItems)} of {totalItems} properties
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400">Rows per page:</span>
-                    <Select 
-                      value={limit.toString()}
-                      onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                      className="bg-white py-0.5 px-2"
-                      options={[
-                        { value: "10", label: "10" },
-                        { value: "20", label: "20" },
-                        { value: "50", label: "50" }
-                      ]}
-                    />
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Rows per page:</span>
+                  <Select
+                    value={limit.toString()}
+                    onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                    className="bg-white py-0.5 px-2 text-xs"
+                    options={[
+                      { value: "10", label: "10" },
+                      { value: "20", label: "20" },
+                      { value: "50", label: "50" },
+                    ]}
+                  />
                 </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button 
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="flex items-center justify-center w-6 h-6 border border-gray-200 text-gray-500 bg-white hover:bg-gray-50 rounded disabled:opacity-50 transition-colors"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="flex items-center gap-1 mx-1 font-medium">
-                    <span className="text-gray-900">
-                      Page {page} of {totalPages}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages || totalPages === 0}
-                    className="flex items-center justify-center w-6 h-6 border border-gray-200 text-gray-500 bg-white hover:bg-gray-50 rounded disabled:opacity-50 transition-colors"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <Pagination
+                  currentPage={page}
+                  totalItems={totalItems}
+                  pageSize={limit}
+                  showCount
+                  compact
+                  onPageChange={(p) => setPage(p)}
+                />
               </div>
             }
           />

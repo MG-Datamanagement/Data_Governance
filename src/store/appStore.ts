@@ -1,12 +1,13 @@
 import { create } from "zustand";
 
 export type DatasetDetailTabType = "DataCard" | "Columns" | "Lineage" | "Properties" | "Queries" | "Audit";
-export type ToastType = "success" | "error" | "info" | "warning";
+export type ToastType = "success" | "error" | "info" | "warning" | "loading";
 
 export interface AppToast {
   id: string;
   message: string;
   type: ToastType;
+  duration?: number;
 }
 
 interface AppState {
@@ -39,7 +40,8 @@ interface AppState {
   toggleDarkMode: () => void;
   setAddDsConfig: (config: Record<string, any>) => void;
   
-  addToast: (message: string, type: ToastType) => void;
+  addToast: (message: string, type: ToastType, duration?: number) => string;
+  updateToast: (id: string, message: string, type: ToastType, duration?: number) => void;
   removeToast: (id: string) => void;
 }
 
@@ -72,14 +74,38 @@ export const useAppStore = create<AppState>((set) => ({
   setAddDsConfig: (config: Record<string, any>) =>
     set({ addDsConfig: { ...config } }),
 
-  addToast: (message, type) => {
+  addToast: (message, type, duration) => {
     const id = Math.random().toString(36).substring(2, 9);
-    set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
-    // Auto remove after 3s
-    setTimeout(() => {
-      set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
-    }, 3000);
+    const defaultDuration = type === "loading" ? 0 : 3000;
+    const finalDuration = duration !== undefined ? duration : defaultDuration;
+    
+    set((state) => ({ toasts: [...state.toasts, { id, message, type, duration: finalDuration }] }));
+    
+    if (finalDuration > 0) {
+      setTimeout(() => {
+        set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+      }, finalDuration);
+    }
+    return id;
   },
+  
+  updateToast: (id, message, type, duration) => {
+    const defaultDuration = type === "loading" ? 0 : 3000;
+    const finalDuration = duration !== undefined ? duration : defaultDuration;
+    
+    set((state) => ({
+      toasts: state.toasts.map((t) => 
+        t.id === id ? { ...t, message, type, duration: finalDuration } : t
+      )
+    }));
+    
+    if (finalDuration > 0) {
+      setTimeout(() => {
+        set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+      }, finalDuration);
+    }
+  },
+  
   removeToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 }));

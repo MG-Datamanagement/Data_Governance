@@ -1,5 +1,4 @@
 import React from "react";
-import { Loader2 } from "lucide-react";
 import { InlineState } from "@/components/ui/InlineState";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +19,15 @@ export interface DataGridProps<T> {
   emptyStateIcon?: React.ReactNode;
   keyExtractor: (row: T) => string | number;
   density?: "compact" | "normal";
+  /** Rendered below the table in the sticky footer slot */
   pagination?: React.ReactNode;
   className?: string;
+  /**
+   * Fixed height for the scrollable body area.
+   * Set to undefined/false to let the table grow naturally.
+   * Default: "420px"
+   */
+  maxHeight?: string | false;
 }
 
 export function DataGrid<T>({
@@ -35,15 +41,28 @@ export function DataGrid<T>({
   density = "normal",
   pagination,
   className,
+  maxHeight = "420px",
 }: DataGridProps<T>) {
-  const cellPadding = density === "compact" ? "px-4 py-2.5 text-[13px]" : "px-6 py-4 text-sm text-gray-700";
-  const headerPadding = density === "compact" ? "px-4 py-2.5 text-[11px]" : "px-6 py-3.5 text-xs text-gray-500";
+  const cellPadding =
+    density === "compact" ? "px-4 py-2.5 text-[13px]" : "px-6 py-4 text-sm text-gray-700";
+  const headerPadding =
+    density === "compact" ? "px-4 py-2.5 text-[11px]" : "px-6 py-3.5 text-xs text-gray-500";
 
   return (
-    <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full flex flex-col", className)}>
-      <div className="overflow-x-auto w-full">
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full flex flex-col",
+        className,
+      )}
+    >
+      {/* Scrollable table body */}
+      <div
+        className="overflow-auto w-full"
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         <table className="w-full text-left">
-          <thead className="bg-gray-50/80 border-b border-gray-200">
+          {/* Sticky header so it stays visible while scrolling */}
+          <thead className="bg-gray-50/80 border-b border-gray-200 sticky top-0 z-10">
             <tr>
               {columns.map((col) => (
                 <th
@@ -52,7 +71,11 @@ export function DataGrid<T>({
                   className={cn(
                     "font-bold uppercase tracking-wider whitespace-nowrap",
                     headerPadding,
-                    col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
+                    col.align === "right"
+                      ? "text-right"
+                      : col.align === "center"
+                        ? "text-center"
+                        : "text-left",
                   )}
                 >
                   {col.header}
@@ -83,7 +106,7 @@ export function DataGrid<T>({
                   onClick={() => onRowClick && onRowClick(row)}
                   className={cn(
                     "transition-colors group",
-                    onRowClick ? "cursor-pointer hover:bg-gray-50/80" : "hover:bg-gray-50/40"
+                    onRowClick ? "cursor-pointer hover:bg-gray-50/80" : "hover:bg-gray-50/40",
                   )}
                 >
                   {columns.map((col) => (
@@ -92,7 +115,11 @@ export function DataGrid<T>({
                       className={cn(
                         "whitespace-nowrap transition-colors",
                         cellPadding,
-                        col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
+                        col.align === "right"
+                          ? "text-right"
+                          : col.align === "center"
+                            ? "text-center"
+                            : "text-left",
                       )}
                     >
                       {col.render ? col.render(row) : (row as any)[col.key]}
@@ -104,8 +131,10 @@ export function DataGrid<T>({
           </tbody>
         </table>
       </div>
+
+      {/* Sticky pagination footer */}
       {pagination && (
-        <div className="border-t border-gray-200 bg-gray-50/50 px-2">
+        <div className="border-t border-gray-200 bg-white px-4 py-2 flex-shrink-0">
           {pagination}
         </div>
       )}

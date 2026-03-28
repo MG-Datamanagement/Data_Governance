@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { DataSource } from "@/types";
-import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
+import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 import { useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";

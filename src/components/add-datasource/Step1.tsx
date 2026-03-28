@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
+import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 import { CONNECTORS } from "@/lib/connectors";
 
 interface Step1Props {

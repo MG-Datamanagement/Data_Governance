@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { LayoutGrid, List, Plus, X, Info, Terminal, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
+import { LayoutGrid, List, Plus, X, Info } from "lucide-react";
 import { datasourceApiServices } from "@/services/datasourceApiServices";
 import { ApiQuery, CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 import QueryListView from "../queries/QueryListView";
@@ -12,6 +12,8 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useGetDatasourceQueries, useGetOwnersList } from "@/hooks/useDashboardQueries";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
+import { InlineState } from "@/components/ui/InlineState";
+import { Pagination } from "@/components/ui/Pagination";
 import { logger } from "@/lib/logger";
 
 interface DatasetQueriesTabProps {
@@ -32,10 +34,15 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
   const [previewQuery, setPreviewQuery] = useState<ApiQuery | null>(null);
   const [queryToDelete, setQueryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  const totalPages = Math.max(1, Math.ceil(queries.length / PAGE_SIZE));
+  const paginatedQueries = queries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleCreateQuery = async (data: CreateQueryRequest) => {
     try {
-      const response = await datasourceApiServices.createDatasetQuery(catalogId, data);
+      await datasourceApiServices.createDatasetQuery(catalogId, data);
       refetchQueries();
     } catch (error) {
       logger.error("Failed to create query", { error });
@@ -56,13 +63,16 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
     }
   };
 
-
   return (
     <SectionCard
       title="Highlighted Queries"
       description={
         <span>
-          Saved queries that reference the <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 font-mono text-xs border border-gray-200">{datasetName}</span> dataset
+          Saved queries that reference the{" "}
+          <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 font-mono text-xs border border-gray-200">
+            {datasetName}
+          </span>{" "}
+          dataset
         </span>
       }
       bodyClassName="bg-gray-50/30"
@@ -71,75 +81,52 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
           <div className="flex items-center bg-white p-1 rounded-lg border border-gray-200 shadow-sm mr-2">
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all ${viewMode === "list"
-                  ? "bg-gray-100 text-indigo-600 font-bold"
-                  : "text-gray-400 hover:text-gray-600"
-                }`}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === "list" ? "bg-gray-100 text-indigo-600 font-bold" : "text-gray-400 hover:text-gray-600"
+              }`}
               title="List View"
             >
               <List size={14} />
             </button>
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-all ${viewMode === "grid"
-                  ? "bg-gray-100 text-indigo-600 font-bold"
-                  : "text-gray-400 hover:text-gray-600"
-                }`}
+              className={`p-1.5 rounded-md transition-all ${
+                viewMode === "grid" ? "bg-gray-100 text-indigo-600 font-bold" : "text-gray-400 hover:text-gray-600"
+              }`}
               title="Grid View"
             >
               <LayoutGrid size={14} />
             </button>
           </div>
-
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            icon={<Plus size={16} strokeWidth={3} />}
-          >
+          <Button onClick={() => setIsModalOpen(true)} icon={<Plus size={16} strokeWidth={3} />}>
             Add Highlighted Query
           </Button>
         </>
       }
     >
-      <div className="p-5">
-        {/* Content Area */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
-          <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
-          <p className="text-gray-400 font-medium">Loading queries...</p>
+        <div className="p-5">
+          <InlineState type="loading" message="Loading queries..." />
         </div>
       ) : (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-400 p-5">
           {viewMode === "list" ? (
-            <QueryListView
-              queries={queries}
-              onDelete={setQueryToDelete}
-              datasetName={datasetName}
-            />
+            <QueryListView queries={paginatedQueries} onDelete={setQueryToDelete} datasetName={datasetName} />
           ) : (
-            <QueryGridView
-              queries={queries}
-              onDelete={setQueryToDelete}
-              datasetName={datasetName}
-            />
+            <QueryGridView queries={paginatedQueries} onDelete={setQueryToDelete} datasetName={datasetName} />
           )}
 
-          {/* Pagination Footer (Mock) */}
-          <div className="flex items-center justify-between bg-white px-4 py-2 rounded-md border border-gray-100 shadow-sm">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-              Showing 1-{queries.length} of {queries.length} Queries
+          {queries.length > 0 && (
+            <div className="mt-3 bg-white rounded-lg border border-gray-100 shadow-sm">
+              <Pagination
+                currentPage={page}
+                totalItems={queries.length}
+                pageSize={PAGE_SIZE}
+                showCount
+                onPageChange={(p) => setPage(p)}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <button aria-label="Previous Page" disabled className="p-2 rounded-lg border border-gray-100 text-gray-300 disabled:opacity-50">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="flex items-center gap-1">
-                <button className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs">1</button>
-              </div>
-              <button aria-label="Next Page" disabled className="p-2 rounded-lg border border-gray-100 text-gray-300 disabled:opacity-50">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -155,7 +142,6 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
         isLoading={isDeleting}
       />
 
-      {/* Modal: New Query */}
       <NewQueryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -163,7 +149,6 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
         ownersList={ownersList}
       />
 
-      {/* Modal: Preview SQL */}
       {previewQuery && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
@@ -187,7 +172,6 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
             </div>
             <div className="p-6">
               <QuerySqlPreview sql={previewQuery?.query_text || ""} maxHeight="500px" className="border-none shadow-inner" />
-
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold border border-gray-200 uppercase tracking-widest">
                   {datasetName}
@@ -210,7 +194,6 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
           </div>
         </div>
       )}
-      </div>
     </SectionCard>
   );
 };

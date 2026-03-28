@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
+import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 import { ConnectorDefinition } from "@/lib/connectors";
 import { ApiOwner } from "@/services/dashboardApiServices";
 import { Select } from "@/components/ui/Select";

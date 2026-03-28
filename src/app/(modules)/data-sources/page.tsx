@@ -8,24 +8,25 @@ import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from
 import { DataSource } from "@/types";
 
 import dynamic from "next/dynamic";
-import ConnectorIcon from "@/app/(data-connectors)/components/connectors/ConnectorIcon";
+import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 // ─── Lazy-loaded heavy modals (Phase 10.2) ────────────────────────────────────
 const AddDataSourceModal = dynamic(
-  () => import("@/app/(data-connectors)/components/modals/AddDataSourceModal"),
+  () => import("@/components/modals/AddDataSourceModal"),
   { ssr: false, loading: () => null },
 );
 const IngestionSidebar = dynamic(
-  () => import("@/app/(data-connectors)/components/ingestion/IngestionSidebar"),
+  () => import("@/components/ingestion/IngestionSidebar"),
   { ssr: false, loading: () => null },
 );
-import LiveIngestionPanel from "@/app/(data-connectors)/components/ingestion/LiveIngestionPanel";
-import ManageSecretsTab from "@/app/(data-connectors)/components/tabs/ManageSecretsTab";
+import LiveIngestionPanel from "@/components/ingestion/LiveIngestionPanel";
+import ManageSecretsTab from "@/components/tabs/ManageSecretsTab";
 import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory } from "@/hooks/useDashboardQueries";
 import { RefreshCcw, AlertTriangle, ChevronRight, Plus, Search, ChevronDown } from "lucide-react";
-import { DataSourceTableRow, StatusBadge } from "@/app/(data-connectors)/components/data-sources/DataSourceTableRow";
+import { DataSourceTableRow, StatusBadge } from "@/components/data-sources/DataSourceTableRow";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
 import { logger } from "@/lib/logger";
 
@@ -169,7 +170,7 @@ const ManageDataSourcesPage: React.FC = () => {
 
     const [sourceToDelete, setSourceToDelete] = useState<DataSource | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const { setAddDsConfig, addToast } = useAppStore();
+    const { setAddDsConfig, addToast, updateToast } = useAppStore();
 
     const toggleAll = () => {
         if (allChecked) {
@@ -190,16 +191,19 @@ const ManageDataSourcesPage: React.FC = () => {
     };
 
     const handleIngest = async (id: string) => {
+        const sourceName = sources.find((s: DataSource) => s.id === id)?.name || "source";
+        const toastId = addToast(`Starting ingestion for ${sourceName}...`, "loading");
         try {
             const response = await dashboardApiServices.ingestSource(id);
             if (response.job_id) {
                 setActiveJobs(prev => ({ ...prev, [id]: response.job_id }));
             }
+            updateToast(toastId, `Ingestion started for ${sourceName}`, "success");
             // Refresh data to show "running" status if the API updates it
             refetchSources();
         } catch (err) {
             logger.error("Failed to trigger ingestion", { error: err });
-            addToast("Failed to start ingestion", "error");
+            updateToast(toastId, "Failed to start ingestion", "error");
         }
     };
 
@@ -207,14 +211,15 @@ const ManageDataSourcesPage: React.FC = () => {
         if (!sourceToDelete) return;
 
         setIsDeleting(true);
+        const toastId = addToast(`Deleting source "${sourceToDelete.name}"...`, "loading");
         try {
             await dashboardApiServices.deleteSource(sourceToDelete.id);
-            addToast("Source Deleted Successfully", "success");
+            updateToast(toastId, "Source Deleted Successfully", "success");
             setSourceToDelete(null);
             refetchSources();
         } catch (err) {
             logger.error("Failed to delete source", { error: err });
-            addToast("Failed to delete source", "error");
+            updateToast(toastId, "Failed to delete source", "error");
         } finally {
             setIsDeleting(false);
         }
@@ -481,34 +486,21 @@ const ManageDataSourcesPage: React.FC = () => {
                             keyExtractor={(run: any) => run.job_id}
                             emptyStateMessage="No run history found"
                             className="w-full border-none shadow-none rounded-none"
+                            maxHeight="500px"
+                            pagination={
+                                runHistory && runHistory.total > HISTORY_LIMIT ? (
+                                    <Pagination
+                                        currentPage={Math.floor(historyOffset / HISTORY_LIMIT) + 1}
+                                        totalItems={runHistory.total}
+                                        pageSize={HISTORY_LIMIT}
+                                        showCount
+                                        onPageChange={(page) => setHistoryOffset((page - 1) * HISTORY_LIMIT)}
+                                    />
+                                ) : undefined
+                            }
                         />
                     )}
                 </div>
-                )}
-
-                {/* Pagination for History */}
-                {activeTab === "Run History" && runHistory && runHistory.total > HISTORY_LIMIT && (
-                    <div className="mt-4 flex items-center justify-between px-2">
-                        <div className="text-sm text-gray-500">
-                            Showing <span className="font-semibold text-gray-900">{historyOffset + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(historyOffset + HISTORY_LIMIT, runHistory.total)}</span> of <span className="font-semibold text-gray-900">{runHistory.total}</span> runs
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setHistoryOffset(prev => Math.max(0, prev - HISTORY_LIMIT))}
-                                disabled={historyOffset === 0}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                            >
-                                Previous
-                            </button>
-                            <button
-                                onClick={() => setHistoryOffset(prev => prev + HISTORY_LIMIT)}
-                                disabled={historyOffset + HISTORY_LIMIT >= runHistory.total}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
                 )}
             </main>
         </div>

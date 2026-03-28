@@ -8,11 +8,11 @@ import {
   History,
   MessageSquarePlusIcon,
   Trash2Icon,
-  Loader2,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChatSession } from "@/types";
 import { IoRefreshSharp } from "react-icons/io5";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -163,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
               {isHistoryLoading ? (
-                <Loader2 size={16} className="text-gray-500 animate-spin" />
+                <Spinner size={16} className="text-gray-500" />
               ) : (
                 <History size={16} className="text-gray-500 font-bold" />
               )}
