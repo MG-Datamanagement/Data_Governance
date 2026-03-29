@@ -5,7 +5,7 @@ export function ComplianceHeader() {
   return (
     <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-2">
       <div>
-        <p className="text-sm text-gray-500 font-medium">
+        <p className="text-sm text-gray-500 font-medium my-2">
           Monitor your data governance health and activities
         </p>
       </div>
