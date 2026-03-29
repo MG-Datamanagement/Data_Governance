@@ -188,7 +188,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
 
   const exportList = async () => {
     setIsExportListLoading(true);
-    const toastId = addToast("Exporting datasets...", "loading");
+    const toastId = addToast("Exporting datasets...", "loading", 2000);
     try {
       const { dashboardApiServices } = await import("@/services/dashboardApi.service");
 
@@ -341,7 +341,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               (piiScanPhase !== "scanning" &&
                 dataset.hasPII &&
                 !scannedDatasets[dataset.id])) && (
-              <Badge variant="warning" size="sm" className="mt-0.5">
+              <Badge variant="warning" size="sm" className="mt-0.5 rounded-md py-0">
                 PII Detected
               </Badge>
             )}
@@ -383,8 +383,8 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
         <Button
           variant="ghost"
           onClick={() => goToDetail(dataset.id)}
-          className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 text-xs px-2"
-          icon={<ChevronRight className="w-4 h-4 ml-1" />}
+          className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 text-xs px-2 gap-1"
+          icon={<ChevronRight className="w-4 h-4" />}
         >
           View Details
         </Button>

@@ -84,7 +84,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
             <ComplianceScoreCard
               score={health?.score ?? 0}
               change={health?.trend_label ?? "No change"}
-              overall_score_infographic={overallScoreInfographic ?? ""}
+              overall_score_infographic={overallScoreInfographic}
             />
           </div>
 

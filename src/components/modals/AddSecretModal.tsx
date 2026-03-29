@@ -2,12 +2,12 @@ import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Select } from "@/components/ui/Select";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
-const secretTypeValues = ["password", "connection_string", "api_key", "token"] as const;
+const secretTypeValues = ["password", "connection_string", "api_key"] as const;
 
 const createSchema = z.object({
   name: z
@@ -53,6 +53,7 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -126,17 +127,22 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
             <label htmlFor="secret-type" className="block text-sm font-semibold text-gray-800 mb-1.5">
               Type
             </label>
-            <Select
-              id="secret-type"
-              {...register("type")}
-              disabled={isEditMode || isLoading}
-              className="w-full bg-white text-gray-900"
-              options={[
-                { value: "password", label: "Password" },
-                { value: "connection_string", label: "Connection String" },
-                { value: "api_key", label: "API Key" },
-                { value: "token", label: "Token" }
-              ]}
+            <Controller
+              name="type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  id="secret-type"
+                  {...field}
+                  disabled={isEditMode || isLoading}
+                  className="w-full bg-white text-gray-900"
+                  options={[
+                    { value: "password", label: "Password" },
+                    { value: "connection_string", label: "Connection String" },
+                    { value: "api_key", label: "API Key" },
+                  ]}
+                />
+              )}
             />
             {fieldError("type")}
           </div>

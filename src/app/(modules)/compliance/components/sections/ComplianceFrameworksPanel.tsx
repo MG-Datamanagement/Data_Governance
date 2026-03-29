@@ -32,11 +32,11 @@ export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
             {frameworks?.length ?? 0} frameworks
           </p>
         </div>
-        <Tooltip content={frameworkInfographic ?? ""} position="right">
-          <div className="text-white/60 hover:text-white transition-colors cursor-help mt-1">
+        {frameworkInfographic && <Tooltip content={frameworkInfographic} position="left">
+          <div className="text-gray-400 hover:text-indigo-600 transition-colors cursor-help">
             <Info size={16} />
           </div>
-        </Tooltip>
+        </Tooltip>}
       </div>
 
       <div className="grid grid-cols-1 gap-2 p-2 overflow-y-auto pr-1">

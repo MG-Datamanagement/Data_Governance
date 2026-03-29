@@ -5,7 +5,7 @@ import { Info } from "lucide-react";
 interface ComplianceScoreCardProps {
   score: number;
   change: string;
-  overall_score_infographic: string;
+  overall_score_infographic: string | undefined;
 }
 
 export function ComplianceScoreCard({ score, change, overall_score_infographic }: ComplianceScoreCardProps) {
@@ -14,11 +14,11 @@ export function ComplianceScoreCard({ score, change, overall_score_infographic }
       <div className="text-5xl font-bold text-emerald-500 mb-2">{score}%</div>
       <div className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-1">
         Overall Compliance Score
-        <Tooltip content={overall_score_infographic}>
+        {overall_score_infographic && <Tooltip content={overall_score_infographic}>
           <div className="text-gray-400 hover:text-indigo-600 transition-colors cursor-help">
             <Info size={16} />
           </div>
-        </Tooltip>
+        </Tooltip>}
       </div>
       <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
         <TrendingUp size={14} />

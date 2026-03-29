@@ -40,7 +40,6 @@ const ManageSecretsTab: React.FC = () => {
       password: 'Password',
       connection_string: 'Connection String',
       api_key: 'API Key',
-      token: 'Token'
     };
     return map[type] || type;
   };

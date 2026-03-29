@@ -375,7 +375,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             }))}
             activeTabId={activeTab}
             onTabChange={(id: string) => handleTabClick(id as Tab)}
-            className="mt-5"
+            className="mt-5 border-none mb-0"
             tabClassName="mx-1"
           />
         </div>

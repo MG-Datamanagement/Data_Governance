@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { LayoutGrid, List, Plus, X, Info } from "lucide-react";
+import { LayoutGrid, List, Plus, X, Info, Terminal } from "lucide-react";
 import { datasourceApiServices } from "@/services/datasourceApi.service";
 import { ApiQuery, CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 import QueryListView from "../queries/QueryListView";
@@ -69,6 +69,7 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
   return (
     <SectionCard
       title="Highlighted Queries"
+      headerIcon={<Terminal size={16} />}
       description={
         <span>
           Saved queries that reference the{" "}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2, Sparkles, Settings2 } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, Settings2, Filter } from "lucide-react";
 import { ApiColumn, ApiTag } from "@/types";
 import { useAiReclassification } from "@/hooks/useAiReclassification";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -76,7 +76,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
             </Button>
           )}
           <Button variant="outline" size="icon" className="h-8 w-8 text-gray-400">
-            <Settings2 className="w-4 h-4" />
+            <Filter className="w-4 h-4" />
           </Button>
         </>
       }

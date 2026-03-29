@@ -196,6 +196,8 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
   return (
     <SectionCard
       title="Dataset Properties"
+      description="Key-value metadata properties associated with this dataset"
+      headerIcon={<Tag size={16} />}
       badgeCount={properties.length > 0 ? `${properties.length} total` : undefined}
       headerAction={
         <>

@@ -15,7 +15,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
       <div
         role="tooltip"
         className={cn(
-          "absolute z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-900 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap",
+          "absolute z-100 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-900 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap",
           position === "top" && "bottom-full mb-2",
           position === "bottom" && "top-full mt-2",
           position === "left" && "right-full mr-2",

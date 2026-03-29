@@ -280,7 +280,9 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
       {/* Activity Log Table */}
       <SectionCard
         title="Activity Log"
+        headerIcon={<Activity size={16} />}
         badgeCount={`${total_log_count} events`}
+        infotext="Showing all event types"
       >
         <DataGrid
           data={activity_log || []}

@@ -16,11 +16,11 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
   return (
     <div className="space-y-4">
       {detail.dataCardContent ? (
-        <SectionCard title="Data Card Documentation" bodyClassName="p-6">
+        <SectionCard showSectionHeader={false} bodyClassName="p-6">
           <MarkdownRenderer content={detail.dataCardContent} />
         </SectionCard>
       ) : (
-        <SectionCard title="Dataset Overview" bodyClassName="p-6">
+        <SectionCard showSectionHeader={false} bodyClassName="p-6">
           <p className="text-sm text-gray-600 leading-relaxed mb-6">
             {detail.overview}
           </p>
