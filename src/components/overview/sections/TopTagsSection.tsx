@@ -45,10 +45,10 @@ export function TopTagsSection({ query }: Props) {
           {tags.map((tag) => (
             <div key={tag.id} className="flex items-center justify-between py-1">
               <div className="flex items-center gap-2">
-                <div
+                {/* <div
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: tag.color }}
-                />
+                /> */}
                 <span className="text-sm text-gray-700">{tag.name}</span>
                 {/* <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
                   {tag.tag_type}

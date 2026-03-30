@@ -365,8 +365,9 @@ function DetailsPanel({
                     <textarea
                         value={editForm.description}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                        rows={3}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        rows={4}
+                        maxLength={200}
+                        className="w-full border border-gray-300 rounded-md px-3 py-6 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     />
 
                     {!isSubdomain && (
@@ -792,6 +793,7 @@ export default function LineOfBusiness() {
     const [expandedDomains, setExpandedDomains] = useState<Set<string>>(
         new Set()
     );
+    const [initialExpandDone, setInitialExpandDone] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
@@ -802,10 +804,11 @@ export default function LineOfBusiness() {
     }, [apiData]);
 
     useEffect(() => {
-        if (domains.length > 0 && expandedDomains.size === 0) {
+        if (domains.length > 0 && !initialExpandDone) {
             setExpandedDomains(new Set(domains.map((d) => d.id)));
+            setInitialExpandDone(true);
         }
-    }, [domains, expandedDomains.size]);
+    }, [domains, initialExpandDone]);
 
     // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -847,7 +850,14 @@ export default function LineOfBusiness() {
     const totalSubdomains = useMemo(() => filteredDomains.reduce((acc, d) => acc + d.subdomains.length, 0), [filteredDomains]);
     const totalAssets = useMemo(() => filteredDomains.reduce((acc, d) => acc + d.assets, 0), [filteredDomains]);
 
-    const collapseAll = () => setExpandedDomains(new Set());
+    const allExpanded = domains.length > 0 && expandedDomains.size === domains.length;
+    const toggleExpandAll = () => {
+        if (allExpanded) {
+            setExpandedDomains(new Set());
+        } else {
+            setExpandedDomains(new Set(domains.map((d) => d.id)));
+        }
+    };
 
     const toggleDomain = (id: string) => {
         setExpandedDomains((prev) => {
@@ -904,8 +914,8 @@ export default function LineOfBusiness() {
                     <p className="text-sm text-gray-500 mt-1">Organize data assets by business domains and sub-domains.</p>
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                    <button onClick={collapseAll} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 bg-white rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        Collapse All
+                    <button onClick={toggleExpandAll} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 bg-white rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        {allExpanded ? "Collapse All" : "Expand All"}
                     </button>
                     <button onClick={() => setModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Create new domain">
                         <Plus className="w-4 h-4" />

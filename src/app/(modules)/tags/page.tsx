@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   Trash2, Edit2, AlertTriangle, Plus, Filter, TagIcon,
-  List, LayoutGrid, CheckCircle2, XCircle, Shield, Tag as TagIconLucide
+  List, LayoutGrid, CheckCircle2, XCircle, Shield, Tag as TagIconLucide,
+  Tag
 } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
@@ -16,6 +17,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CardSkeleton } from '@/components/ui/Skeletons'
 import { logger } from '@/lib/logger'
+import { Tooltip } from '@/components/ui/Tooltip'
 
 // ─── Tag Grid Card ────────────────────────────────────────────────────────────
 
@@ -66,16 +68,16 @@ function TagGridCard({
 
       {/* Type + Security pills */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2.5 py-1">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-1">
           <Shield className="w-3 h-3 text-gray-500 flex-shrink-0" />
           {tag.tag_type.charAt(0).toUpperCase() + tag.tag_type.slice(1)}
         </span>
-        <span className={`inline-flex items-center text-xs font-medium rounded-full px-2.5 py-1 ${
+        <span className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-1 ${
           tag.security_policy === 'high'
-            ? 'bg-red-100 text-red-700'
+            ? 'bg-red-50 text-red-700'
             : tag.security_policy === 'medium'
-              ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-green-100 text-green-700'
+              ? 'bg-yellow-50 text-yellow-700'
+              : 'bg-green-50 text-green-700'
         }`}>
           {tag.security_policy.charAt(0).toUpperCase() + tag.security_policy.slice(1)} Sensitivity
         </span>
@@ -300,10 +302,10 @@ export default function TagsPage() {
       key: "type",
       header: "Type",
       render: (tag: any) => (
-        <span className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-gray-100 rounded-full px-3 py-1">
-          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-          </svg>
+        <span className="inline-flex items-center gap-1.5 text-xs text-gray-700 border border-gray-200 rounded-full px-2 py-0.5">
+          <div>
+            <Tag className="w-3 h-3 text-gray-500" />
+          </div>
           {tag.tag_type}
         </span>
       )
@@ -311,7 +313,13 @@ export default function TagsPage() {
     {
       key: "description",
       header: "Description",
-      render: (tag: any) => <p className="text-sm text-gray-600 truncate max-w-md">{tag.description}</p>
+      render: (tag: any) => {
+        return(
+          <Tooltip content={tag.description} >
+            <p className="text-sm text-gray-600 line-clamp-1 truncate max-w-xs">{tag.description}</p>
+          </Tooltip>
+        )
+      }
     },
     {
       key: "status",
@@ -421,6 +429,7 @@ export default function TagsPage() {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="w-40 bg-white"
+                placeholder=""
                 options={[
                   { value: "", label: "All Types" },
                   { value: "privacy", label: "Privacy" },
@@ -433,6 +442,7 @@ export default function TagsPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-40 bg-white"
+                placeholder=""
                 options={[
                   { value: "", label: "All Statuses" },
                   { value: "active", label: "Active" },

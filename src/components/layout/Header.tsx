@@ -82,7 +82,7 @@ export function Header({ userName }: HeaderProps) {
           </form>
 
           {/* Quick Actions */}
-          <div className="border-l border-gray-200 pl-4 flex gap-4">
+          <div className="border-l border-gray-200 pl-4 flex gap-3">
             <div className="">
               <Button
                 variant="transparent"
@@ -92,14 +92,14 @@ export function Header({ userName }: HeaderProps) {
                 <Bot size={20} className="text-slate-500" />
               </Button>
             </div>
-            {/* <div>
+            <div>
               <Button
                 variant="transparent"
                 className="p-1 transition-colors hidden md:block"
               >
                 <HelpCircle size={20} className="text-slate-500" />
               </Button>
-            </div> */}
+            </div>
             <div>
               <Button
                 variant="transparent"

@@ -86,32 +86,32 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
     },
     { key: "owner", header: "Owner", render: (m) => <span className="text-sm text-gray-600">{m.owner}</span> },
     { key: "lastUpdated", header: "Updated", render: (m) => <span className="text-sm text-gray-600">{m.lastUpdated}</span> },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "right",
-      render: (model) => (
-        <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onModelClick?.();
-            }}
-            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-            title="Edit model"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-            title="Delete model"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-    },
+    // {
+    //   key: "actions",
+    //   header: "Actions",
+    //   align: "right",
+    //   render: (model) => (
+    //     <div className="flex items-center justify-end gap-2">
+    //       <button
+    //         onClick={(e) => {
+    //           e.stopPropagation();
+    //           onModelClick?.();
+    //         }}
+    //         className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+    //         title="Edit model"
+    //       >
+    //         <Edit2 className="w-4 h-4" />
+    //       </button>
+    //       <button
+    //         onClick={(e) => e.stopPropagation()}
+    //         className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+    //         title="Delete model"
+    //       >
+    //         <Trash2 className="w-4 h-4" />
+    //       </button>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (

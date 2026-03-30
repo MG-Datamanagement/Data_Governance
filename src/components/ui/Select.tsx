@@ -6,10 +6,11 @@ type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   options: Option[];
   placeholder?: string;
   error?: boolean;
+  defaultValue?: string;
 };
 
 export const Select = forwardRef<HTMLSelectElement, Props>(function Select(
-  { options, placeholder = "Select", error, className, ...props },
+  { options, placeholder = "Select", error, className, defaultValue, ...props },
   ref
 ) {
   return (
@@ -20,10 +21,14 @@ export const Select = forwardRef<HTMLSelectElement, Props>(function Select(
         error && "border-red-500 focus:border-red-500 focus:ring-red-500/40",
         className,
       )}
-      {...(props.value !== undefined ? {} : { defaultValue: "" })}
+      {...(props.value !== undefined ? {} : { defaultValue: defaultValue })}
       {...props}
     >
-      <option disabled value="">{placeholder}</option>
+      {placeholder && (
+        <option value="">
+          {placeholder}
+        </option>
+      )}
       {options.map(({ value, label }) => (
         <option key={value} value={value}>{label}</option>
       ))}

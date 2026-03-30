@@ -74,7 +74,7 @@ export function OverviewStatsGrid({
       <StatCard
         icon={FileTextIcon}
         iconColor="text-blue-600"
-        label="Total Tags"
+        label="Classified"
         value={stats?.classified}
         info={stats?.classifiedInfo}
         change={"+8% vs last month"}

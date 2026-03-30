@@ -8,6 +8,7 @@ import {
   History,
   MessageSquarePlusIcon,
   Trash2Icon,
+  Database,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChatSession } from "@/types";
@@ -233,7 +234,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           title={isCollapsed ? "Connected to 8 sources" : ""}
         >
-          <Plug size={14} />
+          <Database size={14} />
           {isCollapsed ? 8 : <span>Connected to 8 sources</span>}
         </div>
       </div>

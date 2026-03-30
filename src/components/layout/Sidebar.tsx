@@ -29,7 +29,7 @@ const GOVERN_ITEMS = [
   // { icon: Globe, label: "Domains", href: "/domains" },
   { icon: Tag, label: "Tags", href: "/tags" },
   // { icon: Book, label: "Glossary", href: "/glossary" },
-  { icon: Cpu, label: "Models", href: "/model" },
+  { icon: Cpu, label: "Models", href: "/models" },
   { icon: Bot, label: "Agents", href: "/agents" },
   { icon: Building2, label: "Line of Business", href: "/line-of-business" },
 ];

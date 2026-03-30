@@ -190,7 +190,7 @@ export default function AgentsPage() {
     ];
 
     return (
-        <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-6 bg-white min-h-screen text-gray-900">
+        <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-6 bg-gray-50 min-h-screen text-gray-900">
 
             {/* Breadcrumb */}
             <Breadcrumb items={[
