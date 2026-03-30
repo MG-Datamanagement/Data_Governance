@@ -436,7 +436,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               onChange={(e) => setTypeFilter(e.target.value)}
               className="w-32 bg-white"
               options={[
-                { value: "All", label: "All Types" },
+                { value: "All", label: "Types" },
                 { value: "Table", label: "Table" },
                 { value: "View", label: "View" }
               ]}
@@ -448,7 +448,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-36 bg-white"
               options={[
-                { value: "All", label: "All Statuses" },
+                { value: "All", label: "Statuses" },
                 { value: "Healthy", label: "Healthy" },
                 { value: "Warning", label: "Warning" },
                 { value: "Risk", label: "Risk" }
@@ -549,7 +549,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             maxHeight="600px"
             pagination={
               filtered.length > 0 ? (
-                <div className="px-4 py-3 border-t border-gray-100 bg-white shadow-sm rounded-b-xl">
+                <div className="px-4 py-2 border-t border-gray-100 bg-white shadow-sm rounded-b-xl">
                   <Pagination
                     currentPage={page}
                     totalItems={filtered.length}

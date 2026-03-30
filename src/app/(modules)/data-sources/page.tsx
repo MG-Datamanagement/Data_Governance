@@ -58,11 +58,29 @@ const ManageDataSourcesPage: React.FC = () => {
     const [historyStatus, setHistoryStatus] = useState("All");
     const [historyOffset, setHistoryOffset] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(10);
+    const [sourcesOffset, setSourcesOffset] = useState(0);
+    const [sourcesLimit, setSourcesLimit] = useState(100);
 
-    const { data: apiData = [], isFetching: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
+    const { data: apiDataResponse, isFetching: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
         status: filter !== "All" ? filter : undefined,
-        limit: 20
+        limit: sourcesLimit,
+        offset: sourcesOffset
     });
+
+    // Robust data extraction: handles both paginated objects and plain arrays
+    const apiData = useMemo(() => {
+        if (!apiDataResponse) return [];
+        if (Array.isArray(apiDataResponse)) return apiDataResponse;
+        return apiDataResponse.results || [];
+    }, [apiDataResponse]);
+
+    const sourcesTotal = useMemo(() => {
+        if (!apiDataResponse) return 0;
+        if (Array.isArray(apiDataResponse)) return apiDataResponse.length;
+        return apiDataResponse.total || 0;
+    }, [apiDataResponse]);
+
+    const currentLimit = (apiDataResponse as any)?.limit || sourcesLimit;
 
     const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(historyLimit, historyOffset, historyStatus);
 
@@ -444,7 +462,7 @@ const ManageDataSourcesPage: React.FC = () => {
                                     <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                         Status
                                     </th>
-                                    <th className="py-3 pr-4 w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                    <th className="py-3 pr-4 w-10 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                         
                                     </th>
                                 </tr>
@@ -486,6 +504,23 @@ const ManageDataSourcesPage: React.FC = () => {
                                 ) : null}
                             </tbody>
                         </table>
+
+                        {activeTab === "Sources" && apiData && sourcesTotal > 0 && (
+                            <div className="border-t border-gray-100">
+                                <Pagination
+                                    currentPage={Math.floor(sourcesOffset / currentLimit) + 1}
+                                    totalItems={sourcesTotal}
+                                    pageSize={currentLimit}
+                                    pageSizeOptions={[10, 20, 50, 100]}
+                                    showCount
+                                    onPageChange={(page) => setSourcesOffset((page - 1) * currentLimit)}
+                                    onPageSizeChange={(size) => {
+                                        setSourcesLimit(size);
+                                        setSourcesOffset(0);
+                                    }}
+                                />
+                            </div>
+                        )}
 
                         {activeTab === "Run History" && (
                             <DataGrid

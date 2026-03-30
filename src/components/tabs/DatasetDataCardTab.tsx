@@ -5,6 +5,7 @@ import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { KeyField } from "@/types";
+import { Sparkle } from "lucide-react";
 
 interface DatasetDataCardTabProps {
   detail: any;
@@ -16,7 +17,22 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
   return (
     <div className="space-y-4">
       {detail.dataCardContent ? (
-        <SectionCard showSectionHeader={false} bodyClassName="p-6">
+        <SectionCard showSectionHeader={false} bodyClassName="p-4 bg-none" className="bg-none border-none">
+          <div className="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-50 border border-gray-100 rounded-lg my-2">
+            <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+              <Sparkle className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-indigo-900">
+                AI-Generated Summary
+              </p>
+              <p className="text-[11px] text-indigo-700/80 mt-0.5">
+                This data card was automatically generated
+                by AI based on schema analysis, column patterns,
+                and metadata. Review and edit as needed.
+              </p>
+            </div>
+          </div>
           <MarkdownRenderer content={detail.dataCardContent} />
         </SectionCard>
       ) : (

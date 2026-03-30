@@ -7,6 +7,7 @@ import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 import { useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ChevronRight, Database } from "lucide-react";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
@@ -83,10 +84,10 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
 
     return (
         <tr>
-            <td colSpan={7} className="bg-gray-50 px-6 pb-4 pt-0">
-                <div className="flex gap-4 pt-3">
+            <td colSpan={7} className="bg-gray-50 px-4 pb-2 pt-0">
+                <div className="flex gap-3 pt-3">
                     {/* Left: stats + logs */}
-                    <div className="flex-1 min-w-0">
+                    <div className="w-4/5">
                         {/* Stat cards */}
                         <div className="grid grid-cols-4 gap-3 mb-4">
                             {[
@@ -112,19 +113,21 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                         </div>
 
                         {/* Ingestion logs */}
-                        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-                            <div className="flex items-center justify-between mb-3">
+                        <div className="bg-white rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between bg-gray-50 px-3 py-2">
                                 <h4 className="text-sm font-semibold text-gray-800">
                                     Recent Ingestion Logs
                                 </h4>
-                                <span className="text-xs text-gray-400">Last 24h</span>
+                                <div className="border border-gray-200 rounded-xl px-3 py-1 text-xs">
+                                    Last 24h
+                                </div>
                             </div>
-                            <div className="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                            <div className="max-h-[160px] overflow-y-auto custom-scrollbar">
                                 {isLogsLoading ? (
                                     <div className="py-4 text-center text-xs text-gray-400">Loading logs...</div>
                                 ) : rowLogs.length > 0 ? (
                                     rowLogs.map((log: any, i: number) => (
-                                        <div key={log.id || i} className="flex items-start gap-3">
+                                        <div key={log.id || i} className="flex items-start gap-3 px-3 py-1 border-b border-gray-100">
                                             <span className="text-[10px] text-gray-400 w-24 flex-shrink-0 mt-0.5">
                                                 {new Date(log.logged_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
                                             </span>
@@ -140,7 +143,7 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                     </div>
 
                     {/* Right: Explore Datasets */}
-                    <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center p-6 text-center gap-3">
+                    <div className="w-2/5 bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center p-4 text-center gap-3">
                         <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
                             <svg className="w-7 h-7 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
@@ -187,7 +190,7 @@ export const DataSourceTableRow: React.FC<{
                     }`}
             >
                 {/* Checkbox */}
-                <td className="pl-4 pr-2 py-3 w-10">
+                <td className="pl-4 pr-1 py-3 w-10">
                     <input
                         type="checkbox"
                         checked={checked}
@@ -203,22 +206,14 @@ export const DataSourceTableRow: React.FC<{
                             onClick={() => setExpanded((v) => !v)}
                             className="text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
                         >
-                            <svg
-                                className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-90" : ""
-                                    }`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
+                            <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
                         </button>
-                        <span
+                        {/* <span
                             className={`w-6 h-6 rounded flex items-center justify-center ${source.iconBg}`}
                         >
                             <ConnectorIcon icon={source.icon} className="w-4 h-4" />
-                        </span>
+                        </span> */}
+                        <Database className="w-4 h-4 text-gray-500" />
                         <span className="text-sm font-medium text-gray-800">{source.name}</span>
                     </div>
                 </td>

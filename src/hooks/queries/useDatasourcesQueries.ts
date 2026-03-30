@@ -14,7 +14,7 @@ const STALE_INF = Infinity;
 
 export const datasourcesKeys = {
   all: ["datasources"] as const,
-  list: (filters?: { limit?: number; status?: string }) => [...datasourcesKeys.all, "list", filters] as const,
+  list: (filters?: { limit?: number; offset?: number; status?: string }) => [...datasourcesKeys.all, "list", filters] as const,
   stats: (sourceId: string) => [...datasourcesKeys.all, "stats", sourceId] as const,
   runHistory: (filters?: { limit?: number; offset?: number; status?: string }) => [...datasourcesKeys.all, "runHistory", filters] as const,
   logs: (sourceId: string, limit: number) => [...datasourcesKeys.all, "logs", sourceId, limit] as const,
@@ -22,7 +22,7 @@ export const datasourcesKeys = {
   ownersList: (limit?: number) => [...datasourcesKeys.all, "ownersList", limit] as const,
 };
 
-export const useGetDataSources = (params?: { limit?: number; status?: string }) =>
+export const useGetDataSources = (params?: { limit?: number; offset?: number; status?: string }) =>
   useQuery({
     queryKey: datasourcesKeys.list(params),
     queryFn: () => dashboardApiServices.fetchDataSources(params || {}),

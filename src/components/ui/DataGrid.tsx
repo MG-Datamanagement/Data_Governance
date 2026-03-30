@@ -138,9 +138,9 @@ export function DataGrid<T>({
 
       {/* Sticky pagination footer */}
       {pagination && (
-        <div className="border-t border-gray-200 bg-white px-4 py-2 flex-shrink-0">
+        <>
           {pagination}
-        </div>
+        </>
       )}
     </div>
   );

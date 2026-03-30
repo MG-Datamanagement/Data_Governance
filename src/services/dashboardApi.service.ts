@@ -86,6 +86,13 @@ export interface ApiDataSource {
   description?: string;
 }
 
+export interface ApiSourcesResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  results: ApiDataSource[];
+}
+
 export interface ApiSourceStats {
   source_id: string;
   source_name: string;
@@ -176,6 +183,13 @@ export interface ApiSecret {
   created_at?: string;
   last_rotated?: string;
   is_active?: boolean;
+}
+
+export interface ApiSecretsResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  results: ApiSecret[];
 }
 
 export interface ApiSecretCreateRequest {
@@ -633,16 +647,28 @@ export const dashboardApiServices = {
     source_type?: string;
     status?: string;
     limit?: number;
+    offset?: number;
   }) {
     const queryParams: any = {};
     if (params.source_type) queryParams.source_type = params.source_type;
     if (params.status && params.status !== "All")
       queryParams.status = params.status.toLowerCase();
     if (params.limit) queryParams.limit = params.limit;
+    if (params.offset !== undefined) queryParams.offset = params.offset;
 
-    return dashboardApiClient.get<ApiDataSource[]>("/api/v1/sources-list", {
+    const response = await dashboardApiClient.get<any>("/api/v1/sources-list", {
       params: queryParams,
     });
+
+    if (Array.isArray(response)) {
+      return {
+        results: response,
+        total: response.length,
+        limit: params.limit || response.length,
+        offset: params.offset || 0,
+      };
+    }
+    return response;
   },
 
   async createDataSource(
@@ -762,8 +788,20 @@ export const dashboardApiServices = {
   },
 
   // Secrets CRUD
-  async fetchSecrets(): Promise<ApiSecret[]> {
-    return dashboardApiClient.get<ApiSecret[]>("/api/v1/get/secrets");
+  async fetchSecrets(limit: number = 50, offset: number = 0): Promise<ApiSecretsResponse> {
+    const response = await dashboardApiClient.get<any>("/api/v1/get/secrets", {
+      params: { limit, offset }
+    });
+
+    if (Array.isArray(response)) {
+      return {
+        results: response,
+        total: response.length,
+        limit: limit,
+        offset: offset,
+      };
+    }
+    return response;
   },
 
   async createSecret(payload: ApiSecretCreateRequest) {

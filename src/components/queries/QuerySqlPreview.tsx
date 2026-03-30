@@ -63,11 +63,11 @@ const QuerySqlPreview: React.FC<QuerySqlPreviewProps> = ({
   const lines = sql.split("\n");
 
   return (
-    <div className={`flex flex-col rounded-xl overflow-hidden border border-gray-800 bg-[#0f172a] shadow-inner ${className}`}>
+    <div className={`flex flex-col rounded-xl overflow-hidden bg-gray-100 border border-gray-300 ${className}`}>
       {/* Dark Header Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#1e293b] border-b border-[#334155]">
-        <div className="flex items-center gap-2 text-gray-400">
-          <Terminal size={12} className="text-gray-400" />
+      <div className="flex items-center justify-between px-4 py-1 border-b border-gray-300 bg-gray-200">
+        <div className="flex items-center gap-2 text-gray-800">
+          <Terminal size={12} className="text-gray-800" />
           <span className="text-[10px] font-bold uppercase tracking-widest">SQL</span>
         </div>
         
@@ -76,14 +76,14 @@ const QuerySqlPreview: React.FC<QuerySqlPreviewProps> = ({
           {tags.map((tag) => (
             <span 
               key={tag} 
-              className="px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-300 text-[9px] font-bold border border-indigo-500/30 uppercase tracking-tighter"
+              className="px-2 py-0.5 rounded bg-gray-300 text-gray-700 text-[9px] font-bold border border-gray-400 uppercase"
             >
               {tag}
             </span>
           ))}
           <button
             onClick={handleCopy}
-            className="ml-2 p-1.5 rounded-md hover:bg-[#334155] text-gray-400 hover:text-white transition-all flex items-center gap-1.5"
+            className="ml-2 p-1 rounded-md hover:bg-[#334155] text-gray-800 hover:text-white transition-all flex items-center gap-1.5"
             title="Copy Code"
           >
             {copied ? (
@@ -109,7 +109,7 @@ const QuerySqlPreview: React.FC<QuerySqlPreviewProps> = ({
           </div>
         )}
         <div 
-          className="flex-1 text-gray-300 whitespace-pre px-1"
+          className="flex-1 text-gray-800 whitespace-pre px-1"
           dangerouslySetInnerHTML={{ __html: highlightSql(sql) }}
         />
       </div>

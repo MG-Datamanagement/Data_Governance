@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, Check, Database, Tag, User2, Zap } from "lucide-react";
+import { AlertTriangle, Check, Database, Share2, Tag, User2, Zap } from "lucide-react";
 import { ApiTag } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
@@ -118,7 +118,7 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
           {/* Lineage */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 mb-2">
-              <Zap className="w-4 h-4 text-gray-400" />
+              <Share2 className="w-4 h-4 text-gray-400" />
               Lineage
             </div>
             {lineageWarning ? (

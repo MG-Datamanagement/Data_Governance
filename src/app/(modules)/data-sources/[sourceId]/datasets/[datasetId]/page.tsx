@@ -314,7 +314,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Table2 className="w-6 h-6 text-green-600" />
+                <Database className="w-6 h-6 text-green-600" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">

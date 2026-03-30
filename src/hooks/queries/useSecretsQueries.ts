@@ -9,13 +9,13 @@ import { dashboardApiServices } from "@/services/dashboardApi.service";
 
 export const secretsQueryKeys = {
   all: ["secrets"] as const,
-  list: () => [...secretsQueryKeys.all, "list"] as const,
+  list: (filters?: { limit?: number; offset?: number }) => [...secretsQueryKeys.all, "list", filters] as const,
 };
 
-export const useGetSecrets = () =>
+export const useGetSecrets = (limit: number = 10, offset: number = 0) =>
   useQuery({
-    queryKey: secretsQueryKeys.list(),
-    queryFn: () => dashboardApiServices.fetchSecrets(),
+    queryKey: secretsQueryKeys.list({ limit, offset }),
+    queryFn: () => dashboardApiServices.fetchSecrets(limit, offset),
   });
 
 export const useCreateSecret = () => {

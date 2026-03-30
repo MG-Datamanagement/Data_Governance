@@ -25,15 +25,24 @@ const ManageSecretsTab: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { addToast, updateToast } = useAppStore();
-  const { data: secretsList, isLoading: isFetching } = useGetSecrets();
+  const { data: secretsData, isLoading: isFetching } = useGetSecrets(pageSize, (page - 1) * pageSize);
   const createMutation = useCreateSecret();
   const updateMutation = useUpdateSecret();
   const deleteMutation = useDeleteSecret();
 
-  const secrets = secretsList || [];
-  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  // Robust data extraction: handles both paginated objects and plain arrays
+  const secrets = useMemo(() => {
+    if (!secretsData) return [];
+    if (Array.isArray(secretsData)) return secretsData;
+    return secretsData.results || [];
+  }, [secretsData]);
 
-  const paginatedSecrets = secrets.slice((page - 1) * pageSize, page * pageSize);
+  const totalSecrets = useMemo(() => {
+    if (!secretsData) return 0;
+    if (Array.isArray(secretsData)) return secretsData.length;
+    return secretsData.total || 0;
+  }, [secretsData]);
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   const formatType = (type: string) => {
     const map: Record<string, string> = {
@@ -169,7 +178,7 @@ const ManageSecretsTab: React.FC = () => {
         }
       >
         <DataGrid
-          data={paginatedSecrets}
+          data={secrets}
           columns={columns}
           keyExtractor={(row) => row.id}
           isLoading={isFetching}
@@ -187,12 +196,12 @@ const ManageSecretsTab: React.FC = () => {
           }
           className="shadow-none"
           pagination={
-            secrets.length > pageSize ? (
+            totalSecrets > 0 ? (
               <Pagination
                 currentPage={page}
-                totalItems={secrets.length}
+                totalItems={totalSecrets}
                 pageSize={pageSize}
-                pageSizeOptions={[10, 20, 50]}
+                pageSizeOptions={[10, 20, 50, 100]}
                 showCount
                 onPageChange={setPage}
                 onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}

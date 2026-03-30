@@ -30,7 +30,7 @@ import { secretsQueryKeys } from "./queries/useSecretsQueries";
 
 export const dashboardKeys = {
   all: ["dashboard"] as const,
-  dataSources: (filters?: { limit?: number; status?: string }) => datasourcesKeys.list(filters),
+  dataSources: (filters?: { limit?: number; offset?: number; status?: string }) => datasourcesKeys.list(filters),
   runHistory: (filters?: { limit?: number; offset?: number; status?: string }) => datasourcesKeys.runHistory(filters),
   sourceStats: (sourceId: string) => datasourcesKeys.stats(sourceId),
   catalogDetail: (catalogId: string) => catalogKeys.detail(catalogId),
@@ -39,7 +39,7 @@ export const dashboardKeys = {
   catalogProperties: (catalogId: string) => catalogKeys.properties(catalogId),
   lineageCentric: (catalogId: string, depth?: number) => ["dashboard", "lineageCentric", catalogId, depth] as const,
   ownersList: (limit?: number) => datasourcesKeys.ownersList(limit),
-  secrets: () => secretsQueryKeys.list(),
+  secrets: (filters?: { limit?: number; offset?: number }) => secretsQueryKeys.list(filters),
 };
 
 // ─── Chat hook (standalone — not yet split into its own module) ───────────────

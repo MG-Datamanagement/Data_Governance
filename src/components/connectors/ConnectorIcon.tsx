@@ -6,9 +6,9 @@ interface ConnectorIconProps {
 }
 
 const ConnectorIcon: React.FC<ConnectorIconProps> = ({
-                                                         icon,
-                                                         className = "w-9 h-9",
-                                                     }) => {
+    icon,
+    className = "w-9 h-9",
+}) => {
     const icons: Record<string, React.ReactNode> = {
         airflow: (
             <svg viewBox="0 0 40 40" fill="none" className={className}>
