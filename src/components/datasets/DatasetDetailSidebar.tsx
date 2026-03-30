@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, PanelRightClose, PanelRightOpen, Tag, User2, Zap } from "lucide-react";
+import { AlertTriangle, Check, Database, Tag, User2, Zap } from "lucide-react";
 import { ApiTag } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
+import { SidebarToggle } from "@/components/ui/SidebarToggle";
 
 interface DatasetDetailSidebarProps {
   name: string;
@@ -41,25 +42,20 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
         collapsed ? "w-12" : "w-64",
       )}
     >
-      {/* Toggle button — mirrors the nav sidebar chevron style */}
-      <button
-        onClick={() => toggle()}
+      {/* Toggle button — shared UI component */}
+      <SidebarToggle
+        collapsed={collapsed}
+        onToggle={toggle}
         title={collapsed ? "Expand details" : "Collapse details"}
         className={cn(
-          "absolute top-2.5 z-10 w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all shadow-sm",
-          collapsed ? "left-2" : "right-2",
+          "absolute top-2.5 z-10",
+          collapsed ? "left-3" : "right-2",
         )}
-      >
-        {collapsed ? (
-          <PanelRightOpen size={20} />
-        ) : (
-          <PanelRightClose size={20} />
-        )}
-      </button>
+      />
 
       {/* Collapsed state — slim strip with icon-only indicators */}
       {collapsed && (
-        <div className="flex flex-col items-center pt-12 pb-4 gap-4 mt-2">
+        <div className="flex flex-col items-center pt-12 pb-4 gap-4">
 
           {/* Dataset name */}
           <div

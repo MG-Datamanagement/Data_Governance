@@ -14,12 +14,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Bot,
-  Building2
+  Building2,
 } from "lucide-react";
 import { MessageSquare, Cable, Sparkles, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { BrandLogo } from "../ui/BrandLogo";
+import { SidebarToggle } from "../ui/SidebarToggle";
 import { MOCK_USER } from "@/lib/mockData";
 import { MD_BREAKPOINT } from "@/lib/constants";
 
@@ -109,19 +110,15 @@ export function Sidebar() {
       </div>
 
       {/* Toggle Button */}
-      <button
-        onClick={toggleSidebar}
+      <SidebarToggle
+        collapsed={sidebarCollapsed}
+        onToggle={toggleSidebar}
+        side="left"
         className={cn(
-          "absolute w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 z-20 transition-all",
-          sidebarCollapsed ? "top-12 left-14" : "top-12 left-[226px]",
+          "absolute bg-white z-50",
+          sidebarCollapsed ? "top-16 left-14" : "top-16 left-[226px]",
         )}
-      >
-        {sidebarCollapsed ? (
-          <ChevronRight size={16} />
-        ) : (
-          <ChevronLeft size={16} />
-        )}
-      </button>
+      />
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-3">

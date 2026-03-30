@@ -9,11 +9,12 @@ import {
   MessageSquarePlusIcon,
   Trash2Icon,
   Database,
+  RefreshCcw,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChatSession } from "@/types";
-import { RefreshCcw } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
+import { SidebarToggle } from "../ui/SidebarToggle";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -54,16 +55,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? "w-[52px]" : "w-60",
       )}
     >
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
+      {/* Toggle Button — shared UI component */}
+      <SidebarToggle
+        collapsed={isCollapsed}
+        onToggle={onToggle}
+        side="left"
         className={cn(
-          "absolute w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 z-20",
+          "absolute z-20",
           isCollapsed ? "top-12 left-11" : "top-12 left-[230px]",
         )}
-      >
-        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+      />
 
       {/* New Chat */}
       <div className={cn(isCollapsed ? "px-2 py-1.5" : "p-3")}>
