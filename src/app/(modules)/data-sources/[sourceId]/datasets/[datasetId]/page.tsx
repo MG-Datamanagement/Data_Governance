@@ -17,7 +17,7 @@ const ComplianceReportModal = dynamic(
   () => import("@/components/modals/ComplianceReportModal"),
   { ssr: false, loading: () => null },
 );
-import { formatDateTime, formatIST } from "@/lib/utils";
+import { formatDateTime, formatIST, formatTimeAgo } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import DatasetDataCardTab from "@/components/tabs/DatasetDataCardTab";
 import DatasetColumnsTab from "@/components/tabs/DatasetColumnsTab";
@@ -143,7 +143,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         name: c.name,
         description: c.comment || "Column metadata",
       })),
-      freshness: formatIST(catalogData.updated_at),
+      freshness: formatTimeAgo(catalogData?.updated_at),
       volume:
         catalogData.row_count !== null
           ? `${catalogData.row_count.toLocaleString()}K`
@@ -187,7 +187,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           {/* Breadcrumb skeleton */}
           <div className="h-4 w-1/2 bg-gray-200 rounded mb-6 animate-pulse" />
           {/* Dataset card skeleton */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-5 flex gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-3 flex gap-4">
             {/* Left skeleton */}
             <div className="flex-1 min-w-0 space-y-4">
               <div className="bg-gray-100 rounded-xl h-48 animate-pulse" />
@@ -310,7 +310,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         </nav>
 
         {/* Dataset card header */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-5">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -327,7 +327,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                   </span>
                   <span className="text-gray-300">|</span>
                   <span className="flex items-center gap-1">
-                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <Database className="w-3.5 h-3.5" />
                     {detail.sourceName || sourceId}
                   </span>
                 </div>
@@ -381,7 +381,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         </div>
 
         {/* Tab Body Container */}
-        <div className="flex gap-4 mt-5">
+        <div className="flex gap-4 mt-2">
           <div className="flex-1 min-w-0">
             {activeTab === "DataCard" && (
               <QueryErrorBoundary label="DataCard Summary">

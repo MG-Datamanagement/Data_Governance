@@ -2,7 +2,7 @@
 
 import React from "react";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
-import { cn } from "@/lib/utils";
+import { cn, formatTimeAgo } from "@/lib/utils";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { KeyField } from "@/types";
 import { Sparkle } from "lucide-react";
@@ -11,14 +11,12 @@ interface DatasetDataCardTabProps {
   detail: any;
 }
 
-const qualityColor = "text-green-600";
-
 const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {detail.dataCardContent ? (
-        <SectionCard showSectionHeader={false} bodyClassName="p-4 bg-none" className="bg-none border-none">
-          <div className="flex items-start gap-3 px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-50 border border-gray-100 rounded-lg my-2">
+        <SectionCard showSectionHeader={false} bodyClassName="p-2 bg-none" className="border-none shadow-none bg-transparent">
+          <div className="flex items-start gap-2 p-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-lg">
             <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
               <Sparkle className="h-4 w-4 text-white" />
             </div>
@@ -36,7 +34,7 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
           <MarkdownRenderer content={detail.dataCardContent} />
         </SectionCard>
       ) : (
-        <SectionCard showSectionHeader={false} bodyClassName="p-6">
+        <SectionCard showSectionHeader={false} bodyClassName="p-2 bg-none" className="border-none shadow-none bg-transparent">
           <p className="text-sm text-gray-600 leading-relaxed mb-6">
             {detail.overview}
           </p>
@@ -59,33 +57,33 @@ const DatasetDataCardTab: React.FC<DatasetDataCardTabProps> = ({ detail }) => {
       )}
 
       {/* Data Quality */}
-      <SectionCard title="Data Quality" bodyClassName="p-4">
+      <SectionCard title="Data Quality" bodyClassName="p-2 bg-none" className="border-none shadow-none bg-transparent" headerClassName="px-4 py-2">
         <div className="grid grid-cols-3 gap-2">
           {[
             {
               label: "FRESHNESS",
-              value: detail.freshness,
-              color: "text-green-600",
+              value: detail?.freshness,
+              color: "text-green-900",
             },
             {
               label: "VOLUME",
               value: detail.volume,
-              color: "text-green-600",
+              color: "text-green-900",
             },
             {
               label: "QUALITY SCORE",
               value: detail.qualityScore,
-              color: qualityColor,
+              color: "text-green-900",
             },
           ].map((metric) => (
             <div
               key={metric.label}
-              className="bg-green-50 border border-green-100 rounded-xl px-4 py-4 flex flex-col justify-center items-center"
+              className="bg-green-50 border border-green-100 rounded-xl p-4 flex flex-col justify-center items-start"
             >
-              <p className="text-xs font-semibold text-gray-400 tracking-wide uppercase mb-1 text-center">
+              <p className="text-xs font-semibold text-green-600 tracking-wide uppercase mb-1 text-center">
                 {metric.label}
               </p>
-              <p className={cn(`text-2xl font-extrabold ${metric.color} text-center`)}>
+              <p className={cn(`text-xl font-extrabold ${metric.color}`)}>
                 {metric.value}
               </p>
             </div>
