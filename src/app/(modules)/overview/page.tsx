@@ -39,10 +39,10 @@ function OverviewContent() {
     platforms,
     activity,
     recentlyViewed,
-    frameworks,
-    pendingReviewCount,
-    openIssues,
-    governanceScore,
+    // frameworks,
+    // pendingReviewCount,
+    // openIssues,
+    // governanceScore,
     complianceOverview,
   } = useOverviewData();
 
@@ -79,7 +79,7 @@ function OverviewContent() {
 
             <div className="grid lg:grid-cols-12 gap-5">
               <QueryErrorBoundary label="Compliance Section">
-                <ComplianceSection query={frameworks} overviewQuery={complianceOverview} />
+                <ComplianceSection overviewQuery={complianceOverview} />
               </QueryErrorBoundary>
               <QueryErrorBoundary label="AI Governance Section">
                 <AIGovernanceSection aiQuery={aiSnapshot} trendsQuery={riskTrends} />

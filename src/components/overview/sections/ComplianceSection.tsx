@@ -16,22 +16,22 @@ import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { useRouter } from "next/navigation";
 
 type Props = {
-  query: OverviewData["frameworks"];
+  // query: OverviewData["frameworks"]; // Removed redundant query
   overviewQuery: OverviewData["complianceOverview"];
 };
 
-function ComplianceContent({ query, overviewQuery }: Props) {
-  const { data: frameworksData, isLoading: isFrameworksLoading, error: frameworksError, refetch: refetchFrameworks } = query;
-  const { data: overview, isLoading: isOverviewLoading, error: overviewError, refetch: refetchOverview } = overviewQuery;
-  const frameworksList = frameworksData?.frameworks || [];
+function ComplianceContent({ overviewQuery }: Props) {
+  // const { data: frameworksData, isLoading: isFrameworksLoading, error: frameworksError, refetch: refetchFrameworks } = query;
+  const { data: overview, isLoading, error, refetch } = overviewQuery;
+  const frameworkScores = overview?.framework_scores || [];
   const router = useRouter();
 
-  const isLoading = isFrameworksLoading || isOverviewLoading;
-  const error = frameworksError || overviewError;
-  const refetch = () => {
-    refetchFrameworks();
-    refetchOverview();
-  };
+  // const isLoading = isFrameworksLoading || isOverviewLoading;
+  // const error = frameworksError || overviewError;
+  // const refetch = () => {
+  //   refetchFrameworks();
+  //   refetchOverview();
+  // };
 
   return (
     <div className="card p-6 space-y-4 lg:col-span-4">
@@ -65,14 +65,14 @@ function ComplianceContent({ query, overviewQuery }: Props) {
         />
       )}
 
-      {!isLoading && !error && frameworksList.length === 0 && (
+      {!isLoading && !error && frameworkScores.length === 0 && (
         <InlineState
           type="empty"
           message="No compliance frameworks configured yet."
         />
       )}
 
-      {!isLoading && !error && frameworksList.length > 0 && (
+      {!isLoading && !error && frameworkScores.length > 0 && (
         <div className="space-y-5">
           {overview?.insight && (
             <div className="p-3 bg-green-50 rounded-lg max-h-[325px] overflow-y-auto pr-2 custom-scrollbar">
@@ -81,7 +81,7 @@ function ComplianceContent({ query, overviewQuery }: Props) {
           )}
 
           <div className="pr-1 space-y-6">
-            {(overview?.framework_scores || []).map((framework) => (
+            {frameworkScores.map((framework) => (
               <div
                 key={framework.framework}
                 className="flex-col items-center justify-between"

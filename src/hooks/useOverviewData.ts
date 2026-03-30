@@ -36,7 +36,7 @@ export function useOverviewData() {
   const platforms = usePlatformUsage();
   const activity = useRecentActivity(USER_URN);
   const recentlyViewed = useRecentlyViewed(USER_URN);
-  const frameworks = useComplianceFrameworks();
+  // const frameworks = useComplianceFrameworks(); // Removed redundant call
   const pendingReviewCount = usePendingReviewCount();
   const openIssues = useOpenIssues();
   const governanceScore = useGovernanceScore();
@@ -51,7 +51,7 @@ export function useOverviewData() {
     platforms,
     activity,
     recentlyViewed,
-    frameworks,
+    // frameworks,
     pendingReviewCount,
     openIssues,
     governanceScore,
