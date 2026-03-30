@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Tag, User2, Zap } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, PanelRightClose, PanelRightOpen, Tag, User2, Zap } from "lucide-react";
 import { ApiTag } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
@@ -38,7 +38,7 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
     <div
       className={cn(
         "flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden self-start transition-all duration-300 relative",
-        collapsed ? "w-10" : "w-64",
+        collapsed ? "w-12" : "w-64",
       )}
     >
       {/* Toggle button — mirrors the nav sidebar chevron style */}
@@ -46,20 +46,20 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
         onClick={() => toggle()}
         title={collapsed ? "Expand details" : "Collapse details"}
         className={cn(
-          "absolute top-2.5 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all shadow-sm",
+          "absolute top-2.5 z-10 w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all shadow-sm",
           collapsed ? "left-2" : "right-2",
         )}
       >
         {collapsed ? (
-          <ChevronLeft size={14} />
+          <PanelRightOpen size={20} />
         ) : (
-          <ChevronRight size={14} />
+          <PanelRightClose size={20} />
         )}
       </button>
 
       {/* Collapsed state — slim strip with icon-only indicators */}
       {collapsed && (
-        <div className="flex flex-col items-center pt-12 pb-4 gap-3">
+        <div className="flex flex-col items-center pt-12 pb-4 gap-4 mt-2">
 
           {/* Dataset name */}
           <div
