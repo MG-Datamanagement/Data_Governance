@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2, Sparkles, Settings2, Filter } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, Settings2, Filter, Download } from "lucide-react";
 import { ApiColumn, ApiTag } from "@/types";
 import { useAiReclassification } from "@/hooks/useAiReclassification";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -46,9 +46,10 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
           {reclassifyAiScanPhase === "never" && (
             <Button
               onClick={handleReclassificationActionWithAI}
-              variant="secondary"
+              variant="outline"
               size="sm"
               icon={<Sparkles className="w-3.5 h-3.5" />}
+              className="border-indigo-200 text-indigo-600"
             >
               Reclassify with AI
             </Button>
@@ -75,8 +76,17 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
               Reclassified
             </Button>
           )}
-          <Button variant="outline" size="icon" className="h-8 w-8 text-gray-400">
-            <Filter className="w-4 h-4" />
+          <Button variant="outline" size="sm" className="text-gray-600 border-gray-300 h-8">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+            </div>
+            Filter
+          </Button>
+          <Button variant="outline" size="sm" className="text-gray-600 border-gray-300 h-8">
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+            </div>
+            Export
           </Button>
         </>
       }

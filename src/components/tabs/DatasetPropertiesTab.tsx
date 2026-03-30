@@ -49,8 +49,8 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
     setIsModalOpen(true);
   };
 
-  const handleEditProperty = (prop: { id: string; key: string; value: string; last_updated?: string; }) => {
-    setEditingProperty({ id: prop.id, name: prop.key, value: prop.value });
+  const handleEditProperty = (prop: { id?: string; key: string; value: string; last_updated?: string; }) => {
+    setEditingProperty({ id: prop.id || prop.key, name: prop.key, value: prop.value });
     setIsModalOpen(true);
   };
 
@@ -65,13 +65,24 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
     }
   };
 
-  const handleSaveProperty = (name: string, value: string, id?: string) => {
+  const handleSaveProperty = (name: string, value: string, id?: string, oldName?: string) => {
     if (id) {
-      updateMutation.mutate({
-        catalogId,
-        propertyId: id,
-        data: { value, value_type: "string" }
-      });
+      if (oldName && name !== oldName) {
+        deleteMutation.mutate({ catalogId, propertyId: id }, {
+          onSuccess: () => {
+            createMutation.mutate({
+              catalogId,
+              data: { key: name, value, value_type: "string" }
+            });
+          }
+        });
+      } else {
+        updateMutation.mutate({
+          catalogId,
+          propertyId: id,
+          data: { value, value_type: "string" }
+        });
+      }
     } else {
       createMutation.mutate({
         catalogId,
@@ -182,7 +193,7 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
             <Pencil size={13} />
           </button>
           <button 
-            onClick={() => handleDeleteProperty(prop.id)}
+            onClick={() => handleDeleteProperty(prop.id || prop.key)}
             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
             title="Delete"
           >
@@ -226,7 +237,7 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
           <DataGrid
             data={paginatedProperties}
             columns={columns}
-            keyExtractor={(prop: any) => prop.id}
+            keyExtractor={(prop: any) => prop.id || prop.key}
             emptyStateMessage="No properties found"
             className="border-t border-gray-100 shadow-none border-x-0 border-b-0 rounded-none w-full"
             maxHeight="380px"

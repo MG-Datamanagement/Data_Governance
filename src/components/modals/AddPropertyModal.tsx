@@ -14,7 +14,7 @@ type FormValues = z.infer<typeof schema>;
 interface AddPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, value: string, id?: string) => void;
+  onSave: (name: string, value: string, id?: string, oldName?: string) => void;
   initialData?: { id: string; name: string; value: string } | null;
 }
 
@@ -40,7 +40,7 @@ export default function AddPropertyModal({
   if (!isOpen) return null;
 
   const onValid = (data: FormValues) => {
-    onSave(data.name, data.value, initialData?.id);
+    onSave(data.name, data.value, initialData?.id, initialData?.name);
     onClose();
   };
 
