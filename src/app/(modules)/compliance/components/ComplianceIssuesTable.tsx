@@ -82,7 +82,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
       {/* Header & Search/Filter Row */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center shrink-0">
             <AlertCircle size={24} />
           </div>
           <div className="flex-1">
@@ -117,7 +117,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
               </button>
             )}
           </div>
-          <Button variant="outline" size="lg" className="gap-2 bg-white">
+          <Button disabled variant="outline" size="lg" className="gap-2 bg-white">
             Filter
             <ChevronDown size={16} className="text-gray-400" />
           </Button>

@@ -1,11 +1,11 @@
-import { Shield } from "lucide-react";
+import { Shield, ChevronLeft, ChevronRight, InfoIcon, Info, Columns, PanelRightClose, PanelLeftClose, PanelRightOpen } from "lucide-react";
 import { InlineState } from "@/components/ui/InlineState";
 import { ComplianceFrameworkCard } from "@/app/(modules)/compliance/components/ComplianceFrameworkCard";
 import { ComplianceData } from "@/hooks/useComplianceData";
 import { ApiComplianceFramework } from "@/types";
-import { InfoIcon } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Info } from "lucide-react";
+import { useAppStore } from "@/store/appStore";
+import { cn } from "@/lib/utils";
 
 
 type Props = {
@@ -15,45 +15,84 @@ type Props = {
 export function ComplianceFrameworksPanel({ frameworksQuery }: Props) {
   const { data: runData, isLoading, error, refetch } = frameworksQuery;
   const frameworks = runData?.frameworks;
-    const frameworkInfographic = runData?.frameworks_infographic;
-
+  const { complianceSidebarCollapsed: collapsed, toggleComplianceSidebar: toggle } = useAppStore();
 
   return (
-    <div className="border border-gray-200 rounded-xl bg-white col-span-4 border-l-4 border-l-indigo-600 shadow-sm overflow-hidden flex flex-col h-full sticky top-6">
-      <div className="p-6 border-b border-gray-100 flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Shield className="text-indigo-600" size={18} />
-            <h2 className="text-base font-bold text-gray-900">
-              Compliance Frameworks
-            </h2>
-          </div>
-          <p className="text-xs text-gray-400 font-medium pl-6">
-            {frameworks?.length ?? 0} frameworks
-          </p>
-        </div>
-        {frameworkInfographic && <Tooltip content={frameworkInfographic} position="left">
-          <div className="text-gray-400 hover:text-indigo-600 transition-colors cursor-help">
-            <Info size={16} />
-          </div>
-        </Tooltip>}
-      </div>
+    <div
+      className={cn(
+        "flex-shrink-0 bg-white rounded-xl border border-gray-200 border-l-4 border-l-indigo-600 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-8rem)] sticky top-6 transition-all duration-300",
+        collapsed ? "w-14" : "w-[360px]"
+      )}
+    >
+      {collapsed ? (
+        <div className="flex flex-col items-center h-full py-3 px-1 select-none">
+          <button
+            onClick={() => toggle()}
+            title="Expand frameworks"
+            className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-all shadow-sm"
+          >
+            
+            <PanelRightOpen className="w-5 h-5" />
+          </button>
 
-      <div className="grid grid-cols-1 gap-2 p-2 overflow-y-auto pr-1">
-        {isLoading && (
-          <InlineState type="loading" message="Loading compliance frameworks..." />
-        )}
-        {error && (
-          <InlineState type="empty" message="No compliance frameworks configured." onRetry={refetch} />
-        )}
-        {!isLoading && !error && frameworks?.length === 0 && (
-          <InlineState type="empty" message="No compliance frameworks configured." />
-        )}
-        {!isLoading && !error && frameworks && frameworks.length > 0 &&
-          frameworks.map((framework: ApiComplianceFramework) => (
-            <ComplianceFrameworkCard key={framework.name} framework={framework} />
-          ))}
-      </div>
+          <div className="flex-1 flex items-center justify-center mt-2">
+            <span
+              className="text-[11px] font-semibold text-gray-400 tracking-[0.2em] uppercase whitespace-nowrap"
+              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+            >
+              Compliance Frameworks
+            </span>
+          </div>
+
+          <div
+            title={`${frameworks?.length ?? 0} frameworks`}
+            className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm mt-4 cursor-default group hover:bg-indigo-100 transition-colors"
+          >
+            <span className="text-xs font-bold text-indigo-600 group-hover:scale-110 transition-transform">
+              {frameworks?.length ?? 0}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="p-6 border-b border-gray-100 flex items-start justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Shield className="text-indigo-600" size={18} />
+                <h2 className="text-base font-bold text-gray-900">
+                  Compliance Frameworks
+                </h2>
+              </div>
+              <p className="text-xs text-gray-400 font-medium pl-6">
+                {frameworks?.length ?? 0} frameworks
+              </p>
+            </div>
+            <button
+              onClick={() => toggle()}
+              title="Collapse frameworks"
+              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <PanelRightClose className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 grid grid-auto-rows-min gap-2 p-2 overflow-y-auto pr-1">
+            {isLoading && (
+              <InlineState type="loading" message="Loading compliance frameworks..." />
+            )}
+            {error && (
+              <InlineState type="empty" message="No compliance frameworks configured." onRetry={refetch} />
+            )}
+            {!isLoading && !error && frameworks?.length === 0 && (
+              <InlineState type="empty" message="No compliance frameworks configured." />
+            )}
+            {!isLoading && !error && frameworks && frameworks.length > 0 &&
+              frameworks.map((framework: ApiComplianceFramework) => (
+                <ComplianceFrameworkCard key={framework.name} framework={framework} />
+              ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

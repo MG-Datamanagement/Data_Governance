@@ -15,7 +15,7 @@ import QuickActionsDropdown from "@/components/ui/QuickActionsDropdown";
 import { Button } from "@/components/ui/Button";
 import { Download, Play } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { dashboardApiServices } from "@/services/dashboardApi.service";
 import { ComplianceScanPanel } from "@/app/(modules)/compliance/components/ComplianceScanPanel";
 import { useAppStore } from "@/store/appStore";
@@ -25,6 +25,16 @@ function ComplianceContent() {
   const { addToast, updateToast } = useAppStore();
   const [isExporting, setIsExporting] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("autoScan") === "true") {
+        setIsScanOpen(true);
+        window.history.replaceState({}, '', '/compliance');
+      }
+    }
+  }, []);
   
   const handleExportReport = async () => {
     if (isExporting) return;
@@ -92,8 +102,8 @@ function ComplianceContent() {
         <>
           <ComplianceHeader />
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-            <div className="grid grid-cols-1 gap-5 col-span-8 min-w-0">
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
+            <div className="flex-1 min-w-0 space-y-5 w-full">
               <ComplianceHealthSection healthQuery={healthQuery} insightsQuery={insightsQuery} />
               <ComplianceIssuesSection issuesQuery={issuesQuery} />
             </div>

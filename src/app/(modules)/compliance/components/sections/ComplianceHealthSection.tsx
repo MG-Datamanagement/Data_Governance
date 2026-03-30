@@ -54,15 +54,15 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
   
   const insightsData = insightsQuery.data?.ai_insights;
   const isInsightsLoading = insightsQuery.isLoading;
-  const overallScoreInfographic = runData?.overall_score_infographic;
+  // const overallScoreInfographic = runData?.overall_score_infographic;
 
   return (
     <div className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm space-y-6">
       {/* Section Header */}
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
-          <div className="w-10 h-10 bg-primary/20 p-2 text-indigo-700 rounded-xl flex items-center justify-center">
-            <Shield size={24} />
+          <div className="w-8 h-8 bg-indigo-600 p-1.5 text-white rounded-lg flex items-center justify-center">
+            <Shield size={20} />
           </div>
           <div className="flex flex-col justify-center">
             <h2 className="text-base font-bold text-gray-900 leading-tight">Compliance Health</h2>
@@ -84,7 +84,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
             <ComplianceScoreCard
               score={health?.score ?? 0}
               change={health?.trend_label ?? "No change"}
-              overall_score_infographic={overallScoreInfographic}
+              // overall_score_infographic={overallScoreInfographic}
             />
           </div>
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, FileText, Search, Sparkles, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter, usePathname } from "next/navigation";
 
 type ActionItem = {
   id: string;
@@ -9,6 +10,7 @@ type ActionItem = {
   icon: React.ElementType;
   iconBg: string;
   iconColor: string;
+  href?: string;
 };
 
 const ACTIONS: ActionItem[] = [
@@ -19,6 +21,7 @@ const ACTIONS: ActionItem[] = [
     icon: Plus,
     iconBg: "bg-blue-100",
     iconColor: "text-blue-600",
+    href: "/line-of-business",
   },
   {
     id: "policy",
@@ -35,6 +38,7 @@ const ACTIONS: ActionItem[] = [
     icon: Search,
     iconBg: "bg-purple-100",
     iconColor: "text-purple-600",
+    href: "/compliance?autoScan=true",
   },
   {
     id: "ai",
@@ -49,6 +53,8 @@ const ACTIONS: ActionItem[] = [
 export default function QuickActionsDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -91,8 +97,8 @@ export default function QuickActionsDropdown() {
           )}
         >
           <div className="space-y-1">
-            {ACTIONS.map(
-              ({ id, title, description, icon: Icon, iconBg, iconColor }) => (
+            {ACTIONS.filter(action => !(action.id === "compliance" && pathname === "/compliance")).map(
+              ({ id, title, description, icon: Icon, iconBg, iconColor, href }) => (
                 <button
                   key={id}
                   type="button"
@@ -101,6 +107,11 @@ export default function QuickActionsDropdown() {
                     "p-3 rounded-md",
                     "hover:bg-gray-50 transition-colors text-left",
                   )}
+                  onClick={() => {
+                    if (href) {
+                      router.push(href);
+                    }
+                  }}
                 >
                   <div
                     className={cn(

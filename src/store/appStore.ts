@@ -17,6 +17,8 @@ interface AppState {
   chatSidebarCollapsed: boolean;
   /** Dataset Detail right metadata sidebar (global, persists across navigations) */
   datasetDetailSidebarCollapsed: boolean;
+  /** Compliance Frameworks right sidebar (global, persists across navigations) */
+  complianceSidebarCollapsed: boolean;
   /** Dark mode */
   darkMode: boolean;
   /** Dataset detail tab */
@@ -37,6 +39,9 @@ interface AppState {
   toggleDatasetDetailSidebar: () => void;
   setDatasetDetailSidebarCollapsed: (collapsed: boolean) => void;
 
+  toggleComplianceSidebar: () => void;
+  setComplianceSidebarCollapsed: (collapsed: boolean) => void;
+
   toggleDarkMode: () => void;
   setAddDsConfig: (config: Record<string, any>) => void;
   
@@ -49,6 +54,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: true,
   chatSidebarCollapsed: true,
   datasetDetailSidebarCollapsed: false,
+  complianceSidebarCollapsed: false,
   darkMode: false,
   datasetDetailTab: "DataCard",
   addDsConfig: {},
@@ -69,6 +75,11 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ datasetDetailSidebarCollapsed: !state.datasetDetailSidebarCollapsed })),
   setDatasetDetailSidebarCollapsed: (collapsed) =>
     set({ datasetDetailSidebarCollapsed: collapsed }),
+
+  toggleComplianceSidebar: () =>
+    set((state) => ({ complianceSidebarCollapsed: !state.complianceSidebarCollapsed })),
+  setComplianceSidebarCollapsed: (collapsed) =>
+    set({ complianceSidebarCollapsed: collapsed }),
 
   toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
   setAddDsConfig: (config: Record<string, any>) =>
