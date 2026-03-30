@@ -63,8 +63,6 @@ const ManageDataSourcesPage: React.FC = () => {
 
     const { data: apiDataResponse, isFetching: isSourcesLoading, error: sourcesFetchError, refetch: refetchSources } = useGetDataSources({
         status: filter !== "All" ? filter : undefined,
-        limit: sourcesLimit,
-        offset: sourcesOffset
     });
 
     // Robust data extraction: handles both paginated objects and plain arrays
@@ -185,10 +183,15 @@ const ManageDataSourcesPage: React.FC = () => {
     ];
 
     const sources = useMemo(() => {
-        if (!search.trim()) return allSources;
-        const q = search.toLowerCase();
-        return allSources.filter((s: DataSource) => s.name.toLowerCase().includes(q));
-    }, [allSources, search]);
+        let filtered = allSources;
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            filtered = allSources.filter((s: DataSource) => s.name.toLowerCase().includes(q));
+        }
+
+        // Apply frontend pagination slicing
+        return filtered.slice(sourcesOffset, sourcesOffset + sourcesLimit);
+    }, [allSources, search, sourcesOffset, sourcesLimit]);
 
     const [sourceToDelete, setSourceToDelete] = useState<DataSource | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -435,107 +438,111 @@ const ManageDataSourcesPage: React.FC = () => {
                 {activeTab === "Secrets" ? (
                     <ManageSecretsTab />
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                        <table className="w-full">
-                            {activeTab === "Sources" && <thead>
-                                <tr className="border-b border-gray-100">
-                                    <th className="pl-4 pr-2 py-3 w-10">
-                                        <input
-                                            type="checkbox"
-                                            checked={allChecked}
-                                            onChange={toggleAll}
-                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                    </th>
-                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Name
-                                    </th>
-                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Schedule
-                                    </th>
-                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Owner
-                                    </th>
-                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Last Run
-                                    </th>
-                                    <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Status
-                                    </th>
-                                    <th className="py-3 pr-4 w-10 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        
-                                    </th>
-                                </tr>
-                            </thead>}
-                            <tbody>
-                                {activeTab === "Sources" ? (
-                                    isLoading ? (
-                                        <tr>
-                                            <td colSpan={7} className="p-0 border-0">
-                                                <TableSkeleton columns={7} rows={5} />
-                                            </td>
-                                        </tr>
-                                    ) : sources.length > 0 ? (
-                                        sources.map((source: any) => (
-                                            <DataSourceTableRow
-                                                key={source.id}
-                                                source={source}
-                                                checked={checkedIds.has(source.id)}
-                                                activeJobId={activeJobs[source.id]}
-                                                onCheck={toggleOne}
-                                                onIngest={handleIngest}
-                                                onDelete={(s) => setSourceToDelete(s)}
-                                                onLiveError={(id) => {
-                                                    setActiveJobs(prev => {
-                                                        const next = { ...prev };
-                                                        delete next[id];
-                                                        return next;
-                                                    });
-                                                }}
-                                            />
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
-                                                {error || "No data sources found"}
-                                            </td>
-                                        </tr>
-                                    )
-                                ) : null}
-                            </tbody>
-                        </table>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                        {activeTab === "Sources" && (
+                            <>
+                                <div className="overflow-auto max-h-[500px]">
+                                    <table className="w-full">
+                                        <thead className="sticky top-0 bg-white z-10">
+                                            <tr className="border-b border-gray-100 shadow-sm">
+                                                <th className="pl-4 pr-1 py-3 w-10">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={allChecked}
+                                                        onChange={toggleAll}
+                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                    />
+                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Name
+                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Schedule
+                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Owner
+                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Last Run
+                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    Status
+                                                </th>
+                                                <th className="py-3 pr-4 w-10 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                                    {/* Actions */}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {isLoading ? (
+                                                <tr>
+                                                    <td colSpan={7} className="p-0 border-0">
+                                                        <TableSkeleton columns={7} rows={5} />
+                                                    </td>
+                                                </tr>
+                                            ) : sources.length > 0 ? (
+                                                sources.map((source: any) => (
+                                                    <DataSourceTableRow
+                                                        key={source.id}
+                                                        source={source}
+                                                        checked={checkedIds.has(source.id)}
+                                                        activeJobId={activeJobs[source.id]}
+                                                        onCheck={toggleOne}
+                                                        onIngest={handleIngest}
+                                                        onDelete={(s) => setSourceToDelete(s)}
+                                                        onLiveError={(id) => {
+                                                            setActiveJobs(prev => {
+                                                                const next = { ...prev };
+                                                                delete next[id];
+                                                                return next;
+                                                            });
+                                                        }}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
+                                                        {sourcesFetchError ? "Error loading sources" : "No data sources found"}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                        {activeTab === "Sources" && apiData && sourcesTotal > 0 && (
-                            <div className="border-t border-gray-100">
-                                <Pagination
-                                    currentPage={Math.floor(sourcesOffset / currentLimit) + 1}
-                                    totalItems={sourcesTotal}
-                                    pageSize={currentLimit}
-                                    pageSizeOptions={[10, 20, 50, 100]}
-                                    showCount
-                                    onPageChange={(page) => setSourcesOffset((page - 1) * currentLimit)}
-                                    onPageSizeChange={(size) => {
-                                        setSourcesLimit(size);
-                                        setSourcesOffset(0);
-                                    }}
-                                />
-                            </div>
+                                {apiData && sourcesTotal > 0 && (
+                                    <div className="border-t border-gray-100">
+                                        <Pagination
+                                            currentPage={Math.floor(sourcesOffset / sourcesLimit) + 1}
+                                            totalItems={sourcesTotal}
+                                            pageSize={sourcesLimit}
+                                            pageSizeOptions={[10, 20, 50, 100]}
+                                            showCount
+                                            onPageChange={(page) => setSourcesOffset((page - 1) * sourcesLimit)}
+                                            onPageSizeChange={(size) => {
+                                                setSourcesLimit(size);
+                                                setSourcesOffset(0);
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {activeTab === "Run History" && (
                             <DataGrid
-                                data={runHistory?.results || []}
+                                data={runHistoryData?.results || []}
                                 columns={runHistoryColumns}
-                                isLoading={isHistoryLoading}
+                                isLoading={isHistoryFetchLoading}
                                 keyExtractor={(run: any) => run.job_id}
                                 emptyStateMessage="No run history found"
                                 className="w-full border-none shadow-none rounded-none"
                                 maxHeight="500px"
                                 pagination={
-                                    runHistory && runHistory.total > 0 ? (
+                                    runHistoryData && runHistoryData.total > 0 ? (
                                         <Pagination
                                             currentPage={Math.floor(historyOffset / historyLimit) + 1}
-                                            totalItems={runHistory.total}
+                                            totalItems={runHistoryData.total}
                                             pageSize={historyLimit}
                                             pageSizeOptions={[10, 20, 50, 100]}
                                             showCount
