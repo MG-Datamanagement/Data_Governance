@@ -8,7 +8,7 @@ import {
 } from "@/services/dashboardApi.service";
 import { Dataset, ApiTag } from "@/types";
 import { downloadFileFromResponse, formatDateTime } from "@/lib/utils";
-import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Search, Filter, Table2, LayoutGrid, Sparkles } from "lucide-react";
+import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Search, Filter, Table2, LayoutGrid, Sparkles, Table, ArrowRight } from "lucide-react";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { CONSTANTS } from "@/lib/constants";
 import { useGetSourceStats } from "@/hooks/useDashboardQueries";
@@ -35,45 +35,6 @@ const StatusBadge: React.FC<{ status: Dataset["status"] }> = ({ status }) => {
   );
 };
 
-// ─── Dataset Type Icon ────────────────────────────────────────────────────────
-// const TypeIcon: React.FC<{ type: Dataset["type"] }> = ({ type }) => {
-//   if (type === "View" || type === "Materialized View") {
-//     return (
-//       <div className="w-7 h-7 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
-//         <svg
-//           className="w-4 h-4 text-purple-500"
-//           fill="none"
-//           viewBox="0 0 24 24"
-//           stroke="currentColor"
-//           strokeWidth={1.5}
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-//           />
-//         </svg>
-//       </div>
-//     );
-//   }
-//   return (
-//     <div className="w-7 h-7 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
-//       <svg
-//         className="w-4 h-4 text-blue-500"
-//         fill="none"
-//         viewBox="0 0 24 24"
-//         stroke="currentColor"
-//         strokeWidth={1.5}
-//       >
-//         <path
-//           strokeLinecap="round"
-//           strokeLinejoin="round"
-//           d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125"
-//         />
-//       </svg>
-//     </div>
-//   );
-// };
 
 const TypeIcon: React.FC<{
   type: Dataset["type"];
@@ -97,7 +58,7 @@ const TypeIcon: React.FC<{
           ? "text-indigo-300"
           : "bg-blue-100";
 
-  if (type === "view" || type === "Materialized View") {
+  if (["Materialized View", "view"].includes(type)) {
     return (
       <div
         className={`w-7 h-7 rounded-md ${bgColor} flex items-center justify-center flex-shrink-0`}
@@ -111,7 +72,7 @@ const TypeIcon: React.FC<{
     <div
       className={`w-7 h-7 rounded-md ${bgColor} flex items-center justify-center flex-shrink-0`}
     >
-      <Table2 className={`w-4 h-4 ${iconColor}`} />
+      <Table className={`w-4 h-4 ${iconColor}`} />
     </div>
   );
 };
@@ -156,34 +117,34 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
   const isLoading = isStatsLoading;
 
   React.useEffect(() => {
-      if (stats?.source_name) setSourceName(stats.source_name);
+    if (stats?.source_name) setSourceName(stats.source_name);
   }, [stats?.source_name]);
 
   React.useEffect(() => {
-      if (!stats?.catalogs) {
-          setAllDatasets([]);
-          return;
-      }
-      const mapped = stats.catalogs.map((cat: any) => {
-          const filteredTags =
-            cat.tags?.filter((tag: ApiTag) =>
-              ["pii", "phi", "financial","sensitive"].includes((tag.name || "").toLowerCase())
-            ) || [];
+    if (!stats?.catalogs) {
+      setAllDatasets([]);
+      return;
+    }
+    const mapped = stats.catalogs.map((cat: any) => {
+      const filteredTags =
+        cat.tags?.filter((tag: ApiTag) =>
+          ["pii", "phi", "financial", "sensitive"].includes((tag.name || "").toLowerCase())
+        ) || [];
 
-          return {
-            id: cat.catalog_id,
-            name: cat.table_name || cat.full_name,
-            hasPII: filteredTags.length > 0,
-            type: cat.type || "table",
-            rows: cat.row_count ? cat.row_count.toString() : null,
-            columns: cat.column_count || 0,
-            size: null,
-            lastSync: formatDateTime(cat.last_sync),
-            status: cat.status || "healthy",
-            tags: filteredTags
-          };
-      });
-      setAllDatasets(mapped);
+      return {
+        id: cat.catalog_id,
+        name: cat.table_name || cat.full_name,
+        hasPII: filteredTags.length > 0,
+        type: cat.type || "table",
+        rows: cat.row_count ? cat.row_count.toString() : null,
+        columns: cat.column_count || 0,
+        size: null,
+        lastSync: formatDateTime(cat.last_sync),
+        status: cat.status || "healthy",
+        tags: filteredTags
+      };
+    });
+    setAllDatasets(mapped);
   }, [stats]);
 
   const exportList = async () => {
@@ -239,7 +200,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
       (response?.results || []).forEach((r) => {
         const tag = (r.suggested_tag || "").toLowerCase();
 
-        classificationMap[r.catalog_id] = ["pii", "phi", "financial","sensitive"].includes(tag)
+        classificationMap[r.catalog_id] = ["pii", "phi", "financial", "sensitive"].includes(tag)
           ? "pii"
           : "clean";
       });
@@ -265,7 +226,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
       setAllDatasets((prev: Dataset[]) =>
         prev.map((d: Dataset) => {
           const result = classificationMap[d.id];
-          return result ? { ...d, hasPII: ["pii", "phi","financial","sensitive"].includes(result.toLowerCase()) } : d;
+          return result ? { ...d, hasPII: ["pii", "phi", "financial", "sensitive"].includes(result.toLowerCase()) } : d;
         }),
       );
 
@@ -341,10 +302,10 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               (piiScanPhase !== "scanning" &&
                 dataset.hasPII &&
                 !scannedDatasets[dataset.id])) && (
-              <Badge variant="warning" size="sm" className="mt-0.5 rounded-md py-0">
-                PII Detected
-              </Badge>
-            )}
+                <Badge variant="warning" size="sm" className="mt-0.5 rounded-md py-0">
+                  PII Detected
+                </Badge>
+              )}
             {scannedDatasets[dataset.id] === "clean" && (
               <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] font-medium text-green-600">
                 <Check size={10} />
@@ -384,7 +345,8 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
           variant="ghost"
           onClick={() => goToDetail(dataset.id)}
           className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 text-xs px-2 gap-1"
-          icon={<ChevronRight className="w-4 h-4" />}
+          icon={<ArrowRight className="w-4 h-4" />}
+          iconPosition="end"
         >
           View Details
         </Button>
@@ -586,7 +548,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             className="border-none shadow-none rounded-none"
             maxHeight="600px"
             pagination={
-               filtered.length > 0 ? (
+              filtered.length > 0 ? (
                 <div className="px-4 py-3 border-t border-gray-100 bg-white shadow-sm rounded-b-xl">
                   <Pagination
                     currentPage={page}
@@ -601,7 +563,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
                     showCount
                   />
                 </div>
-               ) : undefined
+              ) : undefined
             }
           />
         </div>

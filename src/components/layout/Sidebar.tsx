@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Bot,
   Building2,
+  ShieldCheck,
+  Brain,
 } from "lucide-react";
 import { MessageSquare, Cable, Sparkles, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,22 +30,22 @@ const GOVERN_ITEMS = [
   { icon: Home, label: "Home", href: "/overview" },
   { icon: Database, label: "Data Sources", href: "/data-sources" },
   // { icon: Globe, label: "Domains", href: "/domains" },
-  { icon: Tag, label: "Tags", href: "/tags" },
+  { icon: ShieldCheck, label: "Tags", href: "/tags" },
   // { icon: Book, label: "Glossary", href: "/glossary" },
-  { icon: Cpu, label: "Models", href: "/models" },
-  { icon: Bot, label: "Agents", href: "/agents" },
+  { icon: Brain, label: "Models", href: "/models" },
+  { icon: Cable, label: "Agents", href: "/agents" },
   { icon: Building2, label: "Line of Business", href: "/line-of-business" },
 ];
 
 const ADMIN_ITEMS = [
-  { icon: Database, label: "Data Connectors", href: "/data-connectors" },
+  { icon: Cable, label: "Data Connectors", href: "/data-connectors" },
   // { icon: BarChart3, label: "Analytics", href: "/analytics" },
 ];
 
 const AI_ASSISTANT_ITEMS = [
   // { icon: MessageSquare, label: "Inbox", href: "/inbox" },
   // { icon: Cable, label: "Connectors", href: "/connectors" },
-  { icon: Sparkles, label: "Ask Me Anything", href: "/ask-me-anything" },
+  { icon: MessageSquare, label: "Ask Me Anything", href: "/ask-me-anything" },
 ];
 
 

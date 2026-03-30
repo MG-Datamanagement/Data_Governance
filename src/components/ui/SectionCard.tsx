@@ -12,6 +12,7 @@ interface SectionCardProps {
   bodyClassName?: string;
   showSectionHeader?: boolean;
   infotext?: string;
+  headerClassName?: string;
 }
 
 export function SectionCard({
@@ -25,10 +26,11 @@ export function SectionCard({
   bodyClassName,
   showSectionHeader = true,
   infotext,
+  headerClassName,
 }: SectionCardProps) {
   return (
     <div className={cn("bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden", className)}>
-      {showSectionHeader && <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+      {showSectionHeader && <div className={cn("px-4 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/30", headerClassName)}>
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             {headerIcon && (

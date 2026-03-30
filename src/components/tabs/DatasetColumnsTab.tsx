@@ -168,18 +168,18 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
                     {ai ? (
                       <>
                         <div className="flex flex-wrap gap-1.5 items-center">
-                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 font-bold text-[9px] rounded uppercase items-center flex gap-1 border border-indigo-200 shadow-sm leading-none h-4">
+                          <span className="px-2 py-1.5 bg-indigo-100 text-indigo-700 font-bold text-[9px] rounded-lg uppercase items-center flex gap-1 border border-indigo-200 shadow-sm leading-none h-4">
                             <Sparkles className="w-2.5 h-2.5" />
                             AI
                           </span>
-                          <span className="px-2 py-0.5 bg-purple-50 text-purple-700 font-semibold text-[10px] rounded border border-purple-200">
+                          <span className="px-3 py-0 bg-purple-50 text-purple-700 font-semibold text-[10px] rounded-md border border-purple-200">
                             {ai.suggested_tag || "General"}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 opacity-90">
-                          <div className="w-12 h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+                          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                              className="bg-indigo-500 h-full rounded-full transition-all duration-1000 ease-out"
+                              className="bg-green-500 h-full rounded-full transition-all duration-1000 ease-out"
                               style={{ width: `${(ai.confidence_score || 0) * 100}%` }}
                             />
                           </div>

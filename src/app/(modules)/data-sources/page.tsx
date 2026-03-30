@@ -445,7 +445,7 @@ const ManageDataSourcesPage: React.FC = () => {
                                         Status
                                     </th>
                                     <th className="py-3 pr-4 w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Details
+                                        
                                     </th>
                                 </tr>
                             </thead>}

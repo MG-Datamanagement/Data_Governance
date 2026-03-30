@@ -70,6 +70,8 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
     <SectionCard
       title="Highlighted Queries"
       headerIcon={<Terminal size={16} />}
+      headerClassName="border-none"
+      className="bg-transparent border-none shadow-none"
       description={
         <span>
           Saved queries that reference the{" "}
@@ -113,7 +115,7 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
           <InlineState type="loading" message="Loading queries..." />
         </div>
       ) : (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-400 p-5">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
           {viewMode === "list" ? (
             <QueryListView queries={paginatedQueries} onDelete={setQueryToDelete} datasetName={datasetName} />
           ) : (

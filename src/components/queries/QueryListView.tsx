@@ -5,17 +5,20 @@ import { Trash2, Eye, Terminal } from "lucide-react";
 import { ApiQuery } from "@/types/dashboardTypes";
 import QuerySqlPreview from "./QuerySqlPreview";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { cn } from "@/lib/utils";
 
 interface QueryListViewProps {
   queries: ApiQuery[];
   onDelete: (queryId: string) => void;
   datasetName: string;
+  className?: string;
 }
 
 const QueryListView: React.FC<QueryListViewProps> = ({
   queries,
   onDelete,
   datasetName,
+  className,
 }) => {
   if (queries.length === 0) {
     return (
@@ -119,7 +122,7 @@ const QueryListView: React.FC<QueryListViewProps> = ({
       data={queries}
       columns={columns}
       keyExtractor={(row) => row.id}
-      className="border-none shadow-none"
+      className={cn("border-none shadow-none", className)}
     />
   );
 };

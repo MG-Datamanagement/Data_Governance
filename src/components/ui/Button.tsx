@@ -10,6 +10,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: Size;
   isLoading?: boolean;
   icon?: React.ReactNode;
+  iconPosition?: "start" | "end";
 };
 
 const variants: Record<Variant, string> = {
@@ -33,6 +34,7 @@ export function Button({
   size = "md",
   isLoading = false,
   icon,
+  iconPosition = "start",
   children,
   className,
   disabled,
@@ -50,8 +52,9 @@ export function Button({
       {...props}
     >
       {isLoading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
-      {!isLoading && icon && <span className="shrink-0 flex items-center justify-center">{icon}</span>}
+      {!isLoading && icon && iconPosition === "start" && <span className="shrink-0 flex items-center justify-center">{icon}</span>}
       {children}
+      {!isLoading && icon && iconPosition === "end" && <span className="shrink-0 flex items-center justify-center">{icon}</span>}
     </button>
   );
 }

@@ -16,6 +16,7 @@ import mssqlIcon from "@/assets/node-img-icons/ms-sql-img-icon.jpg";
 import nifiIcon from "@/assets/node-img-icons/nifi-img-icon.png";
 import redshiftIcon from "@/assets/node-img-icons/redshift-img-icon.png";
 import sparkIcon from "@/assets/node-img-icons/spark-img-icon-transparent.png";
+import { LayoutDashboard } from "lucide-react";
 
 // ─── Type icon (table / view / dashboard) ────────────────────────────────────
 export function typeIcon(type: NodeType, cls = "w-3.5 h-3.5") {
@@ -30,6 +31,9 @@ export function typeIcon(type: NodeType, cls = "w-3.5 h-3.5") {
       <circle cx="12" cy="12" r="3" />
       <path d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7-5.064 7-9.542 7S3.732 16.057 2.458 12z" />
     </svg>
+  );
+  if(type === "dashboard") return (
+    <LayoutDashboard className={cls} />
   );
   return (
     <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
