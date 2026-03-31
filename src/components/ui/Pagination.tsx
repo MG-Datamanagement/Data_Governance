@@ -87,7 +87,7 @@ export function Pagination({
             <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>Rows per page:</span>
             <Select
               value={pageSize.toString()}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              onChange={(val) => onPageSizeChange(Number(val))}
               options={pageSizeOptions.map((size) => ({
                 value: size.toString(),
                 label: size.toString(),

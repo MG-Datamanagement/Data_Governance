@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
 
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     
@@ -34,7 +34,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
     }
     
     setCoords({ top, left });
-  };
+  }, [position]);
 
   const handleMouseEnter = () => {
     updatePosition();
@@ -55,7 +55,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
         window.removeEventListener("resize", updatePosition);
       };
     }
-  }, [isVisible, position]);
+  }, [isVisible, updatePosition]);
 
   return (
     <>

@@ -168,6 +168,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             <div className="max-w-lg">
               <SearchInput
                 placeholder="Find tables, dashboards, people, and more"
+                onChange={() => {}}
                 disabled
                 showKbd
               />
@@ -256,6 +257,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           <div className="max-w-lg">
             <SearchInput
               placeholder="Find tables, dashboards, people, and more"
+              onChange={() => {}}
               showKbd
             />
           </div>
