@@ -247,11 +247,11 @@ export default function AgentsPage() {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="bg-white min-w-[140px]"
                             options={[
-                                { value: "All Statuses", label: "All Statuses" },
                                 { value: "Active", label: "Active" },
                                 { value: "Paused", label: "Paused" },
                                 { value: "Error", label: "Error" }
                             ]}
+                            placeholder="All Statuses"
                         />
 
                         {/* Types Filter Dropdown */}
@@ -260,10 +260,10 @@ export default function AgentsPage() {
                             onChange={(e) => setTypeFilter(e.target.value)}
                             className="bg-white min-w-[140px]"
                             options={[
-                                { value: "All Types", label: "All Types" },
                                 { value: "BYO Agent", label: "BYO Agent" },
                                 { value: "Platform Agent", label: "Platform Agent" }
                             ]}
+                            placeholder="All Types"
                         />
 
                         {(searchQuery !== "" || statusFilter !== "All Statuses" || typeFilter !== "All Types") && (

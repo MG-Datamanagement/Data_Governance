@@ -71,7 +71,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
         <div
           role="tooltip"
           className={cn(
-            "fixed z-[9999] pointer-events-none bg-gray-900 text-white text-[11px] font-medium px-3 py-2 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-100",
+            "fixed z-[9999] pointer-events-none bg-gray-100 text-gray-900 border border-gray-300 text-[11px] font-medium px-3 py-2 rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-100",
             "whitespace-normal break-words max-w-[280px] leading-relaxed",
             position === "top" && "-translate-x-1/2 -translate-y-full",
             position === "bottom" && "-translate-x-1/2",
@@ -87,7 +87,7 @@ export function Tooltip({ content, children, position = "top", className }: Tool
           {content}
           <div 
             className={cn(
-              "absolute w-2 h-2 bg-gray-900 rotate-45",
+              "absolute w-2 h-2 bg-gray-100 border-b border-r border-gray-300 rotate-45",
               position === "top" && "top-full left-1/2 -translate-x-1/2 -translate-y-1/2",
               position === "bottom" && "bottom-full left-1/2 -translate-x-1/2 translate-y-1/2",
               position === "left" && "left-full top-1/2 -translate-y-1/2 -translate-x-1/2",

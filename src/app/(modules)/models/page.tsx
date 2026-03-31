@@ -39,9 +39,9 @@ export default function ModelRegistryPage() {
   });
 
   // Get unique values for filters
-  const sources = ["All Sources", ...new Set(MOCK_MODEL_LIST.map((m) => m.source))];
-  const tasks = ["All Tasks", ...new Set(MOCK_MODEL_LIST.map((m) => m.task))];
-  const statuses = ["All Statuses", ...new Set(MOCK_MODEL_LIST.map((m) => m.status))];
+  const sources = [...new Set(MOCK_MODEL_LIST.map((m) => m.source))];
+  const tasks = [...new Set(MOCK_MODEL_LIST.map((m) => m.task))];
+  const statuses = [...new Set(MOCK_MODEL_LIST.map((m) => m.status))];
 
   const hasActiveFilters = 
     searchQuery !== "" || 

@@ -6,6 +6,7 @@ import { ApiTag } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import { SidebarToggle } from "@/components/ui/SidebarToggle";
+import { Tooltip } from "../ui/Tooltip";
 
 interface DatasetDetailSidebarProps {
   name: string;
@@ -58,24 +59,26 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
         <div className="flex flex-col items-center pt-12 pb-4 gap-4">
 
           {/* Dataset name */}
-          <div
-            title={name}
-            className="text-[10px] font-bold text-gray-600 bg-gray-100 rounded-full px-1 w-6 h-6 flex items-center justify-center"
-          >
-            <Database className="w-4 h-4 text-gray-600" />
-          </div>
+          <Tooltip content={name} position="top">
+            <div
+              className="text-[10px] font-bold text-gray-600 bg-gray-100 rounded-full px-1 w-6 h-6 flex items-center justify-center"
+            >
+              <Database className="w-4 h-4 text-gray-600" />
+            </div>
+          </Tooltip>
 
           {/* Owner avatar */}
-          <div
-            title={`Owner: ${owner}`}
-            className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold flex items-center justify-center"
-          >
-            {ownerInitials}
+          <Tooltip content={owner} position="top">
+            <div
+              className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold flex items-center justify-center"
+            >
+              {ownerInitials}
           </div>
+          </Tooltip>
 
           {/* Lineage health dot */}
+          <Tooltip content={lineageWarning ?? "All upstreams healthy"} position="top">
           <div
-            title={lineageWarning ?? "All upstreams healthy"}
             className={cn(
               "w-6 h-6 rounded-full", "bg-gray-100",
             )}
@@ -84,15 +87,17 @@ const DatasetDetailSidebar: React.FC<DatasetDetailSidebarProps> = ({
               <Zap className={cn("w-4 h-4 text-gray-600 stroke-2")} />
             </div>
           </div>
+          </Tooltip>
 
           {/* Tag count badge */}
           {tags.length > 0 && (
+            <Tooltip content={`${tags.length} tag${tags.length !== 1 ? "s" : ""}`} position="top">
             <div
-              title={`${tags.length} tag${tags.length !== 1 ? "s" : ""}`}
               className="text-[10px] font-bold text-gray-600 bg-gray-100 rounded-full px-1 w-6 h-6 flex items-center justify-center"
             >
               {tags.length}
             </div>
+            </Tooltip>
           )}
         </div>
       )}

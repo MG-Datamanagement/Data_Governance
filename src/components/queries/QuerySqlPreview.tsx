@@ -83,7 +83,7 @@ const QuerySqlPreview: React.FC<QuerySqlPreviewProps> = ({
           ))}
           <button
             onClick={handleCopy}
-            className="ml-2 p-1 rounded-md hover:bg-[#334155] text-gray-800 hover:text-white transition-all flex items-center gap-1.5"
+            className="ml-2 p-1 rounded-md hover:bg-gray-400 text-gray-800 hover:text-white transition-all flex items-center gap-1.5"
             title="Copy Code"
           >
             {copied ? (
@@ -120,14 +120,14 @@ const QuerySqlPreview: React.FC<QuerySqlPreviewProps> = ({
           height: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #0f172a;
+          background: #e5e7eb;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #334155;
+          background: #d1d5db;
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #475569;
+          background: #9ca3af;
         }
       `}</style>
     </div>

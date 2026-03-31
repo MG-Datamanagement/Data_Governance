@@ -1,5 +1,6 @@
 import { LucideIcon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "./Tooltip";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -35,9 +36,11 @@ export function StatCard({
           </div>
 
           {info && (
-            <div title={info} className="cursor-help text-gray-400 hover:text-gray-600 transition-colors">
-              <Info size={12} />
-            </div>
+            <Tooltip content={info}>
+              <div className="cursor-help text-gray-400 hover:text-gray-600 transition-colors">
+                <Info size={12} />
+              </div>
+            </Tooltip>
           )}
         </div>
 
