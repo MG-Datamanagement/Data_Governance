@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { InlineState } from "@/components/ui/InlineState";
 import { Pagination } from "@/components/ui/Pagination";
+import { SearchInput } from "@/components/ui/SearchInput";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function DatasetPropertiesTab({ catalogId }: { catalogId: string }) {
@@ -214,16 +215,12 @@ export default function DatasetPropertiesTab({ catalogId }: { catalogId: string 
       badgeCount={properties.length > 0 ? `${properties.length} total` : undefined}
       headerAction={
         <>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search properties..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-              className="pl-9 pr-4 py-1.5 w-64 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={(val) => { setSearchQuery(val); setPage(1); }}
+            placeholder="Search properties..."
+            wrapperClassName="w-64"
+          />
           <Button
             onClick={handleAddProperty}
             icon={<Plus size={16} />}

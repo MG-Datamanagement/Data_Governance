@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
 
 type Frequency = "Hourly" | "Daily" | "Weekly";
 
@@ -72,20 +73,22 @@ export const Step3: React.FC<Step3Props> = ({ schedule, onChange }) => {
             {schedule.frequency !== "Hourly" && (
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-sm text-gray-500">Run at</span>
-                <input
-                  type="text" value={schedule.hour}
-                  onChange={(e) => onChange("hour", e.target.value.replace(/\D/g, '').slice(0, 2))}
-                  onBlur={(e) => onChange("hour", e.target.value.padStart(2, "0"))}
+                <Input 
+                  type="text" 
+                  value={schedule.hour}
+                  onChange={(val) => onChange("hour", val.replace(/\D/g, '').slice(0, 2))}
+                  onBlur={() => onChange("hour", schedule.hour.padStart(2, "0"))}
                   maxLength={2}
-                  className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-14 text-center"
                 />
                 <span className="text-gray-400">:</span>
-                <input
-                  type="text" value={schedule.minute}
-                  onChange={(e) => onChange("minute", e.target.value.replace(/\D/g, '').slice(0, 2))}
-                  onBlur={(e) => onChange("minute", e.target.value.padStart(2, "0"))}
+                <Input 
+                  type="text" 
+                  value={schedule.minute}
+                  onChange={(val) => onChange("minute", val.replace(/\D/g, '').slice(0, 2))}
+                  onBlur={() => onChange("minute", schedule.minute.padStart(2, "0"))}
                   maxLength={2}
-                  className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-14 text-center"
                 />
                 <span className="text-sm text-gray-400">
                   {schedule.frequency === "Daily" ? "every day" : "every week"}
@@ -103,7 +106,9 @@ export const Step3: React.FC<Step3Props> = ({ schedule, onChange }) => {
 
           <div>
             <p className="text-xs font-semibold text-red-500 mb-1.5">* Timezone</p>
-            <Select value={schedule.timezone} onChange={(e) => onChange("timezone", e.target.value)}
+            <Select 
+              value={schedule.timezone} 
+              onChange={(val) => onChange("timezone", val)}
               className="bg-white"
               options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
             />

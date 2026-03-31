@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Connector, connectors } from "@/lib/mockConnectors";
-import SearchInput from "@/components/ui/SearchInput";
+import { SearchInput } from "@/components/ui/SearchInput";
 import ConnectorCard from "@/components/connectors/ConnectorCard";
 import { logger } from "@/lib/logger";
 import { Plus } from "lucide-react";

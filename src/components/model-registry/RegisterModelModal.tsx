@@ -4,7 +4,10 @@ import { X, Brain } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller } from "react-hook-form";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -25,7 +28,7 @@ interface RegisterModelModalProps {
 
 export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterModelModalProps) {
   const {
-    register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -86,15 +89,18 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
               <label htmlFor="model-name" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                 Model Name <span className="text-red-500">*</span>
               </label>
-              <input
-                id="model-name"
-                type="text"
-                {...register("name")}
-                placeholder="e.g. Customer Churn Predictor"
-                aria-invalid={!!errors.name}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder:text-gray-400 aria-[invalid=true]:border-red-400"
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="model-name"
+                    placeholder="e.g. Customer Churn Predictor"
+                    error={(errors.name as any)?.message}
+                  />
+                )}
               />
-              <FieldError name="name" />
             </div>
 
             <div className="grid grid-cols-2 gap-5">
@@ -103,30 +109,40 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
                 <label htmlFor="model-version" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Version
                 </label>
-                <input
-                  id="model-version"
-                  type="text"
-                  {...register("version")}
-                  aria-invalid={!!errors.version}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors aria-[invalid=true]:border-red-400"
+                <Controller
+                  name="version"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="model-version"
+                      placeholder="v1.0"
+                      error={(errors.version as any)?.message}
+                    />
+                  )}
                 />
-                <FieldError name="version" />
               </div>
               {/* Source */}
               <div>
                 <label htmlFor="model-source" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Source
                 </label>
-                <Select
-                  id="model-source"
-                  {...register("source")}
-                  className="w-full bg-white"
-                  options={[
-                    { value: "Internal", label: "Internal" },
-                    { value: "Hugging Face", label: "Hugging Face" },
-                    { value: "AWS SageMaker", label: "AWS SageMaker" },
-                    { value: "OpenAI", label: "OpenAI" }
-                  ]}
+                <Controller
+                  name="source"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      id="model-source"
+                      className="w-full bg-white"
+                      options={[
+                        { value: "Internal", label: "Internal" },
+                        { value: "Hugging Face", label: "Hugging Face" },
+                        { value: "AWS SageMaker", label: "AWS SageMaker" },
+                        { value: "OpenAI", label: "OpenAI" }
+                      ]}
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -137,16 +153,22 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
                 <label htmlFor="model-task" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Task Type
                 </label>
-                <Select
-                  id="model-task"
-                  {...register("task")}
-                  className="w-full bg-white"
-                  options={[
-                    { value: "Classification", label: "Classification" },
-                    { value: "Anomaly Detection", label: "Anomaly Detection" },
-                    { value: "Text Generation", label: "Text Generation" },
-                    { value: "Time Series", label: "Time Series" }
-                  ]}
+                <Controller
+                  name="task"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      id="model-task"
+                      className="w-full bg-white"
+                      options={[
+                        { value: "Classification", label: "Classification" },
+                        { value: "Anomaly Detection", label: "Anomaly Detection" },
+                        { value: "Text Generation", label: "Text Generation" },
+                        { value: "Time Series", label: "Time Series" }
+                      ]}
+                    />
+                  )}
                 />
               </div>
               {/* Owner */}
@@ -154,15 +176,18 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
                 <label htmlFor="model-owner" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                   Owner <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="model-owner"
-                  type="text"
-                  {...register("owner")}
-                  placeholder="e.g. Data Science Team"
-                  aria-invalid={!!errors.owner}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder:text-gray-400 aria-[invalid=true]:border-red-400"
+                <Controller
+                  name="owner"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="model-owner"
+                      placeholder="e.g. Data Science Team"
+                      error={(errors.owner as any)?.message}
+                    />
+                  )}
                 />
-                <FieldError name="owner" />
               </div>
             </div>
 
@@ -171,12 +196,19 @@ export function RegisterModelModal({ isOpen, onClose, onRegister }: RegisterMode
               <label htmlFor="model-desc" className="block text-[15px] font-medium text-gray-900 mb-1.5">
                 Description
               </label>
-              <textarea
-                id="model-desc"
-                {...register("description")}
-                rows={4}
-                placeholder="Describe what this model does, its inputs and outputs..."
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder:text-gray-400 resize-none"
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    id="model-desc"
+                    rows={4}
+                    placeholder="Describe what this model does, its inputs and outputs..."
+                    className="resize-none"
+                    error={(errors.description as any)?.message}
+                  />
+                )}
               />
             </div>
           </div>

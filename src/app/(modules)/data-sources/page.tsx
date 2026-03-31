@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { RefreshCcw, AlertTriangle, Plus } from "lucide-react";
 
-import { useRouter } from "next/navigation";
 import { dataSources } from "@/lib/mockDataSources";
-import { dashboardApiServices, ApiDataSource, ApiRunHistory, ApiSourceLog } from "@/services/dashboardApi.service";
+import { dashboardApiServices } from "@/services/dashboardApi.service";
 import { DataSource } from "@/types";
 
-import dynamic from "next/dynamic";
-import ConnectorIcon from "@/components/connectors/ConnectorIcon";
-// ─── Lazy-loaded heavy modals (Phase 10.2) ────────────────────────────────────
 const AddDataSourceModal = dynamic(
     () => import("@/components/modals/AddDataSourceModal"),
     { ssr: false, loading: () => null },
@@ -18,23 +16,19 @@ const IngestionSidebar = dynamic(
     () => import("@/components/ingestion/IngestionSidebar"),
     { ssr: false, loading: () => null },
 );
-import LiveIngestionPanel from "@/components/ingestion/LiveIngestionPanel";
 import ManageSecretsTab from "@/components/tabs/ManageSecretsTab";
 import { useAppStore } from "@/store/appStore";
 import { useGetDataSources, useGetRunHistory } from "@/hooks/useDashboardQueries";
-import { RefreshCcw, AlertTriangle, Plus, Search, ChevronDown } from "lucide-react";
 import { DataSourceTableRow, StatusBadge } from "@/components/data-sources/DataSourceTableRow";
 import { TableSkeleton } from "@/components/ui/Skeletons";
-import { TabNavigation } from "@/components/ui/TabNavigation";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
 import { Spinner } from "@/components/ui/Spinner";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { logger } from "@/lib/logger";
-
-
-
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -55,7 +49,7 @@ const ManageDataSourcesPage: React.FC = () => {
     const [sidebarSourceName, setSidebarSourceName] = useState("");
     const [showSidebar, setShowSidebar] = useState(false);
     const [activeJobs, setActiveJobs] = useState<Record<string, string>>({});
-    const [historyStatus, setHistoryStatus] = useState("All");
+    const [historyStatus] = useState("All");
     const [historyOffset, setHistoryOffset] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(10);
     const [sourcesOffset, setSourcesOffset] = useState(0);
@@ -65,27 +59,22 @@ const ManageDataSourcesPage: React.FC = () => {
         status: filter !== "All" ? filter : undefined,
     });
 
-    // Robust data extraction: handles both paginated objects and plain arrays
     const apiData = useMemo(() => {
         if (!apiDataResponse) return [];
         if (Array.isArray(apiDataResponse)) return apiDataResponse;
-        return apiDataResponse.results || [];
+        return (apiDataResponse as any).results || [];
     }, [apiDataResponse]);
 
     const sourcesTotal = useMemo(() => {
         if (!apiDataResponse) return 0;
         if (Array.isArray(apiDataResponse)) return apiDataResponse.length;
-        return apiDataResponse.total || 0;
+        return (apiDataResponse as any).total || 0;
     }, [apiDataResponse]);
-
-    const currentLimit = (apiDataResponse as any)?.limit || sourcesLimit;
 
     const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(historyLimit, historyOffset, historyStatus);
 
-    const runHistory = runHistoryData || null;
     const isHistoryLoading = isHistoryFetchLoading;
     const isLoading = isSourcesLoading;
-    const error = sourcesFetchError ? "Failed to fetch data sources" : null;
 
     const allSources = useMemo(() => {
         return apiData.map((apiDs: any) => {
@@ -186,14 +175,12 @@ const ManageDataSourcesPage: React.FC = () => {
         let filtered = allSources;
         if (search.trim()) {
             const q = search.toLowerCase();
-            filtered = allSources.filter((s: DataSource) => s.name.toLowerCase().includes(q));
+            filtered = allSources.filter((s: any) => s.name.toLowerCase().includes(q));
         }
-
-        // Apply frontend pagination slicing
         return filtered.slice(sourcesOffset, sourcesOffset + sourcesLimit);
     }, [allSources, search, sourcesOffset, sourcesLimit]);
 
-    const [sourceToDelete, setSourceToDelete] = useState<DataSource | null>(null);
+    const [sourceToDelete, setSourceToDelete] = useState<any | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const { setAddDsConfig, addToast, updateToast } = useAppStore();
 
@@ -202,7 +189,7 @@ const ManageDataSourcesPage: React.FC = () => {
             setCheckedIds(new Set());
             setAllChecked(false);
         } else {
-            setCheckedIds(new Set(sources.map((s: DataSource) => s.id)));
+            setCheckedIds(new Set(sources.map((s: any) => s.id)));
             setAllChecked(true);
         }
     };
@@ -216,7 +203,7 @@ const ManageDataSourcesPage: React.FC = () => {
     };
 
     const handleIngest = async (id: string) => {
-        const sourceName = sources.find((s: DataSource) => s.id === id)?.name || "source";
+        const sourceName = sources.find((s: any) => s.id === id)?.name || "source";
         const toastId = addToast(`Starting ingestion for ${sourceName}...`, "loading");
         try {
             const response = await dashboardApiServices.ingestSource(id);
@@ -224,7 +211,6 @@ const ManageDataSourcesPage: React.FC = () => {
                 setActiveJobs(prev => ({ ...prev, [id]: response.job_id }));
             }
             updateToast(toastId, `Ingestion started for ${sourceName}`, "success");
-            // Refresh data to show "running" status if the API updates it
             refetchSources();
         } catch (err) {
             logger.error("Failed to trigger ingestion", { error: err });
@@ -260,7 +246,6 @@ const ManageDataSourcesPage: React.FC = () => {
                         setSidebarJobId(jobId);
                         setSidebarSourceName(sourceName);
                         setShowSidebar(true);
-                        // Trigger a slight delay refresh or just rely on the sidebar
                         refetchSources();
                     }}
                 />
@@ -271,14 +256,13 @@ const ManageDataSourcesPage: React.FC = () => {
                     isOpen={showSidebar}
                     jobId={sidebarJobId}
                     sourceName={sidebarSourceName}
-                    onClose={(viewIngestedDataset: boolean = false) => {
+                    onClose={() => {
                         setShowSidebar(false);
                         setAddDsConfig({});
                     }}
                 />
             )}
 
-            {/* Delete Confirmation Modal */}
             {sourceToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
@@ -319,18 +303,13 @@ const ManageDataSourcesPage: React.FC = () => {
                 </div>
             )}
 
-
-
             <main className="max-w-7xl mx-auto px-8 py-8">
-
-                {/* Breadcrumb */}
                 <Breadcrumb items={[
                     { label: 'Home', href: '/' },
                     { label: 'Governance' },
                     { label: 'Data Sources' },
                 ]} />
 
-                {/* Header */}
                 <div className="flex items-start justify-between mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -349,7 +328,6 @@ const ManageDataSourcesPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex items-center gap-0 border-b border-gray-200 mb-5">
                     {TABS.map((tab) => (
                         <button
@@ -365,64 +343,27 @@ const ManageDataSourcesPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Toolbar */}
                 {activeTab !== "Secrets" && (
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            {/* Search */}
                             {activeTab === "Sources" && (
-                                <>
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                        <input
-                                            type="text"
-                                            value={search}
-                                            onChange={(e) => setSearch(e.target.value)}
-                                            placeholder="Search..."
-                                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                        />
-                                    </div>
-
-                             {/* Filter dropdown for Sources */}
-
-                                    <Select
-                                        value={filter}
-                                        onChange={(e) => setFilter(e.target.value)}
-                                        className="w-32 bg-white"
-                                        options={[
-                                            { value: "All", label: "All" },
-                                            { value: "Success", label: "Success" },
-                                            { value: "Failed", label: "Failed" },
-                                            { value: "Running", label: "Running" }
-                                        ]}
+                                <div className="flex items-center gap-2">
+                                    <SearchInput
+                                        value={search}
+                                        onChange={setSearch}
+                                        placeholder="Search..."
+                                        wrapperClassName="w-52"
                                     />
-                                </>
+                                </div>
                             )}
 
-                            {/* Filter dropdown for History */}
                             {activeTab === "Run History" && (
-                                // <Select
-                                //     value={historyStatus}
-                                //     onChange={(e) => {
-                                //         setHistoryStatus(e.target.value);
-                                //         setHistoryOffset(0); // reset page on filter change
-                                //     }}
-                                //     className="w-36 bg-white"
-                                //     options={[
-                                //         { value: "All", label: "All Statuses" },
-                                //         { value: "Success", label: "Success" },
-                                //         { value: "Failed", label: "Failed" },
-                                //         { value: "Running", label: "Running" }
-                                //     ]}
-                                // />
-                                <>
-
-                                    <div className="text-xs text-gray-500 font-medium">View past ingestion and reingestion runs across all data sources</div>
-                                </>
+                                <div className="text-xs text-gray-500 font-medium">
+                                    View past ingestion and reingestion runs across all data sources
+                                </div>
                             )}
                         </div>
 
-                        {/* Refresh */}
                         <button
                             onClick={() => activeTab === "Sources" ? refetchSources() : refetchHistory()}
                             disabled={isLoading || isHistoryLoading}
@@ -434,7 +375,6 @@ const ManageDataSourcesPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Content Layer */}
                 {activeTab === "Secrets" ? (
                     <ManageSecretsTab />
                 ) : (
@@ -445,32 +385,18 @@ const ManageDataSourcesPage: React.FC = () => {
                                     <table className="w-full">
                                         <thead className="sticky top-0 bg-white z-10">
                                             <tr className="border-b border-gray-100 shadow-sm">
-                                                <th className="pl-4 pr-1 py-3 w-10">
-                                                    <input
-                                                        type="checkbox"
+                                                <th className="pl-4 pr-1 py-3 w-10 text-left">
+                                                    <Checkbox
                                                         checked={allChecked}
                                                         onChange={toggleAll}
-                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                     />
                                                 </th>
-                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    Name
-                                                </th>
-                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    Schedule
-                                                </th>
-                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    Owner
-                                                </th>
-                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    Last Run
-                                                </th>
-                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    Status
-                                                </th>
-                                                <th className="py-3 pr-4 w-10 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                                    {/* Actions */}
-                                                </th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Schedule</th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Owner</th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Run</th>
+                                                <th className="py-3 pr-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                                                <th className="py-3 pr-4 w-10 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -510,7 +436,7 @@ const ManageDataSourcesPage: React.FC = () => {
                                     </table>
                                 </div>
 
-                                {apiData && sourcesTotal > 0 && (
+                                {sourcesTotal > 0 && (
                                     <div className="border-t border-gray-100">
                                         <Pagination
                                             currentPage={Math.floor(sourcesOffset / sourcesLimit) + 1}

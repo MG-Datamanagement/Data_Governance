@@ -88,8 +88,12 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
       <div>
         <label className="block text-sm font-semibold text-red-500 mb-0.5">* Name</label>
         <p className="text-xs text-gray-400 mb-1.5">Give this data source a name</p>
-        <Input type="text" value={finish.name} onChange={(e) => onChange("name", e.target.value)} placeholder={connector.defaultName}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+        <Input 
+          type="text" 
+          value={finish.name} 
+          onChange={(val) => onChange("name", val)} 
+          placeholder={connector.defaultName}
+        />
       </div>
 
       {/* Owner */}
@@ -98,7 +102,7 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
         <p className="text-xs text-gray-400 mb-1.5">Select the primary owner for this data source</p>
         <Select 
           value={finish.owner_id} 
-          onChange={(e) => onChange("owner_id", e.target.value)}
+          onChange={(val) => onChange("owner_id", val)}
           className="w-full bg-white text-gray-700"
           options={[
             { value: "", label: "Select an owner" },
@@ -155,9 +159,12 @@ export const Step4: React.FC<Step4Props> = ({ connector, config, schedule, finis
           <p className="text-sm font-medium text-gray-700">Failure Notifications</p>
         </div>
         <p className="text-xs text-gray-400 mb-2">Enter email addresses to notify when an ingestion run fails. Separate multiple emails with commas.</p>
-        <Input type="text" value={finish.failureEmail} onChange={(e) => onChange("failureEmail", e.target.value)}
+        <Input 
+          type="text" 
+          value={finish.failureEmail} 
+          onChange={(val) => onChange("failureEmail", val)}
           placeholder="e.g. data-team@company.com, oncall@company.com"
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+        />
         <div className="mt-2 flex items-start gap-1.5 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
           <svg className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

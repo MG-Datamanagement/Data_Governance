@@ -284,7 +284,7 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
                       tag={item.tag}
                       tagColor={item.tagColor}
                       time={item.time || ""}
-                      icon={getPlatformDisplay(item.platformKey).icon}
+                      icon={getPlatformDisplay(item.platform || "").icon}
                       iconColor={item.iconColor}
                     />
                   ))}

@@ -25,7 +25,10 @@ import { useGetAgents } from "@/hooks/useDashboardQueries";
 import { InlineState } from "@/components/ui/InlineState";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Pagination } from "@/components/ui/Pagination";
+import { SearchInput } from "@/components/ui/SearchInput";
 
 
 
@@ -220,18 +223,11 @@ export default function AgentsPage() {
 
             {/* Search and Filters box */}
             <div className="bg-white border text-gray-900 border-gray-200 rounded-xl p-4 space-y-4 shadow-sm">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Search size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
-                        placeholder="Search agents by name or use case..."
-                    />
-                </div>
+                <SearchInput
+                    placeholder="Search agents by name or use case..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                />
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -243,26 +239,26 @@ export default function AgentsPage() {
                         {/* Statuses Filter Dropdown */}
                         <Select
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
+                            onChange={(val) => setStatusFilter(val)}
                             className="bg-white min-w-[140px]"
                             options={[
+                                { value: "All Statuses", label: "All Statuses" },
                                 { value: "Active", label: "Active" },
                                 { value: "Paused", label: "Paused" },
                                 { value: "Error", label: "Error" }
                             ]}
-                            placeholder="All Statuses"
                         />
 
                         {/* Types Filter Dropdown */}
                         <Select
                             value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value)}
+                            onChange={(val) => setTypeFilter(val)}
                             className="bg-white min-w-[140px]"
                             options={[
+                                { value: "All Types", label: "All Types" },
                                 { value: "BYO Agent", label: "BYO Agent" },
                                 { value: "Platform Agent", label: "Platform Agent" }
                             ]}
-                            placeholder="All Types"
                         />
 
                         {(searchQuery !== "" || statusFilter !== "All Statuses" || typeFilter !== "All Types") && (
@@ -484,33 +480,30 @@ export default function AgentsPage() {
                                     <div className="space-y-5">
                                         <div className="space-y-1.5">
                                             <label className="text-[14px] font-semibold text-gray-900 block">Agent Name *</label>
-                                            <input
-                                                type="text"
+                                            <Input
                                                 value={newAgentName}
-                                                onChange={(e) => setNewAgentName(e.target.value)}
+                                                onChange={(val) => setNewAgentName(val)}
                                                 placeholder="e.g. Data Quality Scanner"
-                                                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[14px] font-semibold text-gray-900 block">Owner / Team *</label>
-                                            <input
-                                                type="text"
+                                            <Input
+                                                id="agent-owner"
                                                 value={newAgentOwner}
-                                                onChange={(e) => setNewAgentOwner(e.target.value)}
+                                                onChange={(val) => setNewAgentOwner(val)}
                                                 placeholder="e.g. Data Engineering"
-                                                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[14px] font-semibold text-gray-900 block">Description</label>
-                                            <textarea
+                                            <Textarea
                                                 rows={3}
                                                 value={newAgentDesc}
-                                                onChange={(e) => setNewAgentDesc(e.target.value)}
+                                                onChange={(val) => setNewAgentDesc(val)}
                                                 placeholder="Describe the agent's purpose and capabilities..."
-                                                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400 resize-none"
-                                            ></textarea>
+                                                className="resize-none"
+                                            />
                                         </div>
                                     </div>
                                 </div>

@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Input } from "@/components/ui/Input";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -25,7 +26,7 @@ export default function AddPropertyModal({
   initialData,
 }: AddPropertyModalProps) {
   const {
-    register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -80,39 +81,35 @@ export default function AddPropertyModal({
               <label htmlFor="prop-name" className="text-sm font-semibold text-gray-700">
                 Property Name
               </label>
-              <input
-                id="prop-name"
-                type="text"
-                {...register("name")}
-                placeholder="e.g. Data Steward, Region, Cost Center..."
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "prop-name-error" : undefined}
-                className="w-full px-3 py-2 border-2 border-indigo-500/30 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all aria-[invalid=true]:border-red-400"
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="prop-name"
+                    placeholder="e.g. Data Steward, Region, Cost Center..."
+                    error={(errors.name as any)?.message}
+                  />
+                )}
               />
-              {errors.name && (
-                <p id="prop-name-error" role="alert" className="text-xs text-red-500 mt-1">
-                  {errors.name.message}
-                </p>
-              )}
             </div>
             <div className="space-y-1.5">
               <label htmlFor="prop-value" className="text-sm font-semibold text-gray-700">
                 Value
               </label>
-              <input
-                id="prop-value"
-                type="text"
-                {...register("value")}
-                placeholder="Enter property value..."
-                aria-invalid={!!errors.value}
-                aria-describedby={errors.value ? "prop-value-error" : undefined}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all aria-[invalid=true]:border-red-400"
+              <Controller
+                name="value"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="prop-value"
+                    placeholder="Enter property value..."
+                    error={(errors.value as any)?.message}
+                  />
+                )}
               />
-              {errors.value && (
-                <p id="prop-value-error" role="alert" className="text-xs text-red-500 mt-1">
-                  {errors.value.message}
-                </p>
-              )}
             </div>
           </div>
 
@@ -130,7 +127,7 @@ export default function AddPropertyModal({
               disabled={isSubmitting}
               className="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
-              {initialData ? "Save Changes" : "Add Property"}
+              {isSubmitting ? "Saving..." : initialData ? "Save Changes" : "Add Property"}
             </button>
           </div>
         </form>

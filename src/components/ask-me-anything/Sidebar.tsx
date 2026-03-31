@@ -15,6 +15,7 @@ import { cn } from "../../lib/utils";
 import { ChatSession } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
 import { SidebarToggle } from "../ui/SidebarToggle";
+import { SearchInput } from "../ui/SearchInput";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -84,36 +85,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Search */}
-      <div className={cn(isCollapsed ? "px-2 py-1.5" : "px-3 py-1")}>
-        <button
-          onClick={(event) => {
+      <div
+        className={cn(isCollapsed ? "px-2 py-1.5" : "px-3 py-1")}
+        onClick={(event) => {
+          if (isCollapsed) {
             event?.preventDefault();
-            if (isCollapsed) {
-              onToggle();
-              chatHistorySeacrhRef.current &&
-                chatHistorySeacrhRef.current.focus();
-            }
-          }}
-          className={cn(
-            "w-full flex justify-center items-center rounded-md text-sm outline-none focus:border-indigo-600",
-            "border border-gray-300",
-            "px-3 py-2",
-          )}
-        >
-          <div>
+            onToggle();
+            setTimeout(() => {
+              chatHistorySeacrhRef.current?.focus();
+            }, 100);
+          }
+        }}
+      >
+        {!isCollapsed ? (
+          <SearchInput
+            ref={chatHistorySeacrhRef}
+            value={searchQuery}
+            onChange={onSearchChange}
+            placeholder="Search chats..."
+            className="text-xs py-2.5"
+            onClear={() => onSearchChange("")}
+          />
+        ) : (
+          <div className="w-full flex justify-center items-center rounded-md border border-gray-300 px-3 py-2 cursor-pointer hover:border-indigo-600 transition-colors">
             <Search size={16} className="text-gray-500 font-bold" />
           </div>
-          {!isCollapsed && (
-            <input
-              type="text"
-              ref={chatHistorySeacrhRef}
-              placeholder="Search chats..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="border-none outline-none shadow-none px-2 w-full"
-            />
-          )}
-        </button>
+        )}
       </div>
 
       {/* History */}

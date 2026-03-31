@@ -1,12 +1,13 @@
 import { ApiComplianceIssue } from "@/types";
 import { cn, getSeverityColor } from "@/lib/utils";
-import { AlertCircle, Search, ChevronDown, ExternalLink } from "lucide-react";
+import { AlertCircle, ChevronDown, ExternalLink } from "lucide-react";
 import { useState, useMemo } from "react";
 import { InlineState } from "@/components/ui/InlineState";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
+import { SearchInput } from "@/components/ui/SearchInput";
 
 interface ComplianceIssuesTableProps {
   issues: ApiComplianceIssue[];
@@ -96,26 +97,13 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={16}
-            />
-            <input
-              type="text"
+          <div className="flex-1">
+            <SearchInput
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={setSearchTerm}
+              onClear={() => setSearchTerm("")}
               placeholder="Search issues or datasets..."
-              className="w-full pl-10 pr-4 h-11 border border-gray-200 bg-gray-50/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
           </div>
           <Button disabled variant="outline" size="lg" className="gap-2 bg-white">
             Filter

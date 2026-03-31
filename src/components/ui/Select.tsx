@@ -1,37 +1,44 @@
-import { forwardRef, type SelectHTMLAttributes } from "react";
+import React from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Option } from "@/types";
 
-type Props = SelectHTMLAttributes<HTMLSelectElement> & {
-  options: Option[];
-  placeholder?: string;
-  error?: boolean;
-  defaultValue?: string;
-};
+export interface SelectOption {
+    label: string;
+    value: string;
+}
 
-export const Select = forwardRef<HTMLSelectElement, Props>(function Select(
-  { options, placeholder = "Select", error, className, defaultValue, ...props },
-  ref
-) {
-  return (
-    <select
-      ref={ref}
-      className={cn(
-        "px-3 py-2 text-gray-900 text-sm font-medium rounded-md border border-gray-200 bg-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed",
-        error && "border-red-500 focus:border-red-500 focus:ring-red-500/40",
-        className,
-      )}
-      {...(props.value !== undefined ? {} : { defaultValue: defaultValue })}
-      {...props}
-    >
-      {placeholder && (
-        <option value="">
-          {placeholder}
-        </option>
-      )}
-      {options.map(({ value, label }) => (
-        <option key={value} value={value}>{label}</option>
-      ))}
-    </select>
-  );
-});
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+    options?: SelectOption[];
+    onChange?: (value: string) => void;
+}
+
+export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+    ({ className, options = [], value, onChange, ...props }, ref) => {
+        return (
+            <div className="relative group min-w-[120px]">
+                <select
+                    ref={ref}
+                    value={value}
+                    onChange={(e) => onChange?.(e.target.value)}
+                    className={cn(
+                        "w-full pl-4 pr-10 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] cursor-pointer hover:border-gray-300 transition-all",
+                        className
+                    )}
+                    {...props}
+                >
+                    {options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                    {props.children}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 pointer-events-none transition-colors">
+                    <ChevronDown size={16} strokeWidth={2.5} />
+                </div>
+            </div>
+        );
+    }
+);
+
+Select.displayName = "Select";

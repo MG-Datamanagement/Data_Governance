@@ -6,9 +6,9 @@ import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApi.service";
 import { 
-    ChevronRight, Search, Filter, Plus, X, 
+    ChevronRight, Plus, X, 
     ChevronDown, User, Database, Layers, AlertCircle, Pencil, 
-    Trash2, Link, MoreVertical, LayoutDashboard, FolderTree 
+    Trash2, Link, MoreVertical, FolderTree, Filter
 } from "lucide-react";
 import { 
     useGetAllLineOfBusiness, 
@@ -18,6 +18,8 @@ import {
 } from "@/hooks/useLineOfBusinessQueries";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 
@@ -71,19 +73,7 @@ interface EditForm {
     color: string;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const OWNERS = [
-    "analytics-team@company.com",
-    "compliance@company.com",
-    "data-infra@company.com",
-    "eng-lead@company.com",
-    "finance-vp@company.com",
-    "marketing-lead@company.com",
-    "mlops-team@company.com",
-    "revops@company.com",
-    "secops@company.com",
-];
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
 const COLOR_OPTIONS = [
     "#4F63F7",
@@ -95,8 +85,6 @@ const COLOR_OPTIONS = [
     "#6366F1",
     "#14B8A6",
 ];
-
-// ─── Shared helpers ───────────────────────────────────────────────────────────
 
 function ColorDot({ color, size = 12 }: { color: string; size?: number }) {
     return (
@@ -351,10 +339,10 @@ function DetailsPanel({
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
                     <div className="flex items-center gap-2 flex-1 mr-2">
                         <ColorDot color={editForm.color} size={12} />
-                        <input
+                        <Input
                             value={editForm.name}
-                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            className="flex-1 text-base font-semibold text-gray-900 border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-0"
+                            onChange={(val) => setEditForm({ ...editForm, name: val })}
+                            className="flex-1 text-base font-semibold text-gray-900 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 min-w-0"
                         />
                     </div>
                     <button onClick={cancelEdit} className="p-1.5 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-shrink-0" aria-label="Close">
@@ -363,12 +351,13 @@ function DetailsPanel({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-                    <textarea
+                    <Textarea
                         value={editForm.description}
-                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        onChange={(val) => setEditForm({ ...editForm, description: val })}
                         rows={4}
                         maxLength={200}
-                        className="w-full border border-gray-300 rounded-md px-3 py-6 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        placeholder="Description..."
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 resize-none"
                     />
 
                     {!isSubdomain && (
@@ -390,10 +379,10 @@ function DetailsPanel({
 
                     <div>
                         <SectionLabel>Owner</SectionLabel>
-                        <input
+                        <Input
                             value={editForm.owner}
-                            onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            onChange={(val) => setEditForm({ ...editForm, owner: val })}
+                            className="w-full"
                         />
                     </div>
 
@@ -603,7 +592,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                 ...(form.catalogId && { catalog_id: form.catalogId }),
             };
 
-            const created = await lineOfBusinessApiService.createLineOfBusiness(payload);
+            await lineOfBusinessApiService.createLineOfBusiness(payload);
 
             onCreate(form);
             onClose();
@@ -634,12 +623,12 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
 
                 <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-800">Name <span className="text-red-500">*</span></label>
-                    <Input type="text" placeholder="e.g. Platform Engineering" value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(null); }} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400" />
+                    <Input placeholder="e.g. Platform Engineering" value={form.name} onChange={(val) => { setForm({ ...form, name: val }); setError(null); }} />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-800">Description</label>
-                    <textarea rows={3} value={form.description} placeholder="Enter description" onChange={(e) => setForm({ ...form, description: e.target.value })} className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                    <Textarea rows={3} value={form.description} placeholder="Enter description..." onChange={(val) => setForm({ ...form, description: val })} className="resize-none" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -651,7 +640,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                     ) : (
                         <Select
                             value={form.owner}
-                            onChange={(e) => { setForm({ ...form, owner: e.target.value }); setError(null); }}
+                            onChange={(val) => { setForm({ ...form, owner: val }); setError(null); }}
                             className="bg-white"
                             options={[
                                 { value: "", label: "Select an owner..." },
@@ -690,7 +679,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                 ) : (
                                     <Select
                                         value={form.customId}
-                                        onChange={(e) => setForm({ ...form, customId: e.target.value })}
+                                        onChange={(val) => setForm({ ...form, customId: val })}
                                         className="w-full bg-white"
                                         options={[
                                             { value: "", label: "None (Top-level domain)" },
@@ -717,7 +706,7 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                                 ) : catalogs && catalogs.length > 0 ? (
                                     <Select
                                         value={form.catalogId || ""}
-                                        onChange={(e) => setForm({ ...form, catalogId: e.target.value })}
+                                        onChange={(val) => setForm({ ...form, catalogId: val })}
                                         className="w-full bg-white"
                                         options={[
                                             { value: "", label: "None (No catalog)" },
@@ -754,6 +743,18 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
 
 // ─── Custom Owner Dropdown ────────────────────────────────────────────────────
 
+const OWNERS = [
+    "analytics-team@company.com",
+    "compliance@company.com",
+    "data-infra@company.com",
+    "eng-lead@company.com",
+    "finance-vp@company.com",
+    "marketing-lead@company.com",
+    "mlops-team@company.com",
+    "revops@company.com",
+    "secops@company.com",
+];
+
 function OwnerDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
     const [open, setOpen] = useState(false);
     return (
@@ -787,7 +788,7 @@ function OwnerDropdown({ value, onChange }: { value: string; onChange: (v: strin
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LineOfBusiness() {
-    const { data: apiData = [], isLoading, refetch } = useGetAllLineOfBusiness();
+    const { data: apiData = [], refetch } = useGetAllLineOfBusiness();
     const [searchQuery, setSearchQuery] = useState("");
     const [ownerFilter, setOwnerFilter] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -801,21 +802,7 @@ export default function LineOfBusiness() {
 
     // Transform API response to Domain format
     const domains = useMemo(() => {
-        return transformApiResponse(apiData);
-    }, [apiData]);
-
-    useEffect(() => {
-        if (domains.length > 0 && !initialExpandDone) {
-            setExpandedDomains(new Set(domains.map((d) => d.id)));
-            setInitialExpandDone(true);
-        }
-    }, [domains, initialExpandDone]);
-
-    // ─── Mock Data ────────────────────────────────────────────────────────────────
-
-    // Helper function to transform API response to Domain format
-    function transformApiResponse(apiData: any[]): Domain[] {
-        return apiData.map((item) => ({
+        return apiData.map((item: any) => ({
             id: item.id,
             name: item.name,
             description: item.description || "",
@@ -833,7 +820,14 @@ export default function LineOfBusiness() {
                 externalLinks: child.external_links || [],
             })),
         }));
-    }
+    }, [apiData]);
+
+    useEffect(() => {
+        if (domains.length > 0 && !initialExpandDone) {
+            setExpandedDomains(new Set(domains.map((d) => d.id)));
+            setInitialExpandDone(true);
+        }
+    }, [domains, initialExpandDone]);
 
     const filteredDomains = useMemo(() => {
         const q = searchQuery.toLowerCase();
@@ -842,7 +836,7 @@ export default function LineOfBusiness() {
                 !q ||
                 d.name.toLowerCase().includes(q) ||
                 d.description.toLowerCase().includes(q) ||
-                d.subdomains.some((sd) => sd.name.toLowerCase().includes(q));
+                d.subdomains.some((sd: any) => sd.name.toLowerCase().includes(q));
             const matchesOwner = !ownerFilter || d.owner === ownerFilter;
             return matchesSearch && matchesOwner;
         });
@@ -884,12 +878,12 @@ export default function LineOfBusiness() {
         setSelectedItem(null);
     };
 
-    const handleCreate = (form: ModalForm) => {
+    const handleCreate = () => {
         setModalOpen(false);
         refetch();
     };
 
-    const handleUpdate = (updated: Domain[]) => refetch();
+    const handleUpdate = () => refetch();
 
     const handleDelete = (domainId: string) => {
         refetch();
@@ -898,14 +892,12 @@ export default function LineOfBusiness() {
 
     return (
         <div className="min-h-screen bg-gray-50 px-6 py-6">
-            {/* Breadcrumb */}
             <Breadcrumb items={[
                 { label: 'Home', href: '/' },
                 { label: 'Governance' },
                 { label: 'Line of Business' },
             ]} />
 
-            {/* Header */}
             <div className="flex items-start justify-between mb-5">
                 <div>
                     <div className="flex items-center gap-2.5">
@@ -925,19 +917,12 @@ export default function LineOfBusiness() {
                 </div>
             </div>
 
-            {/* Toolbar */}
-            <div className="bg-white border border-gray-200 rounded-md p-4 mb-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
-                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <input
-                        type="text"
-                        placeholder="Search domains and sub-domains..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-1 text-sm bg-transparent focus:outline-none placeholder-gray-400"
-                        aria-label="Search domains and sub-domains"
-                    />
-                </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 flex flex-col gap-3 shadow-sm">
+                <SearchInput
+                    placeholder="Search domains and sub-domains..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                />
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="flex items-center gap-2.5">
                         <div className="flex items-center gap-1.5 text-sm text-gray-600">
@@ -956,7 +941,6 @@ export default function LineOfBusiness() {
                 </div>
             </div>
 
-            {/* Grid View */}
             {viewMode === "grid" && (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -970,12 +954,10 @@ export default function LineOfBusiness() {
                 </>
             )}
 
-            {/* List View — Split Layout */}
             {viewMode === "list" && (
-                <div className="flex items-stretch max-h-[300px]">
-                    {/* Left: scrollable tree */}
-                    <div className={`bg-white border border-gray-200 ${panelOpen ? "rounded-tr-none rounded-br-none rounded-tl-lg rounded-bl-lg" : "rounded-md"} overflow-y-auto transition-all ${panelOpen ? "flex-[7]" : "flex-1"}`}>
-                        <div className="overflow-y-auto divide-y divide-gray-100">
+                <div className="flex items-stretch min-h-[400px]">
+                    <div className={`bg-white border border-gray-200 ${panelOpen ? "rounded-tr-none rounded-br-none rounded-tl-xl rounded-bl-xl" : "rounded-xl"} overflow-y-auto transition-all ${panelOpen ? "flex-[7]" : "flex-1 shadow-sm"}`}>
+                        <div className="divide-y divide-gray-100">
                             {filteredDomains.map((domain) => (
                                 <DomainRow
                                     key={domain.id}
@@ -1000,7 +982,6 @@ export default function LineOfBusiness() {
                         </div>
                     </div>
 
-                    {/* Right: details panel */}
                     {panelOpen && selectedItem && (
                         <div className="flex-[3] min-w-0 flex flex-col">
                             <DetailsPanel
@@ -1016,7 +997,6 @@ export default function LineOfBusiness() {
                 </div>
             )}
 
-            {/* Create modal */}
             {modalOpen && (
                 <CreateDomainModal onClose={() => setModalOpen(false)} onCreate={handleCreate} />
             )}

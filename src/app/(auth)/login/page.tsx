@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { loginSchema, type LoginInput } from '@/lib/validations';
 import { ZodError } from 'zod';
 import { AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState<LoginInput>({
@@ -58,8 +59,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleChange = (field: keyof LoginInput) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const handleChange = (field: keyof LoginInput) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field when user starts typing
     setErrors(prev => ({ ...prev, [field]: undefined }));
     setGeneralError('');
@@ -82,46 +83,30 @@ export default function LoginPage() {
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
               </label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={handleChange('email')}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
                 placeholder="shivam@infinity.com"
+                error={errors.email}
                 disabled={loading}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.email}
-                </p>
-              )}
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
+              <Input
                 id="password"
                 type="password"
                 value={formData.password}
                 onChange={handleChange('password')}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
                 placeholder="••••••••"
+                error={errors.password}
                 disabled={loading}
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.password}
-                </p>
-              )}
             </div>
 
             {generalError && (

@@ -8,7 +8,7 @@ import {
 } from "@/services/dashboardApi.service";
 import { Dataset, ApiTag } from "@/types";
 import { downloadFileFromResponse, formatDateTime } from "@/lib/utils";
-import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Search, Filter, Table2, LayoutGrid, Sparkles, Table, ArrowRight } from "lucide-react";
+import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Filter, Table2, LayoutGrid, Sparkles, Table, ArrowRight } from "lucide-react";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { CONSTANTS } from "@/lib/constants";
 import { useGetSourceStats } from "@/hooks/useDashboardQueries";
@@ -19,6 +19,7 @@ import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Select } from "@/components/ui/Select";
 import { Pagination } from "@/components/ui/Pagination";
 import { useAppStore } from "@/store/appStore";
+import { SearchInput } from "@/components/ui/SearchInput";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: Dataset["status"] }> = ({ status }) => {
@@ -418,14 +419,11 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
         {/* Toolbar */}
         <div className="flex items-start justify-between mb-4 gap-3">
           {/* Search */}
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
+          <div className="flex-1 max-w-xs">
+            <SearchInput
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={setSearch}
               placeholder="Search datasets..."
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white w-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             />
           </div>
 
@@ -433,7 +431,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             {/* Type filter */}
             <Select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(val) => setTypeFilter(val)}
               className="w-32 bg-white"
               options={[
                 { value: "All", label: "Types" },
@@ -445,7 +443,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
             {/* Status filter */}
             <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(val) => setStatusFilter(val)}
               className="w-36 bg-white"
               options={[
                 { value: "All", label: "Statuses" },

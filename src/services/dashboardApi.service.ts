@@ -615,7 +615,7 @@ export const dashboardApiServices = {
         return {
           id: `${item.dataset}-${index}`,
           name: item.dataset || "Unknown Dataset",
-          platform: platformRaw,
+          platform: item.source_type || "",
           tag: item.tag || "",
           tagColor,
           time: item.time || "",

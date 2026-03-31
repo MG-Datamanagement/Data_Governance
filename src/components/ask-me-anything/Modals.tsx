@@ -1,6 +1,8 @@
 import React from "react";
 import { Table2, Bot, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Agent, ChatDataset } from "@/types";
 
 interface AgentModalProps {
@@ -53,18 +55,12 @@ export const AgentModal: React.FC<AgentModalProps> = ({
         </div>
 
         <div className="px-3 py-2 border-b border-gray-200">
-          <div className="flex items-center px-2 py-1 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-600 transition-colors">
-            <div>
-              <Search size={16} className="text-gray-500 font-bold" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="px-2 py-1 text-xs outline-none shadow-none border-none"
-            />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={onSearchChange}
+            placeholder="Search agents..."
+            className="text-xs py-1.5"
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-1">
@@ -81,15 +77,14 @@ export const AgentModal: React.FC<AgentModalProps> = ({
                 } ${agent?.disabled ? "opacity-30" : ""}`}
                 onClick={() => !agent?.disabled && onToggleAgent(agent.id)}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectedAgents.includes(agent.id)}
                   onChange={() => {}}
+                  disabled={agent?.disabled}
                   className={cn(
                     "my-auto",
                     selectedAgents.includes(agent.id) ? "accent-purple-600" : "",
                   )}
-                  disabled={agent?.disabled}
                 />
                 <div className="my-auto">
                   <Icon size={16} />
@@ -177,18 +172,12 @@ export const DatasetModal: React.FC<DatasetModalProps> = ({
         </div>
 
         <div className="px-3 py-2 border-b border-gray-200">
-          <div className="flex items-center px-2 py-1 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-600 transition-colors">
-            <div>
-              <Search size={14} className="text-gray-500 font-bold" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search datasets..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="px-2 py-1 text-xs outline-none shadow-none border-none"
-            />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={onSearchChange}
+            placeholder="Search datasets..."
+            className="text-xs py-1.5"
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-1">
@@ -202,8 +191,7 @@ export const DatasetModal: React.FC<DatasetModalProps> = ({
               }`}
               onClick={() => onToggleDataset(dataset.id)}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selectedDatasets.includes(dataset.id)}
                 onChange={() => {}}
                 className={cn(

@@ -46,10 +46,10 @@ export const chatApiServices = {
   },
 
   async getHistory(): Promise<HistoryResponse> {
-    return chatApiClient.get<HistoryResponse>("/history");
+    return chatApiClient.get<HistoryResponse>("/api/v1/history");
   },
 
   async getSessionDetail(sessionId: string): Promise<SessionDetailResponse> {
-    return chatApiClient.get<SessionDetailResponse>(`/history/${sessionId}`);
+    return chatApiClient.get<SessionDetailResponse>(`/api/v1/history/${sessionId}`);
   },
 };

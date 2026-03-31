@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { NotificationsModal } from "../ui/NotificationsModal";
 import { Button } from "../ui/Button";
+import { SearchInput } from "../ui/SearchInput";
 import { useRouter } from "next/navigation";
 import { CONSTANTS } from "@/lib/constants";
 import { useRecentActivity } from "@/hooks/useDashboardQueries";
@@ -61,25 +62,17 @@ export function Header({ userName }: HeaderProps) {
 
         <div className="flex justify-end items-center flex-1 gap-4">
           {/* Search */}
-          <form
-            onSubmit={handleSearch}
-            className="relative flex-1 md:flex-initial"
-          >
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={16}
-            />
-            <input
-              type="text"
+          <div className="relative flex-1 md:flex-initial">
+            <SearchInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={setSearchQuery}
               placeholder="Find tasks, dashboards, people, and more"
-              className="h-10 pl-10 pr-16 md:pr-24 py-1 w-full md:w-96 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="h-10 w-full md:w-96 pr-16 md:pr-24"
             />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1 py-0.5 text-xs bg-gray-50 border border-gray-300 rounded hidden md:inline-block">
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded hidden md:inline-block pointer-events-none">
               ⌘ K
             </kbd>
-          </form>
+          </div>
 
           {/* Quick Actions */}
           <div className="border-l border-gray-200 pl-4 flex gap-3">

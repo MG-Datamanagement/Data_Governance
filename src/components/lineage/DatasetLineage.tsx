@@ -28,6 +28,7 @@ import { InlineState } from "@/components/ui/InlineState";
 import { MemoizedNodeCard } from "./NodeCard";
 import { MemoizedEdgeLayer } from "./EdgeLayer";
 import { DepthControl } from "./DepthControl";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { SqlEditorSidebar } from "./SqlEditorSidebar";
 import { typeIcon } from "./lineageUtils";
 import { CARD_W, CENTER_W, CARD_H_EST, GAP_Y } from "./lineage.types";
@@ -225,13 +226,12 @@ export default function DatasetLineage({ datasetId, datasetName }: DatasetLineag
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white flex-shrink-0 z-10 gap-1 flex-wrap">
-        <div className="relative w-48 flex-shrink-0">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            className="w-full text-xs pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-300 transition-all"
-            placeholder="Search nodes..."
+        <div className="w-48 flex-shrink-0">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
+            placeholder="Search nodes..."
+            className="text-xs py-1.5"
           />
         </div>
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 flex-shrink-0">

@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Trash2, Edit2, AlertTriangle, Plus, Filter, TagIcon,
+  Trash2, Edit2, AlertTriangle, Plus, TagIcon,
   CheckCircle2, XCircle, Shield,
-  Tag,
-  Search
+  Tag
 } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
@@ -20,6 +19,9 @@ import { CardSkeleton } from '@/components/ui/Skeletons'
 import { logger } from '@/lib/logger'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ViewToggle } from '@/components/ui/ViewToggle'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 
 // ─── Tag Grid Card ────────────────────────────────────────────────────────────
 
@@ -142,7 +144,7 @@ export default function TagsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 
   // React Query hooks
-  const { data: tags = [], isLoading, error, refetch } = useGetTags({
+  const { data: tags = [], isLoading, error } = useGetTags({
     tag_type: typeFilter || undefined,
     status: statusFilter || undefined,
   })
@@ -305,9 +307,7 @@ export default function TagsPage() {
       header: "Type",
       render: (tag: any) => (
         <span className="inline-flex items-center gap-1.5 text-xs text-gray-700 border border-gray-200 rounded-full px-2 py-0.5">
-          <div>
-            <Tag className="w-3 h-3 text-gray-500" />
-          </div>
+          <Tag className="w-3 h-3 text-gray-500" />
           {tag.tag_type}
         </span>
       )
@@ -408,28 +408,22 @@ export default function TagsPage() {
         {/* Search, Filters, and View Toggle */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-6 border border-gray-200">
           {/* Search row */}
-          <div className="flex-1 relative w-full mb-4">
-            <input
+          <div className="mb-4">
+            <SearchInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              onChange={setSearchQuery}
               placeholder="Search tags by name or description..."
             />
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2" />
           </div>
 
           {/* Filters + view toggle row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-600">Filters:</span>
-              </div>
+              <span className="text-sm font-medium text-gray-600">Filters:</span>
               <Select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                onChange={setTypeFilter}
                 className="w-40 bg-white"
-                placeholder=""
                 options={[
                   { value: "", label: "All Types" },
                   { value: "privacy", label: "Privacy" },
@@ -440,9 +434,8 @@ export default function TagsPage() {
               />
               <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={setStatusFilter}
                 className="w-40 bg-white"
-                placeholder=""
                 options={[
                   { value: "", label: "All Statuses" },
                   { value: "active", label: "Active" },
@@ -601,13 +594,11 @@ export default function TagsPage() {
                   <label htmlFor="tagName" className="block text-sm font-medium text-gray-700 mb-2">
                     Tag Name <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <Input
                     id="tagName"
-                    type="text"
                     value={tagName}
-                    onChange={(e) => setTagName(e.target.value)}
+                    onChange={setTagName}
                     placeholder="e.g. PII, Confidential"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -617,7 +608,7 @@ export default function TagsPage() {
                   <Select
                     id="tagType"
                     value={tagType}
-                    onChange={(e) => setTagType(e.target.value)}
+                    onChange={setTagType}
                     className="w-full bg-white"
                     options={[
                       { value: "general", label: "General" },
@@ -633,13 +624,13 @@ export default function TagsPage() {
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
-                <textarea
+                <Textarea
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={setDescription}
                   placeholder="Describe when and how this tag should be applied..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="resize-none"
                 />
               </div>
 
@@ -651,7 +642,7 @@ export default function TagsPage() {
                   <Select
                     id="securityPolicy"
                     value={securityPolicy}
-                    onChange={(e) => setSecurityPolicy(e.target.value)}
+                    onChange={setSecurityPolicy}
                     className="w-full bg-white"
                     options={[
                       { value: "low", label: "Low" },
@@ -667,9 +658,8 @@ export default function TagsPage() {
                   <Select
                     id="owner"
                     value={ownerId}
-                    onChange={(e) => setOwnerId(e.target.value)}
+                    onChange={setOwnerId}
                     className="w-full bg-white cursor-pointer"
-                    placeholder="Select an owner"
                     options={owners.map((owner) => ({
                       value: owner.id,
                       label: owner.name

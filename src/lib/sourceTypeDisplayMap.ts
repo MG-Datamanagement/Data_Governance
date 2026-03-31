@@ -22,6 +22,12 @@ const PLATFORM_DISPLAY_MAP: Record<string, PlatformDisplayConfig> = {
   mongodb:     { icon: Database,        iconColor: "text-green-600" },
   mongo:       { icon: Database,        iconColor: "text-green-600" },
   redshift:    { icon: Database,         iconColor: "text-red-700" },
+  aws_s3:      { icon: Database,         iconColor: "text-red-700" },
+  athena:      { icon: Database,         iconColor: "text-red-700" },
+  databricks:  { icon: Database,         iconColor: "text-red-700" },
+  gcs:         { icon: Database,         iconColor: "text-red-700" },
+  gcp:         { icon: Database,         iconColor: "text-red-700" },
+  gcp_bigquery: { icon: Database,         iconColor: "text-red-700" },
 };
 
 const DEFAULT_DISPLAY: PlatformDisplayConfig = {

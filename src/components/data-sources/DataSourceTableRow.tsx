@@ -8,6 +8,7 @@ import { useGetSourceStats, useGetSourceLogs } from "@/hooks/useDashboardQueries
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ChevronRight, Database } from "lucide-react";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
@@ -191,11 +192,9 @@ export const DataSourceTableRow: React.FC<{
             >
                 {/* Checkbox */}
                 <td className="pl-4 pr-1 py-3 w-10">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={checked}
                         onChange={() => onCheck(source.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
                 </td>
 

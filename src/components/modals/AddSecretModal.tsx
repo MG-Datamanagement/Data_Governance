@@ -5,6 +5,8 @@ import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const secretTypeValues = ["password", "connection_string", "api_key"] as const;
@@ -111,16 +113,19 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
             <label htmlFor="secret-name" className="block text-sm font-semibold text-gray-800 mb-1.5">
               Secret Name
             </label>
-            <input
-              id="secret-name"
-              type="text"
-              {...register("name")}
-              disabled={isEditMode || isLoading}
-              placeholder="e.g., POSTGRES_PASSWORD"
-              aria-invalid={!!errors.name}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50 disabled:bg-gray-50 aria-[invalid=true]:border-red-400"
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="secret-name"
+                  disabled={isEditMode || isLoading}
+                  placeholder="e.g., POSTGRES_PASSWORD"
+                  error={(errors.name as any)?.message}
+                />
+              )}
             />
-            {fieldError("name")}
           </div>
 
           <div>
@@ -132,8 +137,8 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
               control={control}
               render={({ field }) => (
                 <Select
-                  id="secret-type"
                   {...field}
+                  id="secret-type"
                   disabled={isEditMode || isLoading}
                   className="w-full bg-white text-gray-900"
                   options={[
@@ -152,29 +157,40 @@ const AddSecretModal: React.FC<AddSecretModalProps> = ({
               Value{" "}
               {isEditMode && <span className="text-gray-400 font-normal">(Enter new value to update)</span>}
             </label>
-            <input
-              id="secret-value"
-              type="password"
-              {...register("value")}
-              disabled={isLoading}
-              placeholder="Enter secure value"
-              aria-invalid={!!errors.value}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50 aria-[invalid=true]:border-red-400"
+            <Controller
+              name="value"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="secret-value"
+                  type="password"
+                  disabled={isLoading}
+                  placeholder="Enter secure value"
+                  error={(errors.value as any)?.message}
+                />
+              )}
             />
-            {fieldError("value")}
           </div>
 
           <div>
             <label htmlFor="secret-desc" className="block text-sm font-semibold text-gray-800 mb-1.5">
               Description <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
-            <textarea
-              id="secret-desc"
-              {...register("description")}
-              disabled={isLoading}
-              placeholder="What is this secret used for?"
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none disabled:opacity-50"
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  {...field}
+                  id="secret-desc"
+                  disabled={isLoading}
+                  placeholder="What is this secret used for?"
+                  rows={2}
+                  className="resize-none"
+                  error={(errors.description as any)?.message}
+                />
+              )}
             />
           </div>
 

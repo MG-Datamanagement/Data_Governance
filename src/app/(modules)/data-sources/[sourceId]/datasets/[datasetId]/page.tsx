@@ -33,7 +33,7 @@ import {
   useGetLineageCentric
 } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2, SparkleIcon, Search, FileQuestion, Home, ChevronRight, Table2, Database, LayoutGrid, Sparkles, MoreHorizontal } from "lucide-react";
+import { CheckCircle2, Loader2, SparkleIcon, FileQuestion, Home, ChevronRight, Table2, Database, LayoutGrid, Sparkles, MoreHorizontal } from "lucide-react";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { InlineState } from "@/components/ui/InlineState";
 
@@ -67,6 +67,7 @@ import DatasetPropertiesTab from "@/components/tabs/DatasetPropertiesTab";
 import { ReclassificationActionWithAiRequest } from "@/services/dashboardApi.service";
 import { ComplianceApiResponse, datasourceApiServices } from "@/services/datasourceApi.service";
 import { useAppStore } from "@/store/appStore";
+import { SearchInput } from "@/components/ui/SearchInput";
 const TABS = [
   "DataCard",
   "Columns",
@@ -164,22 +165,12 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         {/* Global search bar */}
         <div className="bg-white border-b border-gray-200 px-8 py-3">
           <div className="max-w-7xl mx-auto">
-            <div className="relative max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
+            <div className="max-w-lg">
+              <SearchInput
                 placeholder="Find tables, dashboards, people, and more"
-                className="pl-9 pr-16 py-2 border border-gray-200 rounded-lg text-sm bg-white w-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 disabled
+                showKbd
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
-                  ⌘
-                </kbd>
-                <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
-                  K
-                </kbd>
-              </span>
             </div>
           </div>
         </div>
@@ -262,21 +253,11 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       {/* Global search bar */}
       <div className="bg-white border-b border-gray-200 px-8 py-3">
         <div className="max-w-7xl mx-auto">
-          <div className="relative max-w-lg">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
+          <div className="max-w-lg">
+            <SearchInput
               placeholder="Find tables, dashboards, people, and more"
-              className="pl-9 pr-16 py-2 border border-gray-200 rounded-lg text-sm bg-white w-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              showKbd
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
-                ⌘
-              </kbd>
-              <kbd className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 rounded px-1 py-0.5">
-                K
-              </kbd>
-            </span>
           </div>
         </div>
       </div>

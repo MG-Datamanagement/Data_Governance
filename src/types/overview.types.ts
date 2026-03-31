@@ -117,6 +117,7 @@ export interface RecentlyViewed {
   /** Used by getPlatformDisplay() to resolve icon at render time */
   platformKey: string;
   iconColor: string;
+  sourceType?: string;
 }
 
 export interface RecentlyViewedDataset {

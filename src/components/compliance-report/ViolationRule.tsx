@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import type { NewComplianceRule } from "./compliance.types";
+import { Textarea } from "@/components/ui/Textarea";
 
 interface ViolationRuleProps {
   rule: NewComplianceRule;
@@ -74,12 +75,12 @@ export const ViolationRule: React.FC<ViolationRuleProps> = ({ rule, onRemediate 
                   {remediatingIndex === i ? (
                     <div className="w-full bg-gray-50 p-3 rounded-lg border border-gray-200">
                       <p className="text-xs font-medium text-gray-700 mb-2">Add missing description for this catalog:</p>
-                      <textarea
-                        className="w-full text-xs border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none bg-white"
+                      <Textarea
+                        className="w-full resize-none bg-white font-normal"
                         rows={2}
                         placeholder="Enter description..."
                         value={inputText}
-                        onChange={e => setInputText(e.target.value)}
+                        onChange={setInputText}
                         autoFocus
                         disabled={isSubmitting}
                       />

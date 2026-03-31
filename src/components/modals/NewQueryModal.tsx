@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { X, Plus, Terminal, Info, User as UserIcon, Loader2 } from "lucide-react";
 import { CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 
 interface NewQueryModalProps {
   isOpen: boolean;
@@ -29,8 +31,7 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  const handleFieldChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -72,13 +73,12 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               Query Title
             </label>
-            <input
-              type="text"
+            <Input
               name="title"
               value={formData.title}
-              onChange={handleChange}
+              onChange={(val) => handleFieldChange("title", val)}
               placeholder="e.g. Weekly Active Customers"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all font-medium"
+              className="font-medium"
               required
             />
           </div>
@@ -88,13 +88,13 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               Description
             </label>
-            <textarea
+            <Textarea
               name="description"
               value={formData.description}
-              onChange={handleChange}
+              onChange={(val) => handleFieldChange("description", val)}
               placeholder="Provide context on when to use this query..."
               rows={2}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all resize-none"
+              className="resize-none"
             />
           </div>
 
@@ -104,13 +104,13 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
               SQL Query
             </label>
             <div className="relative group">
-              <textarea
+              <Textarea
                 name="query_text"
                 value={formData.query_text}
-                onChange={handleChange}
+                onChange={(val) => handleFieldChange("query_text", val)}
                 placeholder="SELECT * FROM table WHERE condition..."
                 rows={6}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm font-mono bg-gray-50 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all"
+                className="font-mono bg-gray-50"
                 required
               />
               <div className="absolute right-3 bottom-3 text-[10px] font-bold text-gray-300 pointer-events-none group-focus-within:text-indigo-300 transition-colors uppercase tracking-widest">
@@ -127,7 +127,7 @@ const NewQueryModal: React.FC<NewQueryModalProps> = ({
             <Select
               name="owner_id"
               value={formData.owner_id}
-              onChange={handleChange}
+              onChange={(val) => handleFieldChange("owner_id", val)}
               className="bg-white"
               required
               options={[

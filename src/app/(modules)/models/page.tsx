@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, Search, Filter, X, Plus } from "lucide-react";
+import { BrainCircuit, X, Plus, Filter } from "lucide-react";
 import { ModelRegistryTable } from "@/components/model-registry/ModelRegistryTable";
 import { ModelRegistryGrid } from "@/components/model-registry/ModelRegistryGrid";
 import { ModelDetailModal } from "@/components/model-registry/ModelDetailModal";
 import { RegisterModelModal } from "@/components/model-registry/RegisterModelModal";
 import { MOCK_MODEL_LIST, MOCK_MODEL_METADATA } from "@/lib/mockData";
 import { Select } from "@/components/ui/Select";
+import { Pagination } from "@/components/ui/Pagination";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 
@@ -91,14 +95,11 @@ export default function ModelRegistryPage() {
         {/* Search and Filters */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
           {/* Search Input */}
-          <div className="relative mb-5">
-            <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
+          <div className="mb-5">
+            <SearchInput
               placeholder="Search models by name, description, or tags..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-sm transition-all"
+              onChange={setSearchQuery}
             />
           </div>
 
@@ -111,36 +112,42 @@ export default function ModelRegistryPage() {
               <div className="w-40">
                 <Select
                   value={selectedSourceFilter}
-                  onChange={(e) => setSelectedSourceFilter(e.currentTarget.value)}
-                  options={sources.map((source) => ({
-                    value: source,
-                    label: source,
-                  }))}
-                  placeholder="All Sources"
+                  onChange={(val) => setSelectedSourceFilter(val)}
+                  options={[
+                    { value: "All Sources", label: "All Sources" },
+                    ...sources.map((source) => ({
+                      value: source,
+                      label: source,
+                    }))
+                  ]}
                   className="w-full text-[13px] py-1.5 px-3 border-gray-300 rounded-lg font-normal"
                 />
               </div>
               <div className="w-40">
                 <Select
                   value={selectedTaskFilter}
-                  onChange={(e) => setSelectedTaskFilter(e.currentTarget.value)}
-                  options={tasks.map((task) => ({
-                    value: task,
-                    label: task,
-                  }))}
-                  placeholder="All Tasks"
+                  onChange={(val) => setSelectedTaskFilter(val)}
+                  options={[
+                    { value: "All Tasks", label: "All Tasks" },
+                    ...tasks.map((task) => ({
+                      value: task,
+                      label: task,
+                    }))
+                  ]}
                   className="w-full text-[13px] py-1.5 px-3 border-gray-300 rounded-lg font-normal"
                 />
               </div>
               <div className="w-40">
                 <Select
                   value={selectedStatusFilter}
-                  onChange={(e) => setSelectedStatusFilter(e.currentTarget.value)}
-                  options={statuses.map((status) => ({
-                    value: status,
-                    label: status,
-                  }))}
-                  placeholder="All Statuses"
+                  onChange={(val) => setSelectedStatusFilter(val)}
+                  options={[
+                    { value: "All Statuses", label: "All Statuses" },
+                    ...statuses.map((status) => ({
+                      value: status,
+                      label: status,
+                    }))
+                  ]}
                   className="w-full text-[13px] py-1.5 px-3 border-gray-300 rounded-lg font-normal"
                 />
               </div>

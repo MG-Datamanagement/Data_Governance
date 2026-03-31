@@ -1,22 +1,36 @@
 import React, { type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
+import { AlertCircle } from "lucide-react";
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  error?: boolean;
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  error?: string | boolean;
+  onChange?: (value: string) => void;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, ...props }, ref) => {
+  ({ className, error, onChange, ...props }, ref) => {
+    const hasError = !!error;
+    const errorMessage = typeof error === "string" ? error : undefined;
+
     return (
-      <input
-        ref={ref}
-        className={cn(
-          "w-full px-3 h-10 border border-gray-200 bg-white rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-red-500 focus:border-red-500 focus:ring-red-500/40",
-          className
+      <div className="w-full space-y-1.5">
+        <input
+          ref={ref}
+          className={cn(
+            "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 placeholder:text-gray-400 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed",
+            hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/10",
+            className
+          )}
+          onChange={(e) => onChange?.(e.target.value)}
+          {...props}
+        />
+        {errorMessage && (
+          <p className="flex items-center gap-1.5 text-xs font-medium text-red-600 animate-in fade-in slide-in-from-top-1 duration-200">
+            <AlertCircle size={12} />
+            {errorMessage}
+          </p>
         )}
-        {...props}
-      />
+      </div>
     );
   }
 );
