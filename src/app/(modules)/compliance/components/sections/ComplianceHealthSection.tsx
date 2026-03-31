@@ -93,7 +93,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
 
           {/* Metrics shown ONLY when collapsed (to match the horizontal design in Image 2) */}
           {isCollapsed && !isLoading && !error && (
-            <div className="hidden md:flex items-center gap-4 flex-1 animate-in fade-in slide-in-from-left-4 duration-500">
+            <div className="hidden md:flex justify-center items-center gap-4 flex-1 flex-wrap animate-in fade-in slide-in-from-left-4 duration-500">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black text-green-600">{health?.score}%</span>
                 <Badge variant={statusMeta.variant} size="sm" className="h-6">
@@ -108,11 +108,11 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
                 <span>{health?.trend_label}</span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {[
                   { label: "GDPR", color: "bg-green-500" },
-                  { label: "SOC 2", color: "bg-blue-500" },
-                  { label: "HIPAA", color: "bg-orange-500" }
+                  // { label: "SOC 2", color: "bg-blue-500" },
+                  // { label: "HIPAA", color: "bg-orange-500" }
                 ].map(dot => (
                   <div key={dot.label} className="flex items-center gap-1.5">
                     <div className={cn("w-2 h-2 rounded-full", dot.color)} />

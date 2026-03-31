@@ -59,9 +59,11 @@ export function ComplianceTrendsChart({ data }: ComplianceTrendsChartProps) {
           </h3>
           <p className="text-xs text-gray-500">Performance across frameworks</p>
         </div>
-        <div className="flex items-center gap-1 text-xs text-success font-medium bg-success/10 px-1.5 py-0.5 rounded-full border border-success/50">
-          <TrendingUpIcon size={14} className="text-success" />
-          Live Data
+        <div className="flex items-center gap-1 text-xs text-nowrap text-success font-medium bg-success/10 px-1.5 py-0.5 rounded-full border border-success/50">
+          <div className="flex items-center justify-center">
+            <TrendingUpIcon size={14} className="text-success" />
+          </div>
+          <span>Live Data</span>
         </div>
       </div>
 
