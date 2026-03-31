@@ -16,18 +16,19 @@ export interface PlatformDisplayConfig {
 }
 
 const PLATFORM_DISPLAY_MAP: Record<string, PlatformDisplayConfig> = {
-  postgres:    { icon: Database, iconColor: "text-slate-600" },
-  postgresql:  { icon: Database,     iconColor: "text-slate-600" },
-  snowflake:   { icon: Database,   iconColor: "text-sky-600" },
-  mongodb:     { icon: Database,        iconColor: "text-green-600" },
-  mongo:       { icon: Database,        iconColor: "text-green-600" },
-  redshift:    { icon: Database,         iconColor: "text-red-700" },
-  aws_s3:      { icon: Database,         iconColor: "text-red-700" },
-  athena:      { icon: Database,         iconColor: "text-red-700" },
-  databricks:  { icon: Database,         iconColor: "text-red-700" },
-  gcs:         { icon: Database,         iconColor: "text-red-700" },
-  gcp:         { icon: Database,         iconColor: "text-red-700" },
-  gcp_bigquery: { icon: Database,         iconColor: "text-red-700" },
+  postgres:    { icon: Database,     iconColor: "text-[#336791]" },
+  postgresql:  { icon: Database,     iconColor: "text-[#336791]" },
+  snowflake:   { icon: Database,     iconColor: "text-[#29B5E8]" },
+  mongodb:     { icon: Database,     iconColor: "text-[#00ED64]" },
+  mongo:       { icon: Database,     iconColor: "text-[#00ED64]" },
+  redshift:    { icon: Database,     iconColor: "text-[#DD344C]" },
+  aws_s3:      { icon: Database,     iconColor: "text-[#FF9900]" },
+  athena:      { icon: Database,     iconColor: "text-[#9434E4]" },
+  databricks:  { icon: Database,     iconColor: "text-[#FF3621]" },
+  gcs:         { icon: Database,     iconColor: "text-[#4285F4]" },
+  gcp:         { icon: Database,     iconColor: "text-[#4285F4]" },
+  gcp_bigquery: { icon: Database,     iconColor: "text-[#4285F4]" },
+  csv:         { icon: Database,     iconColor: "text-[#10B981]" },
 };
 
 const DEFAULT_DISPLAY: PlatformDisplayConfig = {

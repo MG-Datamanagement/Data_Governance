@@ -9,7 +9,7 @@
  * slices without caring which tab is active.
  */
 
-import { Activity, Clock, Database, CheckCircle2, AlertCircle, PlayCircle, PlusCircle, CheckSquare } from "lucide-react";
+import { Activity, Clock, Database, CheckCircle2, AlertCircle, PlayCircle, PlusCircle, CheckSquare, Dot } from "lucide-react";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import { InlineState } from "@/components/ui/InlineState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -17,6 +17,7 @@ import { OverviewData } from "@/hooks/useOverviewData";
 import { getPlatformDisplay, PlatformIcon } from "@/lib/sourceTypeDisplayMap";
 import { RecentActivity, RecentlyViewed } from "@/types";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import ConnectorIcon from "@/components/connectors/ConnectorIcon";
 
 type ActivityTabType = "recent" | "viewed";
 
@@ -42,6 +43,7 @@ type ActivityItemV2Props = {
   time?: string;
   icon: PlatformIcon;
   iconColor: string;
+  platformKey?: string;
 };
 
 function ActivityItemV2({
@@ -52,14 +54,18 @@ function ActivityItemV2({
   time,
   icon,
   iconColor,
+  platformKey,
 }: ActivityItemV2Props) {
   const PlatformIcon = icon;
   return (
     <div className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0">
-          <PlatformIcon size={14} className={cn(iconColor)} />
+        <div className="w-7 h-7 bg-gray-100/90 rounded-md flex items-center justify-center flex-shrink-0">
+          {/* <PlatformIcon size={14} className={cn(iconColor)} /> */}
+          <div className="text-sm">
+            <ConnectorIcon icon={platform || ""} />
+          </div>
         </div>
 
         {/* Content */}
@@ -77,6 +83,7 @@ function ActivityItemV2({
 
           <div className="flex items-center justify-between mt-1">
             <div className="text-xs text-gray-500 truncate">{platform}</div>
+            {/* <div className="text-xs text-gray-500 truncate">{platformKey}</div> */}
 
             {time && (
               <div className="text-[10px] text-gray-400">
@@ -286,6 +293,7 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
                       time={item.time || ""}
                       icon={getPlatformDisplay(item.platform || "").icon}
                       iconColor={item.iconColor}
+                      platformKey={item.platformKey}
                     />
                   ))}
             </>

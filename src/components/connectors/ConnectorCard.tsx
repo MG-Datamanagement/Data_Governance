@@ -19,8 +19,8 @@ const ConnectorCard: React.FC<ConnectorCardProps> = ({ connector, onClick }) => 
         group
       `}
         >
-            <div className="mb-4">
-                <ConnectorIcon icon={connector.icon} className="w-9 h-9" />
+            <div className="mb-2 text-2xl">
+                <ConnectorIcon icon={connector.icon} />
             </div>
             <h3 className="font-semibold text-gray-800 mb-1 text-[15px] group-hover:text-indigo-600 transition-colors">
                 {connector.name}
