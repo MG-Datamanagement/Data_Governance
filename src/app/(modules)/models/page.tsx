@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, Search, Filter, X, List, Grid, Plus } from "lucide-react";
+import { BrainCircuit, Search, Filter, X, Plus } from "lucide-react";
 import { ModelRegistryTable } from "@/components/model-registry/ModelRegistryTable";
 import { ModelRegistryGrid } from "@/components/model-registry/ModelRegistryGrid";
 import { ModelDetailModal } from "@/components/model-registry/ModelDetailModal";
@@ -9,6 +9,7 @@ import { RegisterModelModal } from "@/components/model-registry/RegisterModelMod
 import { MOCK_MODEL_LIST, MOCK_MODEL_METADATA } from "@/lib/mockData";
 import { Select } from "@/components/ui/Select";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { ViewToggle } from "@/components/ui/ViewToggle";
 
 export default function ModelRegistryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -155,30 +156,10 @@ export default function ModelRegistryPage() {
             </div>
 
             {/* List/Grid View Toggle */}
-            <div className="flex items-center p-1 bg-gray-50 border border-gray-200 rounded-lg shrink-0 gap-0.5">
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded-md transition-all ${
-                  viewMode === "list"
-                    ? "bg-white shadow-sm text-gray-900"
-                    : "text-gray-400 hover:text-gray-700 hover:bg-white/50"
-                }`}
-                title="List view"
-              >
-                <List className="w-[18px] h-[18px]" />
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-md transition-all ${
-                  viewMode === "grid"
-                    ? "bg-white shadow-sm text-gray-900"
-                    : "text-gray-400 hover:text-gray-700 hover:bg-white/50"
-                }`}
-                title="Grid view"
-              >
-                <Grid className="w-[18px] h-[18px]" />
-              </button>
-            </div>
+            <ViewToggle
+              view={viewMode}
+              onChange={(v) => setViewMode(v as "list" | "grid")}
+            />
           </div>
         </div>
 

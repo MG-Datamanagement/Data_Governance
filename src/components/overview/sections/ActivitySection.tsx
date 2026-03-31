@@ -25,45 +25,14 @@ type Props = {
   recentlyViewedQuery: OverviewData["recentlyViewed"];
 };
 
-const TABS: { id: ActivityTabType; label: string; icon: React.ElementType }[] =
+const TABS: { id: ActivityTabType; label: string; icon: React.ElementType; viewMoreText: string; href: string }[] =
   [
-    { id: "recent", label: "Recent Activity", icon: Activity },
-    { id: "viewed", label: "Recently Viewed", icon: Clock },
+    { id: "recent", label: "Recent Activity", icon: Activity, viewMoreText: "View All Activity", href: "" },
+    { id: "viewed", label: "Recently Viewed", icon: Clock, viewMoreText: "View All Datasets", href: "" },
   ];
 
 const MAX_RECENT_ACTIVITY_VISIBLE_ITEMS = 6;
 const MAX_RECENTLY_VIEWED_VISIBLE_ITEMS = 5;
-
-type ActivityItemProps = {
-  name: string;
-  platform: string;
-  type: string;
-};
-
-function ActivityItem({ name, platform, type }: ActivityItemProps) {
-  return (
-    <div className="p-2 hover:bg-gray-50 cursor-pointer">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center flex-shrink-0">
-          <Database size={14} className="text-purple-600" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div
-            title={name}
-            className="text-xs font-medium text-gray-900 truncate"
-          >
-            {name}
-          </div>
-          {/* {platform && type && (
-            <div className="text-xs text-gray-500">
-              {platform} • {type}
-            </div>
-          )} */}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 type ActivityItemV2Props = {
   name: string;
@@ -89,8 +58,8 @@ function ActivityItemV2({
     <div className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="w-9 h-9 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0">
-          <PlatformIcon size={16} className={cn(iconColor)} />
+        <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0">
+          <PlatformIcon size={14} className={cn(iconColor)} />
         </div>
 
         {/* Content */}
@@ -98,7 +67,7 @@ function ActivityItemV2({
           <div className="flex items-center justify-between gap-2">
             <div
               title={name}
-              className="text-sm font-medium text-gray-900 truncate"
+              className="text-xs font-medium text-gray-900 truncate"
             >
               {name}
             </div>
@@ -157,7 +126,7 @@ function TimelineActivityItem({ name, time }: TimelineActivityItemProps) {
 
       {/* Content */}
       <div>
-        <div className="text-xs text-gray-800 line-clamp-2" title={name}>
+        <div className="text-xs font-medium text-gray-800 line-clamp-2" title={name}>
           {name}
         </div>
         

@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   Trash2, Edit2, AlertTriangle, Plus, Filter, TagIcon,
-  List, LayoutGrid, CheckCircle2, XCircle, Shield, Tag as TagIconLucide,
-  Tag
+  CheckCircle2, XCircle, Shield,
+  Tag,
+  Search
 } from 'lucide-react'
 import { useGetTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTagsQueries'
 import { useGetOwnersList } from '@/hooks/useDashboardQueries'
@@ -18,6 +19,7 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CardSkeleton } from '@/components/ui/Skeletons'
 import { logger } from '@/lib/logger'
 import { Tooltip } from '@/components/ui/Tooltip'
+import { ViewToggle } from '@/components/ui/ViewToggle'
 
 // ─── Tag Grid Card ────────────────────────────────────────────────────────────
 
@@ -315,7 +317,7 @@ export default function TagsPage() {
       header: "Description",
       render: (tag: any) => {
         return(
-          <Tooltip content={tag.description} >
+          <Tooltip content={tag.description}>
             <p className="text-sm text-gray-600 line-clamp-1 truncate max-w-xs">{tag.description}</p>
           </Tooltip>
         )
@@ -413,9 +415,7 @@ export default function TagsPage() {
               className="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               placeholder="Search tags by name or description..."
             />
-            <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2" />
           </div>
 
           {/* Filters + view toggle row */}
@@ -452,22 +452,10 @@ export default function TagsPage() {
             </div>
 
             {/* List / Grid toggle */}
-            <div className="flex items-center border border-gray-200 rounded-lg p-0.5 bg-gray-50">
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                title="List view"
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                title="Grid view"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-            </div>
+            <ViewToggle
+              view={viewMode}
+              onChange={setViewMode}
+            />
           </div>
         </div>
 

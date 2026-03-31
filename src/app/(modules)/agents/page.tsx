@@ -6,8 +6,6 @@ import {
     Plus,
     Search,
     Filter,
-    List,
-    LayoutGrid,
     CheckCircle2,
     PauseCircle,
     XCircle,
@@ -21,6 +19,7 @@ import {
     Settings
 } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { ViewToggle } from '@/components/ui/ViewToggle';
 
 import { useGetAgents } from "@/hooks/useDashboardQueries";
 import { InlineState } from "@/components/ui/InlineState";
@@ -281,20 +280,10 @@ export default function AgentsPage() {
                         )}
                     </div>
 
-                    <div className="flex items-center border border-gray-200 rounded-lg p-0.5 bg-gray-50">
-                        <button
-                            onClick={() => setViewMode("list")}
-                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                        >
-                            <List size={16} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode("grid")}
-                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                        >
-                            <LayoutGrid size={16} />
-                        </button>
-                    </div>
+                    <ViewToggle
+                        view={viewMode}
+                        onChange={setViewMode}
+                    />
                 </div>
             </div>
 

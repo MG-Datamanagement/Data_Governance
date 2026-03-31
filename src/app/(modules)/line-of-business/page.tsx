@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
 import { lineOfBusinessApiService } from "@/services/lineOfBusinessApi.service";
 import { 
-    ChevronRight, Search, Filter, List, Grid, Plus, X, 
+    ChevronRight, Search, Filter, Plus, X, 
     ChevronDown, User, Database, Layers, AlertCircle, Pencil, 
     Trash2, Link, MoreVertical, LayoutDashboard, FolderTree 
 } from "lucide-react";
@@ -19,6 +19,7 @@ import {
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { ViewToggle } from "@/components/ui/ViewToggle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -948,24 +949,10 @@ export default function LineOfBusiness() {
                             {filteredDomains.length} domain{filteredDomains.length !== 1 ? "s" : ""} · {totalSubdomains} sub-domain{totalSubdomains !== 1 ? "s" : ""} · {totalAssets.toLocaleString()} assets
                         </span>
                     </div>
-                    <div className="flex items-center border border-gray-200 rounded-md overflow-hidden p-0.5 bg-gray-100 transition-all duration-100">
-                        <button
-                            onClick={() => setViewMode("list")}
-                            className={`p-1.5 rounded-md ${viewMode === "list" ? "bg-white text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-                            aria-label="List view"
-                            aria-pressed={viewMode === "list"}
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode("grid")}
-                            className={`p-1.5 rounded-md ${viewMode === "grid" ? "bg-white text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-                            aria-label="Grid view"
-                            aria-pressed={viewMode === "grid"}
-                        >
-                            <Grid className="w-4 h-4" />
-                        </button>
-                    </div>
+                    <ViewToggle
+                        view={viewMode}
+                        onChange={setViewMode}
+                    />
                 </div>
             </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { LayoutGrid, List, Plus, X, Info, Terminal } from "lucide-react";
+import { Plus, X, Info, Terminal } from "lucide-react";
 import { datasourceApiServices } from "@/services/datasourceApi.service";
 import { ApiQuery, CreateQueryRequest, QueryOwner } from "@/types/dashboardTypes";
 import QueryListView from "../queries/QueryListView";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { InlineState } from "@/components/ui/InlineState";
 import { Pagination } from "@/components/ui/Pagination";
 import { logger } from "@/lib/logger";
+import { ViewToggle } from "@/components/ui/ViewToggle";
 
 interface DatasetQueriesTabProps {
   catalogId: string;
@@ -84,26 +85,10 @@ const DatasetQueriesTab: React.FC<DatasetQueriesTabProps> = ({ catalogId, datase
       bodyClassName="bg-gray-50/30"
       headerAction={
         <>
-          <div className="flex items-center bg-white p-1 rounded-lg border border-gray-200 shadow-sm mr-2">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "list" ? "bg-gray-100 text-indigo-600 font-bold" : "text-gray-400 hover:text-gray-600"
-              }`}
-              title="List View"
-            >
-              <List size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "grid" ? "bg-gray-100 text-indigo-600 font-bold" : "text-gray-400 hover:text-gray-600"
-              }`}
-              title="Grid View"
-            >
-              <LayoutGrid size={14} />
-            </button>
-          </div>
+          <ViewToggle
+            view={viewMode}
+            onChange={setViewMode}
+          />
           <Button onClick={() => setIsModalOpen(true)} icon={<Plus size={16} strokeWidth={3} />}>
             Add Highlighted Query
           </Button>
