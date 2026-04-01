@@ -446,7 +446,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
               onChange={(val) => setStatusFilter(val)}
               className="w-36 bg-white"
               options={[
-                { value: "All", label: "Statuses" },
+                { value: "All", label: "Status" },
                 { value: "Healthy", label: "Healthy" },
                 { value: "Warning", label: "Warning" },
                 { value: "Risk", label: "Risk" }

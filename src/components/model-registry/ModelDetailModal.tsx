@@ -11,6 +11,7 @@ import {
   Tag
 } from "lucide-react";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
+import { getTagColor, getTagTextColor, getSourceIconColor } from "@/lib/utils";
 
 interface ModelDetailModalProps {
   model: ModelMetadata;
@@ -30,13 +31,7 @@ const riskTierStyles: Record<string, { text: string; border: string }> = {
   "High Risk": { text: "text-red-600", border: "border-red-200" },
 };
 
-const tagColorMap: Record<string, string> = {
-  blue: "bg-blue-50 text-blue-700 border border-blue-100",
-  purple: "bg-purple-50 text-purple-700 border border-purple-100",
-  orange: "bg-orange-50 text-orange-700 border border-orange-100",
-  green: "bg-green-50 text-green-700 border border-green-100",
-  red: "bg-red-50 text-red-700 border border-red-100",
-};
+
 
 export function ModelDetailModal({ model, isOpen, onClose }: ModelDetailModalProps) {
   if (!isOpen) return null;
@@ -56,11 +51,13 @@ export function ModelDetailModal({ model, isOpen, onClose }: ModelDetailModalPro
       key: "classification",
       header: "Classification",
       render: (row) => (
-        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-          row.classification === "Confidential" ? "text-gray-700 border-gray-200 bg-white" :
-          row.classification === "PII" ? "text-red-600 bg-red-50/50 border-red-100" :
-          "text-gray-600 border-gray-200 bg-white"
-        }`}>
+        <span 
+          className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold shadow-sm"
+          style={{ 
+            backgroundColor: getTagColor(row.classification),
+            color: getTagTextColor(row.classification)
+          }}
+        >
           {row.classification}
         </span>
       ),
@@ -224,7 +221,11 @@ export function ModelDetailModal({ model, isOpen, onClose }: ModelDetailModalPro
                 {model.tags.map((tag) => (
                   <span
                     key={tag.name}
-                    className={`inline-block px-3 py-1 rounded-full text-[12.5px] font-medium shadow-sm ${tagColorMap[tag.color]}`}
+                    className="inline-block px-3 py-1 rounded-full text-[12.5px] font-medium shadow-sm"
+                    style={{ 
+                      backgroundColor: getTagColor(tag.name),
+                      color: getTagTextColor(tag.name)
+                    }}
                   >
                     {tag.name}
                   </span>

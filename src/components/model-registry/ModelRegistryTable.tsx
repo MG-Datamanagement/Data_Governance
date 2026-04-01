@@ -2,28 +2,23 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { ModelListItem } from "@/types";
-import { BrainCircuit, Edit2, Trash2 } from "lucide-react";
+import { BrainCircuit, Edit2, Trash2, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
+import { getTagColor, getTagTextColor } from "@/lib/utils";
 
 interface ModelRegistryTableProps {
   models: ModelListItem[];
   onModelClick?: () => void;
 }
 
-const statusColors: Record<string, { bg: string; text: string; icon: string }> = {
-  Approved: { bg: "bg-green-100", text: "text-green-700", icon: "✓" },
-  "Pending Review": { bg: "bg-yellow-100", text: "text-yellow-700", icon: "◎" },
-  Deprecated: { bg: "bg-red-100", text: "text-red-700", icon: "✕" },
+const statusColors: Record<string, { bg: string; text: string; icon: any }> = {
+  Approved: { bg: "bg-green-100", text: "text-green-700", icon: CheckCircle2 },
+  "Pending Review": { bg: "bg-yellow-100", text: "text-yellow-700", icon: Clock },
+  Deprecated: { bg: "bg-red-100", text: "text-red-700", icon: AlertCircle },
 };
 
-const tagColorMap: Record<string, string> = {
-  blue: "bg-blue-100 text-blue-700",
-  purple: "bg-purple-100 text-purple-700",
-  orange: "bg-orange-100 text-orange-700",
-  green: "bg-green-100 text-green-700",
-  red: "bg-red-100 text-red-700",
-};
+
 
 export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableProps) {
   const [page, setPage] = useState(1);
@@ -52,9 +47,10 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
               {model.tags.slice(0, 2).map((tag) => (
                 <span
                   key={tag.name}
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                    tagColorMap[tag.color]
-                  }`}
+                  className="inline-block px-2.5 rounded-full text-[10px] font-medium shadow-sm text-gray-800"
+                  style={{ 
+                    backgroundColor: getTagColor(tag.name),
+                  }}
                 >
                   {tag.name}
                 </span>
@@ -77,9 +73,13 @@ export function ModelRegistryTable({ models, onModelClick }: ModelRegistryTableP
       header: "Status",
       render: (model) => {
         const statusStyle = statusColors[model.status] || { bg: "bg-gray-100", text: "text-gray-700", icon: "•" };
+        const Icon = statusStyle.icon;
         return (
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statusStyle.bg}`}>
-            <span className={statusStyle.text}>{statusStyle.icon} {model.status}</span>
+          <span className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg}`}>
+            <div className={statusStyle.text}>
+              {Icon && <Icon className="w-3 h-3" />}
+            </div>
+            <span className={statusStyle.text}> {model.status}</span>
           </span>
         );
       },

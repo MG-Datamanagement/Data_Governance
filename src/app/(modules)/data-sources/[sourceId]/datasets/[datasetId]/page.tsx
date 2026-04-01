@@ -17,7 +17,7 @@ const ComplianceReportModal = dynamic(
   () => import("@/components/modals/ComplianceReportModal"),
   { ssr: false, loading: () => null },
 );
-import { formatDateTime, formatIST, formatTimeAgo } from "@/lib/utils";
+import { capitalize, formatDateTime, formatIST, formatTimeAgo } from "@/lib/utils";
 import { CONSTANTS } from "@/lib/constants";
 import DatasetDataCardTab from "@/components/tabs/DatasetDataCardTab";
 import DatasetColumnsTab from "@/components/tabs/DatasetColumnsTab";
@@ -134,8 +134,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
       sourceName: catalogData.source_name,
       name: catalogData.table_name,
       type: catalogData.source_type
-        ? catalogData.source_type.charAt(0).toUpperCase() +
-        catalogData.source_type.slice(1)
+        ? capitalize(catalogData.source_type)
         : "Dataset",
       overview:
         catalogData.description ||

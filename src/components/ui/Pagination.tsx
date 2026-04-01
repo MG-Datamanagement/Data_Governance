@@ -33,7 +33,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   showCount = false,
-  compact = false,
+  compact = true,
   className,
 }: PaginationProps) {
   const totalPages =
@@ -52,7 +52,7 @@ export function Pagination({
     <div
       className={cn(
         "flex items-center justify-between",
-        compact ? "px-2 py-1.5" : "px-2 py-3",
+        compact ? "px-2 py-3" : "px-4 py-5",
         className,
       )}
     >
@@ -84,7 +84,7 @@ export function Pagination({
         {/* Page Size Selector */}
         {pageSizeOptions && onPageSizeChange && pageSize != null && (
           <div className="flex items-center gap-2">
-            <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>Rows per page:</span>
+            <div className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>Rows per page:</div>
             <Select
               value={pageSize.toString()}
               onChange={(val) => onPageSizeChange(Number(val))}

@@ -22,6 +22,7 @@ import { ViewToggle } from '@/components/ui/ViewToggle'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { capitalize, getTagColor, getTagDotColor } from '@/lib/utils'
 
 // ─── Tag Grid Card ────────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ function TagGridCard({
         <div className="flex items-center gap-2.5 min-w-0">
           <span
             className="inline-block w-3 h-3 rounded-full flex-shrink-0 mt-0.5"
-            style={{ backgroundColor: tag.color }}
+            style={{ backgroundColor: getTagColor(tag.name) }}
           />
           <h3 className="text-base font-bold text-gray-900 leading-tight truncate">{tag.name}</h3>
         </div>
@@ -74,16 +75,15 @@ function TagGridCard({
       <div className="flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-1">
           <Shield className="w-3 h-3 text-gray-500 flex-shrink-0" />
-          {tag.tag_type.charAt(0).toUpperCase() + tag.tag_type.slice(1)}
+          {capitalize(tag.tag_type)}
         </span>
-        <span className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-1 ${
-          tag.security_policy === 'high'
+        <span className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-1 ${tag.security_policy === 'high'
             ? 'bg-red-50 text-red-700'
             : tag.security_policy === 'medium'
               ? 'bg-yellow-50 text-yellow-700'
               : 'bg-green-50 text-green-700'
-        }`}>
-          {tag.security_policy.charAt(0).toUpperCase() + tag.security_policy.slice(1)} Sensitivity
+          }`}>
+          {capitalize(tag.security_policy)} Sensitivity
         </span>
       </div>
 
@@ -295,8 +295,8 @@ export default function TagsPage() {
       render: (tag: any) => (
         <div className="flex items-center gap-3">
           <span
-            className="inline-block w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: tag.color }}
+            className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
+            style={{ backgroundColor: getTagDotColor(tag.name) }}
           />
           <span className="text-sm font-medium text-gray-900">{tag.name}</span>
         </div>
@@ -316,7 +316,7 @@ export default function TagsPage() {
       key: "description",
       header: "Description",
       render: (tag: any) => {
-        return(
+        return (
           <Tooltip content={tag.description}>
             <p className="text-sm text-gray-600 line-clamp-1 truncate max-w-xs">{tag.description}</p>
           </Tooltip>
@@ -327,31 +327,28 @@ export default function TagsPage() {
       key: "status",
       header: "Status",
       render: (tag: any) => (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-          tag.status === 'active'
-            ? 'bg-green-100 text-green-700'
-            : 'bg-gray-100 text-gray-600'
-        }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${
-            tag.status === 'active' ? 'bg-green-600' : 'bg-gray-600'
-          }`} />
-          {tag.status}
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${tag.status === 'active'
+          ? 'bg-green-100 text-green-800'
+          : 'bg-gray-100 text-gray-800'
+          }`}>
+          {tag.status === 'active' ? <CheckCircle2 className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-gray-600" />}
+          {capitalize(tag.status)}
         </span>
       )
     },
-    {
-      key: "security",
-      header: "Security",
-      render: (tag: any) => (
-        <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-          tag.security_policy === 'high' ? 'bg-red-100 text-red-700' :
-          tag.security_policy === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-green-100 text-green-700'
-        }`}>
-          {tag.security_policy}
-        </span>
-      )
-    },
+    // {
+    //   key: "security",
+    //   header: "Security",
+    //   render: (tag: any) => (
+    //     <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+    //       tag.security_policy === 'high' ? 'bg-red-100 text-red-700' :
+    //       tag.security_policy === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+    //       'bg-green-100 text-green-700'
+    //     }`}>
+    //       {tag.security_policy}
+    //     </span>
+    //   )
+    // },
     {
       key: "actions",
       header: "Actions",
@@ -437,7 +434,7 @@ export default function TagsPage() {
                 onChange={setStatusFilter}
                 className="w-40 bg-white"
                 options={[
-                  { value: "", label: "All Statuses" },
+                  { value: "", label: "All Status" },
                   { value: "active", label: "Active" },
                   { value: "inactive", label: "Inactive" }
                 ]}
@@ -673,19 +670,14 @@ export default function TagsPage() {
                   <span className="block text-sm font-medium text-gray-700 mb-3">
                     Color Indicator
                   </span>
-                  <div className="flex gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        type="button"
-                        onClick={() => setSelectedColor(color.hex)}
-                        className={`w-8 h-8 rounded-full ${color.class} ${
-                          selectedColor === color.hex
-                            ? 'ring-2 ring-offset-2 ring-gray-400'
-                            : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-300'
-                        } transition-all`}
-                      />
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                      style={{ backgroundColor: getTagDotColor(tagName) }}
+                    />
+                    <div className="text-xs text-gray-500 italic">
+                      Color is automatically assigned based on name
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -696,22 +688,20 @@ export default function TagsPage() {
                     <button
                       type="button"
                       onClick={() => setStatus('active')}
-                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                        status === 'active'
+                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${status === 'active'
                           ? 'border-green-500 bg-green-50 text-green-700 font-medium'
                           : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      }`}
+                        }`}
                     >
                       Active
                     </button>
                     <button
                       type="button"
                       onClick={() => setStatus('inactive')}
-                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
-                        status === 'inactive'
+                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${status === 'inactive'
                           ? 'border-gray-500 bg-gray-50 text-gray-700 font-medium'
                           : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      }`}
+                        }`}
                     >
                       Inactive
                     </button>

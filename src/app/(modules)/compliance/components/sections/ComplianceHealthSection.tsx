@@ -136,7 +136,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
       {!isCollapsed && (
         <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
           {/* Row 1: Score + Trends */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
             {/* Left: Score Card */}
             <div className="md:col-span-5">
               <ComplianceScoreCard
@@ -147,7 +147,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
 
             {/* Right: Trends Chart */}
             <div className="md:col-span-7">
-              <div className="h-full relative px-2">
+              <div className="h-full relative">
                 {isLoading && (
                   <InlineState
                     type="loading"
@@ -165,7 +165,7 @@ export function ComplianceHealthSection({ healthQuery, insightsQuery }: Props) {
                   <InlineState type="empty" message="No trend data available." />
                 )}
                 {!isLoading && !error && trends && (
-                  <ComplianceTrendsChart data={trends} />
+                  <ComplianceTrendsChart data={trends} trendLabel={health?.trend_label} />
                 )}
               </div>
             </div>

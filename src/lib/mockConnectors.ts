@@ -27,7 +27,7 @@ export const connectors: Connector[] = [
   },
   {
     id: "azure-ad",
-    name: "Azure AD",
+    name: "AzureAD",
     description: "Import Users and Groups from Azure Active Directory.",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-100",

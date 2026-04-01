@@ -34,7 +34,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 
 export default function AgentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All Statuses");
+    const [statusFilter, setStatusFilter] = useState("All Status");
     const [typeFilter, setTypeFilter] = useState("All Types");
     const [viewMode, setViewMode] = useState<"list" | "grid">("list");
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -101,7 +101,7 @@ export default function AgentsPage() {
 
             // Status matching
             const matchesStatus =
-                statusFilter === "All Statuses" ||
+                statusFilter === "All Status" ||
                 agent.status === statusFilter;
 
             // Type matching
@@ -236,13 +236,13 @@ export default function AgentsPage() {
                             Filters:
                         </div>
 
-                        {/* Statuses Filter Dropdown */}
+                        {/* Status Filter Dropdown */}
                         <Select
                             value={statusFilter}
                             onChange={(val) => setStatusFilter(val)}
                             className="bg-white min-w-[140px]"
                             options={[
-                                { value: "All Statuses", label: "All Statuses" },
+                                { value: "All Status", label: "All Status" },
                                 { value: "Active", label: "Active" },
                                 { value: "Paused", label: "Paused" },
                                 { value: "Error", label: "Error" }
@@ -261,11 +261,11 @@ export default function AgentsPage() {
                             ]}
                         />
 
-                        {(searchQuery !== "" || statusFilter !== "All Statuses" || typeFilter !== "All Types") && (
+                        {(searchQuery !== "" || statusFilter !== "All Status" || typeFilter !== "All Types") && (
                             <button
                                 onClick={() => {
                                     setSearchQuery("");
-                                    setStatusFilter("All Statuses");
+                                    setStatusFilter("All Status");
                                     setTypeFilter("All Types");
                                 }}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors ml-1"

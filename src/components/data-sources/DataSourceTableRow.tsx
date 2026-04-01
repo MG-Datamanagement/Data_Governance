@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ChevronRight, Database } from "lucide-react";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { getSourceColor, getSourceIconColor } from "@/lib/utils";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export const StatusBadge: React.FC<{ status: DataSource["status"] }> = ({ status }) => {
@@ -64,7 +65,7 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
     const router = useRouter();
     const { data: apiStats, isLoading: isStatsLoading } = useGetSourceStats(source.id);
     const { data: logsData, isLoading: isLogsLoading } = useGetSourceLogs(source.id, 5);
-    
+
     const stats = useMemo(() => {
         if (!apiStats) return null;
         return {
@@ -94,7 +95,7 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                             {[
                                 { label: "TOTAL TABLES", value: isLoading ? "..." : (stats?.totalTables.toLocaleString() || "0") },
                                 { label: "TOTAL COLUMNS", value: isLoading ? "..." : (formatNumber(stats?.totalColumns || 0)) },
-                                { label: "TOTAL ROWS", value: isLoading ? "..." : (stats?.totalRows.toLocaleString()+'k' || "0") },
+                                { label: "TOTAL ROWS", value: isLoading ? "..." : (stats?.totalRows.toLocaleString() + 'k' || "0") },
 
                             ].map((stat) => (
                                 <div
@@ -200,20 +201,27 @@ export const DataSourceTableRow: React.FC<{
 
                 {/* Expand chevron + icon + name */}
                 <td className="py-3 pr-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <button
                             onClick={() => setExpanded((v) => !v)}
-                            className="text-gray-400 hover:text-gray-600 p-0.5 rounded transition-colors"
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                            <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
+                            <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
                         </button>
-                        {/* <span
-                            className={`w-6 h-6 rounded flex items-center justify-center ${source.iconBg}`}
+                        <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: getSourceColor(source.sourceType) }}
                         >
-                            <ConnectorIcon icon={source.icon} className="w-4 h-4" />
-                        </span> */}
-                        <Database className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-800">{source.name}</span>
+                            <Database
+                                className="w-4 h-4"
+                                color={getSourceIconColor(source.sourceType)}
+                            />
+                        </div>
+                        <span
+                            className="text-sm font-semibold text-gray-900 tracking-tight"
+                        >
+                            {source.name}
+                        </span>
                     </div>
                 </td>
 

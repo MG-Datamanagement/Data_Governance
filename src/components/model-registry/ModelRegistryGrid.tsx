@@ -2,6 +2,7 @@
 
 import { ModelListItem } from "@/types";
 import { BrainCircuit, Users, Clock, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { getTagColor, getTagTextColor } from "@/lib/utils";
 
 interface ModelRegistryGridProps {
   models: ModelListItem[];
@@ -14,13 +15,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: any }> = {
   Deprecated: { bg: "bg-red-100", text: "text-red-700", icon: XCircle },
 };
 
-const tagColorMap: Record<string, string> = {
-  blue: "bg-blue-100 text-blue-700",
-  purple: "bg-purple-100 text-purple-700",
-  orange: "bg-orange-100 text-orange-700",
-  green: "bg-green-100 text-green-700",
-  red: "bg-red-100 text-red-700",
-};
+
 
 export function ModelRegistryGrid({ models, onModelClick }: ModelRegistryGridProps) {
   return (
@@ -90,9 +85,11 @@ export function ModelRegistryGrid({ models, onModelClick }: ModelRegistryGridPro
               {model.tags.map((tag) => (
                 <span
                   key={tag.name}
-                  className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
-                    tagColorMap[tag.color]
-                  }`}
+                  className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm"
+                  style={{ 
+                    backgroundColor: getTagColor(tag.name),
+                    color: getTagTextColor(tag.name)
+                  }}
                 >
                   {tag.name}
                 </span>

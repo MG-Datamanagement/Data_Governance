@@ -53,6 +53,7 @@ export interface DataSourceStats {
 
 export interface DataSource {
   id: string;
+  sourceType: string;
   name: string;
   icon: string;
   iconBg: string;

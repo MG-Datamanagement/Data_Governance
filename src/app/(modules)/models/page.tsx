@@ -19,7 +19,7 @@ export default function ModelRegistryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceFilter, setSelectedSourceFilter] = useState("All Sources");
   const [selectedTaskFilter, setSelectedTaskFilter] = useState("All Tasks");
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState("All Statuses");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("All Status");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -38,7 +38,7 @@ export default function ModelRegistryPage() {
     const matchesTask =
       selectedTaskFilter === "All Tasks" || model.task === selectedTaskFilter;
     const matchesStatus =
-      selectedStatusFilter === "All Statuses" || model.status === selectedStatusFilter;
+      selectedStatusFilter === "All Status" || model.status === selectedStatusFilter;
 
     return matchesSearch && matchesSource && matchesTask && matchesStatus;
   });
@@ -46,19 +46,19 @@ export default function ModelRegistryPage() {
   // Get unique values for filters
   const sources = [...new Set(MOCK_MODEL_LIST.map((m) => m.source))];
   const tasks = [...new Set(MOCK_MODEL_LIST.map((m) => m.task))];
-  const statuses = [...new Set(MOCK_MODEL_LIST.map((m) => m.status))];
+  const status = [...new Set(MOCK_MODEL_LIST.map((m) => m.status))];
 
   const hasActiveFilters = 
     searchQuery !== "" || 
     selectedSourceFilter !== "All Sources" || 
     selectedTaskFilter !== "All Tasks" || 
-    selectedStatusFilter !== "All Statuses";
+    selectedStatusFilter !== "All Status";
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedSourceFilter("All Sources");
     setSelectedTaskFilter("All Tasks");
-    setSelectedStatusFilter("All Statuses");
+    setSelectedStatusFilter("All Status");
   };
 
   return (
@@ -142,8 +142,8 @@ export default function ModelRegistryPage() {
                   value={selectedStatusFilter}
                   onChange={(val) => setSelectedStatusFilter(val)}
                   options={[
-                    { value: "All Statuses", label: "All Statuses" },
-                    ...statuses.map((status) => ({
+                    { value: "All Status", label: "All Status" },
+                    ...status.map((status) => ({
                       value: status,
                       label: status,
                     }))

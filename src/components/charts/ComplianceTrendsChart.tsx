@@ -21,9 +21,10 @@ interface ComplianceTrendsChartProps {
       data: number[];
     }[];
   };
+  trendLabel?: string;
 }
 
-export function ComplianceTrendsChart({ data }: ComplianceTrendsChartProps) {
+export function ComplianceTrendsChart({ data, trendLabel }: ComplianceTrendsChartProps) {
   // Transform API data format to Recharts format
   // From: { labels: ["Mar"], datasets: [{ label: "Overall", data: [44.4] }, ...] }
   // To: [{ month: "Mar", "Overall": 44.4, ... }]
@@ -63,7 +64,7 @@ export function ComplianceTrendsChart({ data }: ComplianceTrendsChartProps) {
           <div className="flex items-center justify-center">
             <TrendingUpIcon size={14} className="text-success" />
           </div>
-          <span>Live Data</span>
+          <span>{trendLabel}</span>
         </div>
       </div>
 

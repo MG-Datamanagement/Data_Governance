@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useGetCatalogAuditTrail } from "@/hooks/useDashboardQueries";
 import { formatDistanceToNow, format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import {
   Search,
   Filter,
@@ -50,12 +50,6 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
 
   const totalPages = total_log_count ? Math.ceil(total_log_count / limit) : 1;
 
-  const getInitials = (nameStr: string) => {
-    if (!nameStr) return "U";
-    const name = nameStr.split(" ")[0];
-    if (name.length >= 2) return name.slice(0, 2).toUpperCase();
-    return name.charAt(0).toUpperCase();
-  };
 
   const parseAction = (actionStr: string) => {
     if (!actionStr) return { badge: "UNKNOWN", text: "Unknown action" };

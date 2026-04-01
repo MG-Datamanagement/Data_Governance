@@ -1,6 +1,6 @@
 import { ApiComplianceIssue } from "@/types";
-import { cn, getSeverityColor } from "@/lib/utils";
-import { AlertCircle, ChevronDown, ExternalLink } from "lucide-react";
+import { getSeverityColor } from "@/lib/utils";
+import { AlertCircle, ChevronDown, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { InlineState } from "@/components/ui/InlineState";
 import { Button } from "@/components/ui/Button";
@@ -84,7 +84,7 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center shrink-0">
-            <AlertCircle size={24} />
+            <AlertTriangle size={24} />
           </div>
           <div className="flex-1">
             <h3 className="text-base font-bold text-gray-900 leading-tight">

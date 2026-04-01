@@ -37,8 +37,8 @@ export const Step1: React.FC<Step1Props> = ({ selected, onSelect }) => {
                 : "border-gray-200 bg-white hover:border-indigo-300 hover:bg-gray-50"
                 }`}
             >
-              <div className={`w-10 h-10 rounded-lg ${c.iconBg} flex items-center justify-center flex-shrink-0`}>
-                <ConnectorIcon icon={c.icon} className="w-6 h-6" />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <ConnectorIcon icon={c.icon} className="w-8 h-8" />
               </div>
               <div className="min-w-0">
                 <p className={`text-sm font-semibold ${isSelected ? "text-indigo-700" : "text-gray-800"}`}>{c.name}</p>

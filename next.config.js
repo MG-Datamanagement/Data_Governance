@@ -1,85 +1,110 @@
-// /**
-//  * next.config.js — Next.js Configuration (Phase 8 Security Hardening)
-//  *
-//  * Changes from Phase 8:
-//  *  - poweredByHeader: false  — remove "X-Powered-By: Next.js" fingerprint
-//  *  - HTTP Security Headers   — CSP, HSTS, X-Frame-Options, X-Content-Type-Options,
-//  *                              Referrer-Policy, Permissions-Policy
-//  *  - reactStrictMode: true   — already enabled (kept)
-//  */
+/** @type {import('next').NextConfig} */
+const path = require('path');
 
-// /** @type {import('next').NextConfig} */
+// ─── Security Headers (Temporarily Disconnected but Available) ─────────────────
+const securityHeaders = [
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "X-Frame-Options", value: "SAMEORIGIN" },
+    {
+        key: "Content-Security-Policy",
+        value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com data:",
+            "img-src 'self' data: blob: https:",
+            "connect-src 'self' http://localhost:8000 http://172.188.2.173:8005",
+            "worker-src blob:",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ].join("; "),
+    },
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+    },
+    {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    },
+    { key: "X-XSS-Protection", value: "1; mode=block" },
+];
 
-// // ─── Security Headers ─────────────────────────────────────────────────────────
-// const securityHeaders = [
-//   // Prevent MIME-type sniffing
-//   { key: "X-Content-Type-Options", value: "nosniff" },
+const nextConfig = {
+    poweredByHeader: false,
+    reactStrictMode: true,
+    images: {
+        domains: [],
+        remotePatterns: [],
+    },
+    async headers() {
+        return [
+            // {
+            //     source: "/:path*",
+            //     headers: securityHeaders,
+            // },
+        ];
+    },
+    webpack(config) {
+        // Correctly find and handle the SVG rule
+        const fileLoaderRule = config.module.rules.find((rule) =>
+            rule.test?.test?.(".svg")
+        );
 
-//   // Block clickjacking / iframe embedding from other origins
-//   { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        if (fileLoaderRule) {
+            fileLoaderRule.exclude = /\.svg$/i;
+        }
 
-//   // Modern CSP: restrict sources; adjust 'unsafe-inline' once you add nonces
-//   {
-//     key: "Content-Security-Policy",
-//     value: [
-//       "default-src 'self'",
-//       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",       // tighten with nonce in production
-//       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-//       "font-src 'self' https://fonts.gstatic.com data:",
-//       "img-src 'self' data: blob: https:",
-//       "connect-src 'self' http://localhost:8000 http://172.188.2.173:8005",        // adjust to your actual API origin
-//       "worker-src blob:",
-//       "frame-ancestors 'none'",
-//       "base-uri 'self'",
-//       "form-action 'self'",
-//     ].join("; "),
-//   },
+        // Add SVGR loader specifically for source-icons
+        config.module.rules.push({
+            test: /\.svg$/i,
+            issuer: /\.[jt]sx?$/,
+            // Important: Restrict to source-icons to avoid metadata conflicts (e.g. icon.svg)
+            include: [path.resolve(__dirname, 'src/assets/source-icons')],
+            use: [
+                {
+                    loader: "@svgr/webpack",
+                    options: {
+                        icon: true,
+                        svgo: true,
+                        jsx: {
+                            babelConfig: {
+                                plugins: [
+                                    [
+                                        "@babel/plugin-transform-react-jsx",
+                                        {
+                                            throwIfNamespace: false, // Fix for "Namespace tags are not supported"
+                                        },
+                                    ],
+                                ],
+                            },
+                        },
+                        svgoConfig: {
+                            plugins: [
+                                {
+                                    name: "preset-default",
+                                    params: {
+                                        overrides: {
+                                            removeViewBox: false,
+                                            cleanupIDs: false, // Disable default cleanup to allow prefixIds to handle it
+                                        },
+                                    },
+                                },
+                                {
+                                    name: "prefixIds",
+                                },
+                                "removeXMLNS", // Strip problematic XML namespaces
+                            ],
+                        },
+                    },
+                },
+            ],
+        });
 
-//   // Leaks referer only to same origin
-//   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        return config;
+    },
+};
 
-//   // HSTS — only activates when served over HTTPS in production
-//   {
-//     key: "Strict-Transport-Security",
-//     value: "max-age=63072000; includeSubDomains; preload",
-//   },
-
-//   // Disable unnecessary browser features
-//   {
-//     key: "Permissions-Policy",
-//     value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
-//   },
-
-//   // XSS protection (legacy browsers); modern browsers use CSP
-//   { key: "X-XSS-Protection", value: "1; mode=block" },
-// ];
-
-// const nextConfig = {
-//   // Remove "X-Powered-By: Next.js" from all responses
-//   poweredByHeader: false,
-
-//   // React Strict Mode — double-invokes effects in dev to surface bugs
-//   reactStrictMode: true,
-
-//   images: {
-//     // Add production image domains here when needed
-//     domains: [],
-//     // Prefer remotePatterns over domains (Next.js 13+)
-//     remotePatterns: [],
-//   },
-
-//   // Apply security headers to all routes
-//   async headers() {
-//     return [
-//       {
-//         source: "/:path*",
-//         headers: securityHeaders,
-//       },
-//     ];
-//   },
-
-//   // Webpack config — no changes needed, kept for extension
-//   // webpack: (config) => { return config; },
-// };
-
-// module.exports = nextConfig;
+module.exports = nextConfig;

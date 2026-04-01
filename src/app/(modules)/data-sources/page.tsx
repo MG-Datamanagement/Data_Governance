@@ -96,6 +96,7 @@ const ManageDataSourcesPage: React.FC = () => {
 
             return {
                 id: sourceId,
+                sourceType: apiDs.source_type,
                 name: apiDs.name,
                 icon: original?.icon || (apiDs.name.toLowerCase().includes('mongo') ? 'mongodb' : 'database'),
                 iconBg: original?.iconBg || 'bg-gray-100',
@@ -161,8 +162,8 @@ const ManageDataSourcesPage: React.FC = () => {
             render: (run: any) => <StatusBadge status={run.status} />
         },
         {
-            key: "details",
-            header: "Details",
+            key: "datasets",
+            header: "Datasets",
             render: (run: any) => (
                 <span className="text-xs text-gray-400">
                     {run.records_ingested} records
@@ -353,6 +354,17 @@ const ManageDataSourcesPage: React.FC = () => {
                                         onChange={setSearch}
                                         placeholder="Search..."
                                         wrapperClassName="w-52"
+                                    />
+                                    <Select
+                                        value={filter}
+                                        onChange={setFilter}
+                                        options={[
+                                            { label: "All", value: "All" },
+                                            { label: "Success", value: "success" },
+                                            { label: "Failed", value: "failed" },
+                                            { label: "Running", value: "running" },
+                                        ]}
+                                        className="w-32"
                                     />
                                 </div>
                             )}
