@@ -108,6 +108,11 @@ export function ComplianceScanPanel({
 
     const run = async () => {
       try {
+        // Trigger background API call immediately in parallel with others
+        dashboardApiServices.triggerComplianceRun().catch((err) => {
+          logger.error("Failed to trigger background compliance run:", err);
+        });
+
         // 1. Fetch step labels
         const loadingData =
           await dashboardApiServices.getComplianceLoadingSteps();

@@ -8,14 +8,29 @@ export interface SelectOption {
     value: string;
 }
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+export type SelectSize = 'sm' | 'md' | 'lg';
+
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange' | 'size'> {
     options?: SelectOption[];
     onChange?: (value: string) => void;
     placeholder?: string;
+    size?: SelectSize;
 }
 
+const sizeStyles: Record<SelectSize, string> = {
+    sm: "h-8 px-2.5 text-xs gap-1.5 rounded-lg",
+    md: "h-9 px-3.5 text-sm gap-2 rounded-lg",
+    lg: "h-11 px-5 text-sm rounded-xl font-bold",
+};
+
+const iconSizes: Record<SelectSize, number> = {
+    sm: 14,
+    md: 16,
+    lg: 16,
+};
+
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-    ({ className, options = [], value, onChange, placeholder = "Select...", disabled, ...props }, ref) => {
+    ({ className, options = [], value, onChange, placeholder = "Select...", disabled, size = 'md', ...props }, ref) => {
         const [isOpen, setIsOpen] = useState(false);
         const [openUpwards, setOpenUpwards] = useState(false);
         const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -32,7 +47,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         const updatePosition = useCallback(() => {
             if (!triggerRef.current) return;
             const rect = triggerRef.current.getBoundingClientRect();
-            const dropdownHeight = Math.min(options.length * 40 + 12, 252); // Approximate height: items * 40px + padding
+            const dropdownHeight = Math.min(options.length * 40 + 12, 252);
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
 
@@ -90,7 +105,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         };
 
         return (
-            <div className={cn("relative group min-w-[120px]", className)} ref={containerRef}>
+            <div className={cn("relative group inline-block w-full min-w-[80px]", className)} ref={containerRef}>
                 {/* Hidden Select for accessibility & form compatibility */}
                 <select
                     ref={selectRef}
@@ -115,20 +130,21 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                     onKeyDown={handleKeyDown}
                     disabled={disabled}
                     className={cn(
-                        "w-full flex items-center justify-between gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-900 appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] cursor-pointer hover:border-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                        "w-full flex items-center justify-between bg-white border border-gray-200 font-medium text-gray-900 appearance-none focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] cursor-pointer hover:border-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                        sizeStyles[size],
                         isOpen && "border-indigo-500 ring-4 ring-indigo-500/10"
                     )}
                 >
-                    <span className={cn("truncate", !selectedOption && "text-gray-400")}>
+                    <span className={cn("truncate flex-grow text-left", !selectedOption && "text-gray-400")}>
                         {selectedOption ? selectedOption.label : placeholder}
                     </span>
                     <ChevronDown
-                        size={16}
+                        size={iconSizes[size]}
                         className={cn(
-                            "text-gray-400 transition-transform duration-200",
+                            "text-gray-400 transition-transform duration-200 flex-shrink-0",
                             isOpen && "rotate-180 text-indigo-500"
                         )}
-                        strokeWidth={2.5}
+                        strokeWidth={size === 'sm' ? 3 : 2.5}
                     />
                 </button>
 
@@ -179,6 +195,6 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 );
 
-
 Select.displayName = "Select";
+
 

@@ -486,6 +486,11 @@ export const dashboardApiServices = {
   }> {
     return dashboardApiClient.get("/api/compliance/summary");
   },
+
+  async triggerComplianceRun(): Promise<any> {
+    return dashboardApiClient.get("/api/compliance/run");
+  },
+  
   async getComplianceFrameworks() {
     return dashboardApiClient.get<ApiComplianceFrameworks>("/api/compliance/frameworks");
   },

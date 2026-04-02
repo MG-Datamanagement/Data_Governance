@@ -19,7 +19,9 @@ export interface PaginationProps {
   onPageSizeChange?: (size: number) => void;
   /** Show "Showing X–Y of Z items" label */
   showCount?: boolean;
-  /** Compact mode: smaller text and tighter layout */
+  /** Selection for overall pagination size */
+  size?: "sm" | "md";
+  /** Compact mode: shortcut for size="sm" (backward compatibility) */
   compact?: boolean;
   className?: string;
 }
@@ -33,9 +35,11 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   showCount = false,
+  size: sizeProp,
   compact = true,
   className,
 }: PaginationProps) {
+  const size = sizeProp ?? (compact ? "sm" : "md");
   const totalPages =
     totalPagesProp ??
     (totalItems != null && pageSize ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1);
@@ -48,34 +52,36 @@ export function Pagination({
       ? Math.min(currentPage * pageSize, totalItems)
       : null;
 
+  const textClass = size === "sm" ? "text-xs" : "text-sm";
+
   return (
     <div
       className={cn(
-        "flex items-center justify-between",
-        compact ? "px-2 py-3" : "px-4 py-5",
+        "flex items-center justify-between gap-4",
+        size === "sm" ? "px-2 py-3" : "px-4 py-5",
         className,
       )}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         {/* Count label */}
         {showCount && totalItems != null ? (
-          <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
+          <span className={cn("text-gray-500 font-medium", textClass)}>
             {start != null && end != null ? (
               <>
                 Showing{" "}
-                <span className="font-semibold text-gray-800">{start}–{end}</span> of{" "}
-                <span className="font-semibold text-gray-800">{totalItems}</span> items
+                <span className="font-bold text-gray-800">{start}–{end}</span> of{" "}
+                <span className="font-bold text-gray-800">{totalItems}</span>
               </>
             ) : (
               <>
                 Page{" "}
-                <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
-                <span className="font-semibold text-gray-800">{totalPages}</span>
+                <span className="font-bold text-gray-800">{currentPage}</span> of{" "}
+                <span className="font-bold text-gray-800">{totalPages}</span>
               </>
             )}
           </span>
         ) : (
-          <span className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>
+          <span className={cn("text-gray-500", textClass)}>
             Page <span className="font-semibold text-gray-800">{currentPage}</span> of{" "}
             <span className="font-semibold text-gray-800">{totalPages}</span>
           </span>
@@ -83,16 +89,17 @@ export function Pagination({
 
         {/* Page Size Selector */}
         {pageSizeOptions && onPageSizeChange && pageSize != null && (
-          <div className="flex items-center gap-2">
-            <div className={cn("text-gray-500", compact ? "text-xs" : "text-sm")}>Rows per page:</div>
+          <div className="flex items-center gap-2.5">
+            <span className={cn("text-gray-500 font-medium whitespace-nowrap", textClass)}>Rows per page:</span>
             <Select
               value={pageSize.toString()}
               onChange={(val) => onPageSizeChange(Number(val))}
-              options={pageSizeOptions.map((size) => ({
-                value: size.toString(),
-                label: size.toString(),
+              options={pageSizeOptions.map((sz) => ({
+                value: sz.toString(),
+                label: sz.toString(),
               }))}
-              className={compact ? "h-7 py-0.5 text-xs" : "h-8 py-1 text-sm"}
+              size={size}
+              className="w-16"
             />
           </div>
         )}
@@ -102,14 +109,12 @@ export function Pagination({
       <div className="flex items-center gap-1.5">
         <Button
           variant="outline"
-          size={compact ? "sm" : "sm"}
+          size={size}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          icon={<ChevronLeft size={compact ? 14 : 16} />}
+          icon={<ChevronLeft size={size === "sm" ? 14 : 16} />}
           aria-label="Previous Page"
-        >
-          {compact ? "" : "Previous"}
-        </Button>
+        />
 
         {/* Page number pills (show up to 5 pages) */}
         {totalPages > 1 && (
@@ -126,9 +131,10 @@ export function Pagination({
                   aria-label={`Go to page ${p}`}
                   aria-current={p === currentPage ? "page" : undefined}
                   className={cn(
-                    "w-7 h-7 rounded-md text-xs font-medium transition-colors",
+                    "flex items-center justify-center rounded-lg text-xs font-semibold transition-all",
+                    size === "sm" ? "w-8 h-8" : "w-10 h-10 text-sm",
                     p === currentPage
-                      ? "bg-indigo-600 text-white shadow-sm"
+                      ? "bg-indigo-600 text-white shadow-md"
                       : "text-gray-600 hover:bg-gray-100",
                   )}
                 >
@@ -141,15 +147,13 @@ export function Pagination({
 
         <Button
           variant="outline"
-          size={compact ? "sm" : "sm"}
+          size={size}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
-          icon={<ChevronRight size={compact ? 14 : 16} />}
+          icon={<ChevronRight size={size === "sm" ? 14 : 16} />}
           className="flex-row-reverse"
           aria-label="Next Page"
-        >
-          {compact ? "" : "Next"}
-        </Button>
+        />
       </div>
     </div>
   );
