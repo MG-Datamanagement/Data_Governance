@@ -18,7 +18,7 @@ import {
   ToolDetail,
 } from "../../../types";
 import { Bot } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, generateUUID } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/Fallbacks";
 import { chatApiServices } from "@/services/chatApi.service";
@@ -109,7 +109,7 @@ const AskMeAnything: React.FC = () => {
     options?: { isEdit?: boolean },
   ) => {
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: "human",
       content,
       created_at: new Date().toISOString(),
@@ -144,7 +144,7 @@ const AskMeAnything: React.FC = () => {
       );
 
       const aiMessage: Message = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         role: "ai",
         content: response.response,
         created_at: new Date().toISOString(),
@@ -182,7 +182,7 @@ const AskMeAnything: React.FC = () => {
       logger.error("Failed to send message", { error });
 
       const errorMessage: Message = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         role: "ai",
         content: "Sorry, I encountered an error processing your request.",
         created_at: new Date().toISOString(),
@@ -251,7 +251,7 @@ const AskMeAnything: React.FC = () => {
       setMessages(
         sessionDetail.messages.map((msg) => ({
           ...msg,
-          id: crypto.randomUUID(),
+          id: generateUUID(),
         })),
       );
       setCurrentSessionId(sessionId);
