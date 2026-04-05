@@ -39,6 +39,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         const triggerRef = useRef<HTMLButtonElement>(null);
         const selectRef = useRef<HTMLSelectElement>(null);
 
+        const dropdownRef = useRef<HTMLDivElement>(null);
+
         // Sync with external ref for form library compatibility
         React.useImperativeHandle(ref, () => selectRef.current as HTMLSelectElement);
 
@@ -63,7 +65,13 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
         useEffect(() => {
             const handleClickOutside = (event: MouseEvent) => {
-                if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                const target = event.target as Node;
+                const path = event.composedPath?.() || [];
+                
+                const isClickInsideContainer = containerRef.current && (containerRef.current.contains(target) || path.includes(containerRef.current));
+                const isClickInsideDropdown = dropdownRef.current && (dropdownRef.current.contains(target) || path.includes(dropdownRef.current));
+                
+                if (!isClickInsideContainer && !isClickInsideDropdown) {
                     setIsOpen(false);
                 }
             };
@@ -151,6 +159,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 {/* Dropdown Menu (Portal) */}
                 {isOpen && typeof document !== "undefined" && createPortal(
                     <div 
+                        ref={dropdownRef}
                         className={cn(
                             "fixed bg-white border border-gray-100 rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-200",
                             openUpwards ? "origin-bottom -translate-y-full" : "origin-top"
@@ -169,7 +178,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                                         type="button"
                                         onClick={() => handleSelect(option.value)}
                                         className={cn(
-                                            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
                                             option.value === value
                                                 ? "bg-indigo-50 text-indigo-700"
                                                 : "text-gray-700 hover:bg-gray-50"

@@ -555,8 +555,6 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
     const [advancedOpen, setAdvancedOpen] = useState(false);
     
     const { data: owners = [], isLoading: loadingOwners } = useGetLobOwners(100);
-    const { data: parentDomains = [], isLoading: loadingDomains } = useGetLobDomainsForSelection();
-    const { data: catalogs = [], isLoading: loadingCatalogs } = useGetLobCatalogs();
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -579,17 +577,12 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
             const selectedOwner = owners.find((o) => o.id === form.owner);
             const ownerName = selectedOwner?.name || form.owner;
 
-            // Find the selected parent domain to get its name
-            const selectedParentDomain = parentDomains.find((d) => d.id === form.customId);
-            const parentDomainName = selectedParentDomain?.name || form.customId || undefined;
-
             const payload = {
                 name: form.name,
                 description: form.description,
                 owner: ownerName,
                 color: form.color,
-                custom_domain_name: parentDomainName || undefined,
-                ...(form.catalogId && { catalog_id: form.catalogId }),
+                ...(form.customId && form.customId.trim() && { custom_domain_name: form.customId.trim() }),
             };
 
             await lineOfBusinessApiService.createLineOfBusiness(payload);
@@ -669,61 +662,17 @@ function CreateDomainModal({ onClose, onCreate }: { onClose: () => void; onCreat
                     </button>
                     {advancedOpen && (
                         <div className="border-l-2 border-gray-200 px-4 py-3 flex flex-col gap-4 ml-2">
-                            <div>
-                                <label className="text-sm font-medium text-gray-800">Parent Domain <span className="text-gray-400 text-xs">(Optional)</span></label>
-                                <p className="text-xs text-gray-500 mb-2">Choose an existing domain as parent for this sub-domain</p>
-                                {loadingDomains ? (
-                                    <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
-                                        Loading domains...
-                                    </div>
-                                ) : (
-                                    <Select
-                                        value={form.customId}
-                                        onChange={(val) => setForm({ ...form, customId: val })}
-                                        className="w-full bg-white"
-                                        options={[
-                                            { value: "", label: "None (Top-level domain)" },
-                                            ...parentDomains.map((domain) => ({
-                                                value: domain.id,
-                                                label: `${domain.name} (${domain.owner})`
-                                            }))
-                                        ]}
-                                    />
-                                )}
-                                <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-medium text-gray-800">Custom Domain ID</label>
+                                <Input
+                                    value={form.customId}
+                                    onChange={(val) => setForm({ ...form, customId: val })}
+                                    placeholder="e.g. platform-engineering"
+                                    className="bg-white"
+                                />
+                                <p className="flex items-center gap-1.5 text-[11px] text-[#D97706] mt-0.5 font-medium">
                                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                    Select a parent domain to create this as a sub-domain.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-800">Catalog <span className="text-gray-400 text-xs">(Optional)</span></label>
-                                <p className="text-xs text-gray-500 mb-2">Assign a catalog to this domain</p>
-                                {loadingCatalogs ? (
-                                    <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
-                                        Loading catalogs...
-                                    </div>
-                                ) : catalogs && catalogs.length > 0 ? (
-                                    <Select
-                                        value={form.catalogId || ""}
-                                        onChange={(val) => setForm({ ...form, catalogId: val })}
-                                        className="w-full bg-white"
-                                        options={[
-                                            { value: "", label: "None (No catalog)" },
-                                            ...catalogs.map((catalog) => ({
-                                                value: catalog.id,
-                                                label: `${catalog.full_name || `${catalog.schema_name}.${catalog.table_name}` || catalog.table_name || catalog.id} (${catalog.source_name || "Unknown"})`
-                                            }))
-                                        ]}
-                                    />
-                                ) : (
-                                    <div className="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50">
-                                        No catalogs available
-                                    </div>
-                                )}
-                                <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                    Select a catalog to associate with this domain. This can be updated later.
+                                    Once set, ID cannot be changed.
                                 </p>
                             </div>
                         </div>

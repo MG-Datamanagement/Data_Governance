@@ -152,14 +152,14 @@ export default function ModelRegistryPage() {
                 />
               </div>
 
-              {hasActiveFilters && (
+              {/* {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
                   className="text-[13px] text-gray-500 flex items-center gap-1 hover:text-gray-900 transition-colors ml-2 font-medium"
                 >
                   <X className="w-3.5 h-3.5" /> Clear Filters
                 </button>
-              )}
+              )} */}
             </div>
 
             {/* List/Grid View Toggle */}

@@ -261,7 +261,7 @@ export default function AgentsPage() {
                             ]}
                         />
 
-                        {(searchQuery !== "" || statusFilter !== "All Status" || typeFilter !== "All Types") && (
+                        {/* {(searchQuery !== "" || statusFilter !== "All Status" || typeFilter !== "All Types") && (
                             <button
                                 onClick={() => {
                                     setSearchQuery("");
@@ -273,7 +273,7 @@ export default function AgentsPage() {
                                 <X size={14} className="text-gray-400" />
                                 Clear Filters
                             </button>
-                        )}
+                        )} */}
                     </div>
 
                     <ViewToggle
