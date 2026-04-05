@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ViewToggle } from "@/components/ui/ViewToggle";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -748,6 +749,8 @@ export default function LineOfBusiness() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
+    const [domainToDelete, setDomainToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Transform API response to Domain format
     const domains = useMemo(() => {
@@ -835,8 +838,25 @@ export default function LineOfBusiness() {
     const handleUpdate = () => refetch();
 
     const handleDelete = (domainId: string) => {
-        refetch();
-        if (selectedItem?.id === domainId || selectedItem?.parentId === domainId) closePanel();
+        setDomainToDelete(domainId);
+    };
+
+    const executeDelete = async () => {
+        if (!domainToDelete) return;
+        setIsDeleting(true);
+        try {
+            await lineOfBusinessApiService.deleteLineOfBusiness(domainToDelete);
+            refetch();
+            if (selectedItem?.id === domainToDelete || selectedItem?.parentId === domainToDelete) {
+                closePanel();
+            }
+        } catch (error) {
+            logger.error("Failed to delete Line of Business:", error);
+            alert("Failed to delete the Line of Business. Please try again.");
+        } finally {
+            setIsDeleting(false);
+            setDomainToDelete(null);
+        }
     };
 
     return (
@@ -949,6 +969,18 @@ export default function LineOfBusiness() {
             {modalOpen && (
                 <CreateDomainModal onClose={() => setModalOpen(false)} onCreate={handleCreate} />
             )}
+
+            <ConfirmModal
+                isOpen={!!domainToDelete}
+                onClose={() => setDomainToDelete(null)}
+                onConfirm={executeDelete}
+                title="Delete Line of Business"
+                description="Are you sure you want to delete this Line of Business and all of its child domains? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isDestructive={true}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }
