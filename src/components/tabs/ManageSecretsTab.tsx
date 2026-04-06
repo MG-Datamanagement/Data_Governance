@@ -25,7 +25,7 @@ const ManageSecretsTab: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { addToast, updateToast } = useAppStore();
-  const { data: secretsData, isLoading: isFetching } = useGetSecrets(pageSize, (page - 1) * pageSize);
+  const { data: secretsData, isLoading: isFetching, refetch } = useGetSecrets(pageSize, (page - 1) * pageSize);
   const createMutation = useCreateSecret();
   const updateMutation = useUpdateSecret();
   const deleteMutation = useDeleteSecret();
@@ -83,6 +83,7 @@ const ManageSecretsTab: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingSecret(null);
+      refetch();
     } catch (err) {
       logger.error("Failed to save secret", { error: err });
       updateToast(toastId, "Failed to save secret. Please try again.", "error");
@@ -96,6 +97,7 @@ const ManageSecretsTab: React.FC = () => {
       await deleteMutation.mutateAsync(secretToDelete.id);
       updateToast(toastId, "Secret deleted successfully", "success");
       setSecretToDelete(null);
+      refetch();
     } catch (err) {
       logger.error("Failed to delete secret", { error: err });
       updateToast(toastId, "Failed to delete secret", "error");

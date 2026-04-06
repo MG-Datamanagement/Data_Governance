@@ -71,7 +71,7 @@ const ManageDataSourcesPage: React.FC = () => {
         return (apiDataResponse as any).total || 0;
     }, [apiDataResponse]);
 
-    const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(historyLimit, historyOffset, historyStatus);
+    const { data: runHistoryData, isFetching: isHistoryFetchLoading, refetch: refetchHistory } = useGetRunHistory(historyLimit, historyOffset, historyStatus, activeTab === "Run History");
 
     const isHistoryLoading = isHistoryFetchLoading;
     const isLoading = isSourcesLoading;

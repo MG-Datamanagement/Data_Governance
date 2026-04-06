@@ -37,11 +37,12 @@ export const useGetSourceStats = (sourceId: string) =>
     enabled: !!sourceId,
   });
 
-export const useGetRunHistory = (limit: number = 10, offset: number = 0, status: string = "All") =>
+export const useGetRunHistory = (limit: number = 10, offset: number = 0, status: string = "All", enabled: boolean = true) =>
   useQuery({
     queryKey: datasourcesKeys.runHistory({ limit, offset, status }),
     queryFn: () => dashboardApiServices.fetchRunHistory(limit, offset, status),
     staleTime: STALE_5MIN,
+    enabled,
   });
 
 export const useGetSourceLogs = (sourceId: string, limit: number = 5) =>
