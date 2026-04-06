@@ -258,20 +258,21 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
   return (
     <div className="space-y-6">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-start lg:items-center justify-between gap-4">
+        <div className="shrink-0 max-w-[200px]">
           <h2 className="text-md font-bold text-gray-900">Audit Trail</h2>
           <p className="text-xs text-gray-500 mt-1">
             Complete history of all actions performed on this dataset
           </p>
         </div>
-        <div className="flex-1 flex max-w-3xl justify-end">
+        <div className="flex-2 w-full max-w-3xl ml-auto">
           <DataTableToolbar
             search={{
               value: searchQuery,
               onChange: setSearchQuery,
               onClear: () => setSearchQuery(""),
               placeholder: "Search who, what, where, details",
+              className: "w-full rounded-lg",
             }}
             filters={[
               {
@@ -292,10 +293,11 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
               },
             ]}
             actions={
-              <Button variant="outline" className="h-9" icon={<Download size={16} />}>
+              <Button variant="outline" size="sm" className="h-9" icon={<Download size={16} />}>
                 Export
               </Button>
             }
+            filterClass="px-2"
           />
         </div>
       </div>

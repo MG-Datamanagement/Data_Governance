@@ -99,7 +99,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
             <Button
               onClick={handleReclassificationActionWithAI}
               variant="outline"
-              size="sm"
+              size="md"
               icon={<RefreshCcw className="w-3.5 h-3.5" />}
               className="border-indigo-200 text-indigo-600"
             >
@@ -122,7 +122,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
                 handleReclassificationActionWithAI();
               }}
               variant="secondary"
-              size="sm"
+              size="md"
               icon={<CheckCircle2 size={16} className="text-green-500" />}
             >
               Reclassified
@@ -150,7 +150,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
             ]}
           />
 
-          <Button variant="outline" size="sm" className="text-gray-600 border-gray-300 h-8">
+          <Button variant="outline" size="md" className="text-gray-600 border-gray-300 h-9">
             <div className="flex items-center gap-2">
               <Download className="w-4 h-4" />
             </div>
