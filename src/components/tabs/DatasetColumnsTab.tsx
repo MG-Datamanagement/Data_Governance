@@ -190,7 +190,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
                       </>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {(col.tags?.length ? col.tags : [{ name: "Confidential" }]).map(
+                        {col.tags?.length ? col.tags.map(
                           (tag: any, i: number) => (
                             <span
                               key={i}
@@ -199,6 +199,10 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
                               {tag.name || String(tag)}
                             </span>
                           )
+                        ) : (
+                          <span className="px-2 py-0.5 text-gray-600 text-sm">
+                            -
+                          </span>
                         )}
                       </div>
                     )}
