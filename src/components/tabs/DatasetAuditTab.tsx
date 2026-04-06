@@ -15,7 +15,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
-import { SearchInput } from "@/components/ui/SearchInput";
+import { DataTableToolbar } from "@/components/ui/DataTableToolbar";
 
 interface DatasetAuditTabProps {
   catalogId: string;
@@ -23,33 +23,19 @@ interface DatasetAuditTabProps {
 
 export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAction, setSelectedAction] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
 
-  // Reset to page 1 whenever search query changes
-  React.useEffect(() => { setPage(1); }, [searchQuery]);
+  // Reset to page 1 whenever filters change
+  React.useEffect(() => { setPage(1); }, [searchQuery, selectedAction, selectedStatus]);
 
   const offset = (page - 1) * limit;
 
   const { data: auditData, isLoading } = useGetCatalogAuditTrail(catalogId, limit, offset);
 
   const { summary, activity_log: rawActivityLog, total_log_count } = auditData || {};
-
-  const activity_log = useMemo(() => {
-    if (!rawActivityLog) return [];
-    if (!searchQuery.trim()) return rawActivityLog;
-    const q = searchQuery.toLowerCase();
-    return rawActivityLog.filter(
-      (log: any) =>
-        log.who_name?.toLowerCase().includes(q) ||
-        log.what_action?.toLowerCase().includes(q) ||
-        log.details?.toLowerCase().includes(q) ||
-        log.where_location?.toLowerCase().includes(q)
-    );
-  }, [rawActivityLog, searchQuery]);
-
-  const totalPages = total_log_count ? Math.ceil(total_log_count / limit) : 1;
-
 
   const parseAction = (actionStr: string) => {
     if (!actionStr) return { badge: "UNKNOWN", text: "Unknown action" };
@@ -59,6 +45,64 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     }
     return { badge: "SYSTEM", text: actionStr };
   };
+
+  const actionOptions = useMemo(() => {
+    if (!rawActivityLog) return [{ label: "All Actions", value: "all" }];
+    const actions = new Set<string>();
+    rawActivityLog.forEach((log: any) => {
+      const { badge } = parseAction(log.what_action);
+      actions.add(badge);
+    });
+    return [
+      { label: "All Actions", value: "all" },
+      ...Array.from(actions).sort().map(a => ({ label: a, value: a }))
+    ];
+  }, [rawActivityLog]);
+
+  const statusOptions = useMemo(() => {
+    if (!rawActivityLog) return [{ label: "All Statuses", value: "all" }];
+    const statuses = new Set<string>();
+    rawActivityLog.forEach((log: any) => {
+      if (log.status) statuses.add(log.status);
+    });
+    return [
+      { label: "All Statuses", value: "all" },
+      ...Array.from(statuses).sort().map(s => ({ label: s, value: s }))
+    ];
+  }, [rawActivityLog]);
+
+  const activity_log = useMemo(() => {
+    if (!rawActivityLog) return [];
+    
+    return rawActivityLog.filter((log: any) => {
+      let matchesSearch = true;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        matchesSearch = log.who_name?.toLowerCase().includes(q) ||
+          log.what_action?.toLowerCase().includes(q) ||
+          log.details?.toLowerCase().includes(q) ||
+          log.where_location?.toLowerCase().includes(q);
+      }
+
+      let matchesAction = true;
+      if (selectedAction !== "all") {
+        const { badge } = parseAction(log.what_action);
+        matchesAction = badge === selectedAction;
+      }
+
+      let matchesStatus = true;
+      if (selectedStatus !== "all") {
+        matchesStatus = (log.status || "Unknown") === selectedStatus;
+      }
+
+      return matchesSearch && matchesAction && matchesStatus;
+    });
+  }, [rawActivityLog, searchQuery, selectedAction, selectedStatus]);
+
+  const totalPages = total_log_count ? Math.ceil(total_log_count / limit) : 1;
+
+
+
 
   const parseLocation = (locStr: string) => {
     if (!locStr) return { primary: "System", secondary: "" };
@@ -215,25 +259,44 @@ export default function DatasetAuditTab({ catalogId }: DatasetAuditTabProps) {
     <div className="space-y-6">
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="shrink-0">
           <h2 className="text-md font-bold text-gray-900">Audit Trail</h2>
           <p className="text-xs text-gray-500 mt-1">
             Complete history of all actions performed on this dataset
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search audit logs..."
-            wrapperClassName="w-64"
+        <div className="flex-1 flex max-w-3xl justify-end">
+          <DataTableToolbar
+            search={{
+              value: searchQuery,
+              onChange: setSearchQuery,
+              onClear: () => setSearchQuery(""),
+              placeholder: "Search who, what, where, details",
+            }}
+            filters={[
+              {
+                key: "action",
+                label: "Action",
+                options: actionOptions,
+                value: selectedAction,
+                onChange: setSelectedAction,
+                width: "w-40",
+              },
+              {
+                key: "status",
+                label: "Status",
+                options: statusOptions,
+                value: selectedStatus,
+                onChange: setSelectedStatus,
+                width: "w-40",
+              },
+            ]}
+            actions={
+              <Button variant="outline" className="h-9" icon={<Download size={16} />}>
+                Export
+              </Button>
+            }
           />
-          <Button variant="outline" icon={<Filter size={16} />}>
-            Filter
-          </Button>
-          <Button variant="outline" icon={<Download size={16} />}>
-            Export
-          </Button>
         </div>
       </div>
 

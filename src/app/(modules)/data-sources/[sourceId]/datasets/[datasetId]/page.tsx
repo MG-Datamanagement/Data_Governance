@@ -33,7 +33,7 @@ import {
   useGetLineageCentric
 } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2, SparkleIcon, FileQuestion, Home, ChevronRight, Table2, Database, LayoutGrid, Sparkles, MoreHorizontal } from "lucide-react";
+import { CheckCircle2, Loader2, SparkleIcon, FileQuestion, Home, ChevronRight, Table2, Database, LayoutGrid, Sparkles, MoreHorizontal, SparklesIcon, ShieldCheck } from "lucide-react";
 import { TabNavigation } from "@/components/ui/TabNavigation";
 import { InlineState } from "@/components/ui/InlineState";
 
@@ -46,7 +46,7 @@ const DatasetLineage = dynamic(
       <div className="flex items-center justify-center min-h-[400px] animate-pulse">
         <div className="space-y-3 w-full max-w-2xl px-6">
           <div className="flex justify-center gap-8 mb-6">
-            {[0,1,2].map(i => (
+            {[0, 1, 2].map(i => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div className="w-32 h-20 bg-gray-100 rounded-xl" />
                 <div className="h-3 w-24 bg-gray-100 rounded" />
@@ -167,7 +167,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             <div className="max-w-lg">
               <SearchInput
                 placeholder="Find tables, dashboards, people, and more"
-                onChange={() => {}}
+                onChange={() => { }}
                 disabled
                 showKbd
               />
@@ -220,7 +220,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
     if (tab === "Properties") count = propertiesData?.custom_properties?.length || 0;
     if (tab === "Audit") count = auditData?.total_log_count || 0;
     if (tab === "Queries") count = queriesData?.user_queries?.length || 0;
-    
+
     return { name: tab, count };
   });
 
@@ -256,7 +256,7 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
           <div className="max-w-lg">
             <SearchInput
               placeholder="Find tables, dashboards, people, and more"
-              onChange={() => {}}
+              onChange={() => { }}
               showKbd
             />
           </div>
@@ -292,8 +292,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
         </nav>
 
         {/* Dataset card header */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 pt-5 mb-3">
-          <div className="flex items-start justify-between">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-3">
+          <div className="flex items-start justify-between px-5 py-5">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
                 <Database className="w-6 h-6 text-green-600" />
@@ -302,12 +302,12 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
                 <h1 className="text-xl font-bold text-gray-900">
                   {detail.name}
                 </h1>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Database className="w-3.5 h-3.5" />
                     {detail.type}
                   </span>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-500">|</span>
                   <span className="flex items-center gap-1">
                     <Database className="w-3.5 h-3.5" />
                     {detail.sourceName || sourceId}
@@ -318,14 +318,14 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleViewCompliance}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <ShieldCheck className="w-4 h-4 text-indigo-500" />
                 View Compliance Report
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" aria-label="More options">
+              {/* <button className="p-2 text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" aria-label="More options">
                 <MoreHorizontal className="w-4 h-4" />
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -333,15 +333,15 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             tabs={tabs.map(({ name, count }) => ({
               id: name,
               name: (
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                <div className="flex items-end gap-1.5 whitespace-nowrap h-6">
+                  {name}
                   {name === "DataCard" && (
-                    <SparkleIcon
-                      className={cn(activeTab === name ? "text-indigo-600 fill-indigo-600" : "text-gray-500 fill-gray-500")}
-                      strokeWidth={1}
+                    <SparklesIcon
+                      className={cn(activeTab === name ? "text-indigo-600 stroke-indigo-600" : "text-gray-500 stroke-gray-500", "self-start")}
+                      strokeWidth={2}
                       size={14}
                     />
                   )}
-                  {name}
                   {count !== undefined && count > 0 && (
                     <span
                       className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${activeTab === name
@@ -357,8 +357,8 @@ const DatasetDetailPage: React.FC<DatasetDetailPageProps> = ({
             }))}
             activeTabId={activeTab}
             onTabChange={(id: string) => handleTabClick(id as Tab)}
-            className="mt-5 border-none mb-0"
-            tabClassName="mx-1"
+            className="mt-5 mb-0 border-t border-gray-200 px-5"
+            tabClassName="mx-1 py-2  flex items-end"
           />
         </div>
 

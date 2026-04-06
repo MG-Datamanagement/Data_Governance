@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2, Sparkles, Settings2, Filter, Download } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, Settings2, Filter, Download, RefreshCcw } from "lucide-react";
 import { ApiColumn, ApiTag } from "@/types";
 import { useAiReclassification } from "@/hooks/useAiReclassification";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
+import { DataTableToolbar } from "@/components/ui/DataTableToolbar";
 
 interface DatasetColumnsTabProps {
   catalogData: any;
@@ -27,15 +28,66 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedClassification, setSelectedClassification] = useState("all");
+
   const allColumns = useMemo(
     () => (catalogData?.columns || []).map((col: ApiColumn, idx: number) => ({ ...col, _index: idx + 1 })),
     [catalogData?.columns]
   );
 
+  const typeOptions = useMemo(() => {
+    const rawCols = catalogData?.columns || [];
+    const types = Array.from(new Set(rawCols.map((col: any) => (col.type || col.data_type || "UNKNOWN").toUpperCase()))).filter(Boolean);
+    return [
+      { label: "All Types", value: "all" },
+      ...types.map(t => ({ label: String(t), value: String(t) }))
+    ];
+  }, [catalogData?.columns]);
+
+  const classificationOptions = useMemo(() => {
+    const rawCols = catalogData?.columns || [];
+    const tags = new Set<string>();
+    rawCols.forEach((col: any) => {
+      col.tags?.forEach((tag: any) => {
+        if (tag.name) tags.add(tag.name);
+        else if (typeof tag === "string") tags.add(tag);
+      });
+      const ai = aiResults[col.name];
+      if (ai?.suggested_tag) {
+        tags.add(ai.suggested_tag);
+      }
+    });
+
+    return [
+      { label: "All Classifications", value: "all" },
+      ...Array.from(tags).map(t => ({ label: t, value: t }))
+    ];
+  }, [catalogData?.columns, aiResults]);
+
+  const filteredColumns = useMemo(() => {
+    return allColumns.filter((col: any) => {
+      const colType = (col.type || col.data_type || "UNKNOWN").toUpperCase();
+      const matchesType = selectedType === "all" || colType === selectedType;
+
+      let matchesClassification = false;
+      if (selectedClassification === "all") {
+        matchesClassification = true;
+      } else {
+        const ai = aiResults[col.name];
+        const aiTag = ai?.suggested_tag;
+        const regularTags = col.tags?.map((t: any) => t.name || String(t)) || [];
+        matchesClassification = aiTag === selectedClassification || regularTags.includes(selectedClassification);
+      }
+
+      return matchesType && matchesClassification;
+    });
+  }, [allColumns, selectedType, selectedClassification, aiResults]);
+
   const paginatedColumns = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return allColumns.slice(start, start + pageSize);
-  }, [allColumns, page, pageSize]);
+    return filteredColumns.slice(start, start + pageSize);
+  }, [filteredColumns, page, pageSize]);
 
   return (
     <SectionCard
@@ -48,7 +100,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
               onClick={handleReclassificationActionWithAI}
               variant="outline"
               size="sm"
-              icon={<Sparkles className="w-3.5 h-3.5" />}
+              icon={<RefreshCcw className="w-3.5 h-3.5" />}
               className="border-indigo-200 text-indigo-600"
             >
               Reclassify with AI
@@ -76,12 +128,28 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
               Reclassified
             </Button>
           )}
-          <Button variant="outline" size="sm" className="text-gray-600 border-gray-300 h-8">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-            </div>
-            Filter
-          </Button>
+
+          <DataTableToolbar
+            filters={[
+              {
+                key: "type",
+                label: "Data Type",
+                options: typeOptions,
+                value: selectedType,
+                onChange: (val) => { setSelectedType(val); setPage(1); },
+                width: "w-40",
+              },
+              {
+                key: "classification",
+                label: "Classification",
+                options: classificationOptions,
+                value: selectedClassification,
+                onChange: (val) => { setSelectedClassification(val); setPage(1); },
+                width: "w-40",
+              },
+            ]}
+          />
+
           <Button variant="outline" size="sm" className="text-gray-600 border-gray-300 h-8">
             <div className="flex items-center gap-2">
               <Download className="w-4 h-4" />
@@ -92,6 +160,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
       }
     >
       <div className="flex flex-col w-full">
+
         {reclassifyAiScanPhase === "scanning" && (
           <div className={cn("p-4 flex items-center w-full gap-2", "bg-indigo-50")}>
             <div>
@@ -135,7 +204,7 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
                 <div className="flex flex-col">
                   <span className="text-sm font-bold text-gray-800">{col.name}</span>
                   <span className="text-[10px] font-bold text-gray-400 mt-0.5">
-                    {col.is_nullable ? "NULLABLE" : "NOT NULL"}
+                    {col.is_nullable ? "NULL" : "NOT NULL"}
                   </span>
                 </div>
               ),
@@ -215,10 +284,10 @@ const DatasetColumnsTab: React.FC<DatasetColumnsTabProps> = ({
           emptyStateMessage="No columns found"
           className="border-none shadow-none"
           pagination={
-            allColumns.length > pageSize ? (
+            filteredColumns.length > pageSize ? (
               <Pagination
                 currentPage={page}
-                totalItems={allColumns.length}
+                totalItems={filteredColumns.length}
                 pageSize={pageSize}
                 pageSizeOptions={[20, 50, 100]}
                 showCount

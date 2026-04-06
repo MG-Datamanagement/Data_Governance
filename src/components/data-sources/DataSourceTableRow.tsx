@@ -145,24 +145,25 @@ const ExpandedRow: React.FC<{ source: DataSource; activeJobId?: string; onLiveEr
                     </div>
 
                     {/* Right: Explore Datasets */}
-                    <div className="w-2/5 bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center p-4 text-center gap-3">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                            <svg className="w-7 h-7 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="w-2/5 bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center p-4 text-center gap-3 bg-gradient-to-b from-indigo-50 to-white">
+                        <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
+                            <svg className="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                             </svg>
                         </div>
                         <div>
-                            <h4 className="text-sm font-semibold text-gray-800 mb-1">
+                            <h4 className="text-lg font-semibold text-indigo-900 mb-2">
                                 Explore Datasets
                             </h4>
-                            <p className="text-xs text-gray-400 leading-relaxed">
+                            <p className="text-sm text-indigo-700 leading-relaxed">
                                 View detailed metadata, schema, and lineage for all{" "}
                                 {isLoading ? "..." : (stats?.totalTables.toLocaleString() || "0")} ingested datasets.
                             </p>
                         </div>
                         <Button
                             onClick={() => router.push(`/data-sources/${source.id}/datasets`)}
-                            className="w-full"
+                            className="w-full text-indigo-600 border-indigo-200 hover:border-indigo-300"
+                            variant="outline"
                         >
                             View All Datasets
                         </Button>

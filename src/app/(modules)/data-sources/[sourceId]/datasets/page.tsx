@@ -8,7 +8,7 @@ import {
 } from "@/services/dashboardApi.service";
 import { Dataset, ApiTag } from "@/types";
 import { downloadFileFromResponse, formatDateTime } from "@/lib/utils";
-import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Filter, Table2, LayoutGrid, Sparkles, Table, ArrowRight } from "lucide-react";
+import { Check, CheckCircle2, Clock11, Loader2, XIcon, ArrowLeft, ChevronRight, RefreshCw, Download, Filter, Table2, LayoutGrid, Sparkles, Table, ArrowRight, ShieldCheck } from "lucide-react";
 import { ClassifyScanPhase } from "@/types/datasourcesTypes";
 import { CONSTANTS } from "@/lib/constants";
 import { useGetSourceStats } from "@/hooks/useDashboardQueries";
@@ -484,7 +484,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
                 {piiScanPhase === "never" && (
                   <Button
                     onClick={handleInitPiiClassification}
-                    icon={<Sparkles className="w-4 h-4" />}
+                    icon={<ShieldCheck className="w-4 h-4" />}
                   >
                     Initiate PII Classification
                   </Button>
@@ -495,7 +495,7 @@ const DatasetListPage: React.FC<DatasetListPageProps> = ({ params: { sourceId } 
                     variant="outline"
                     onClick={handleInitPiiClassification}
                     className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-                    icon={<Sparkles className="w-4 h-4" />}
+                    icon={<ShieldCheck className="w-4 h-4" />}
                   >
                     Reclassify PII
                   </Button>

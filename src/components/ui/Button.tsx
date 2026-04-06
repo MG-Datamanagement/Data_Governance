@@ -44,7 +44,7 @@ export function Button({
     <button
       disabled={isLoading || disabled}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 disabled:pointer-events-none",
+        "inline-flex items-center justify-center gap-2 font-medium transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 disabled:pointer-events-none shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]",
         variants[variant],
         sizes[size],
         className

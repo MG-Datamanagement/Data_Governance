@@ -25,8 +25,8 @@ export function DepthControl({ depth, direction, onChange }: DepthControlProps) 
           {d}
         </button>
       ))}
-      <span className="ml-2 text-[11px] text-gray-500 font-medium">Direction</span>
-      {(["both", "upstream", "downstream"] as const).map((d) => (
+      {/* <span className="ml-2 text-[11px] text-gray-500 font-medium">Direction</span> */}
+      {/* {(["both", "upstream", "downstream"] as const).map((d) => (
         <button
           key={d}
           onClick={() => onChange(depth, d)}
@@ -38,7 +38,7 @@ export function DepthControl({ depth, direction, onChange }: DepthControlProps) 
         >
           {d}
         </button>
-      ))}
+      ))} */}
     </div>
   );
 }

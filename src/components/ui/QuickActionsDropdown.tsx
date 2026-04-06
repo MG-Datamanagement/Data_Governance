@@ -25,11 +25,12 @@ const ACTIONS: ActionItem[] = [
   },
   {
     id: "policy",
-    title: "Create Policy",
-    description: "Define new compliance policy",
+    title: "Create Tag",
+    description: "Define new tag",
     icon: FileText,
     iconBg: "bg-indigo-100",
     iconColor: "text-indigo-600",
+    href: "/tags",
   },
   {
     id: "compliance",
@@ -40,14 +41,14 @@ const ACTIONS: ActionItem[] = [
     iconColor: "text-purple-600",
     href: "/compliance?autoScan=true",
   },
-  {
-    id: "ai",
-    title: "AI Classifier",
-    description: "Auto-classify data assets",
-    icon: Sparkles,
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-600",
-  },
+  // {
+  //   id: "ai",
+  //   title: "AI Classifier",
+  //   description: "Auto-classify data assets",
+  //   icon: Sparkles,
+  //   iconBg: "bg-amber-100",
+  //   iconColor: "text-amber-600",
+  // },
 ];
 
 export default function QuickActionsDropdown() {

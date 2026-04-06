@@ -634,9 +634,10 @@ export const dashboardApiServices = {
     }
   },
 
-  async getRecentActivity(userUrn: string) {
+  async getRecentActivity(userUrn: string, limit: number = 80) {
     const response = await dashboardApiClient.get<{ info: string, activities: NewRecentActivity[] }>(
       `/api/v1/recent-activity`,
+      { params: { limit } }
     );
     return response.activities.map((activity: NewRecentActivity, index: number) => ({
       id: `${activity.t}-${index}`,

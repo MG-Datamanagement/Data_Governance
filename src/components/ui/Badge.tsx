@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export type BadgeVariant = "success" | "warning" | "error" | "info" | "neutral" | "framework";
-export type BadgeSize = "sm" | "md";
+export type BadgeSize = "xs" | "sm" | "md" | "lg";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
@@ -20,8 +20,10 @@ const variants: Record<BadgeVariant, string> = {
 };
 
 const sizes: Record<BadgeSize, string> = {
+  xs: "px-1 py-0.5 text-[8px]",
   sm: "px-2 py-0.5 text-[10px]",
   md: "px-2.5 py-1 text-xs",
+  lg: "px-3 py-1.5 text-sm",
 };
 
 export function Badge({

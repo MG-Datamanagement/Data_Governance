@@ -18,6 +18,7 @@ import { getPlatformDisplay, PlatformIcon } from "@/lib/sourceTypeDisplayMap";
 import { RecentActivity, RecentlyViewed } from "@/types";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ConnectorIcon from "@/components/connectors/ConnectorIcon";
+import React, { useState } from "react";
 
 type ActivityTabType = "recent" | "viewed";
 
@@ -32,8 +33,7 @@ const TABS: { id: ActivityTabType; label: string; icon: React.ElementType; viewM
     { id: "viewed", label: "Recently Viewed", icon: Clock, viewMoreText: "View All Datasets", href: "" },
   ];
 
-const MAX_RECENT_ACTIVITY_VISIBLE_ITEMS = 6;
-const MAX_RECENTLY_VIEWED_VISIBLE_ITEMS = 5;
+const DEFAULT_VISIBLE_ITEMS = 12;
 
 type ActivityItemV2Props = {
   name: string;
@@ -61,10 +61,10 @@ function ActivityItemV2({
     <div className="p-3 hover:bg-gray-50 cursor-pointer transition-colors">
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className="w-7 h-7 bg-gray-100/90 rounded-md flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 bg-[#f3f4f6] border border-[#e5e7eb] rounded-md flex items-center justify-center flex-shrink-0">
           {/* <PlatformIcon size={14} className={cn(iconColor)} /> */}
-          <div className="text-sm">
-            <ConnectorIcon icon={platform || ""} />
+          <div>
+            <ConnectorIcon icon={platform || ""} className="w-5 h-5 rounded-md" />
           </div>
         </div>
 
@@ -73,7 +73,7 @@ function ActivityItemV2({
           <div className="flex items-center justify-between gap-2">
             <div
               title={name}
-              className="text-xs font-medium text-gray-900 truncate"
+              className="text-[11px] font-semibold text-black truncate"
             >
               {name}
             </div>
@@ -82,8 +82,8 @@ function ActivityItemV2({
           </div>
 
           <div className="flex items-center justify-between mt-1">
-            <div className="text-xs text-gray-500 truncate">{platform}</div>
-            {/* <div className="text-xs text-gray-500 truncate">{platformKey}</div> */}
+            {/* <div className="text-[10px] text-gray-500 truncate">{platform}</div> */}
+            <div className="text-[10px] text-gray-500 truncate">{platformKey}</div>
 
             {time && (
               <div className="text-[10px] text-gray-400">
@@ -133,7 +133,7 @@ function TimelineActivityItem({ name, time }: TimelineActivityItemProps) {
 
       {/* Content */}
       <div>
-        <div className="text-xs font-medium text-gray-800 line-clamp-2" title={name}>
+        <div className="text-xs font-medium text-black line-clamp-2" title={name}>
           {name}
         </div>
         
@@ -203,6 +203,34 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
     ? activity
     : recentlyViewed;
 
+  const [visibleCount, setVisibleCount] = useState({ recent: DEFAULT_VISIBLE_ITEMS, viewed: DEFAULT_VISIBLE_ITEMS });
+  const [infiniteEnabled, setInfiniteEnabled] = useState({ recent: false, viewed: false });
+
+  const isInfinite = isRecent ? infiniteEnabled.recent : infiniteEnabled.viewed;
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!isInfinite) return; // Wait to be turned on by CTA click
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50) {
+      if (isRecent && activity && activity.length > visibleCount.recent) {
+        setVisibleCount((prev) => ({ ...prev, recent: prev.recent + 10 }));
+      } else if (!isRecent && recentlyViewed && recentlyViewed.length > visibleCount.viewed) {
+        setVisibleCount((prev) => ({ ...prev, viewed: prev.viewed + 10 }));
+      }
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (isRecent) {
+      setVisibleCount((prev) => ({ ...prev, recent: prev.recent + 10 }));
+      setInfiniteEnabled((prev) => ({ ...prev, recent: true }));
+    } else {
+      setVisibleCount((prev) => ({ ...prev, viewed: prev.viewed + 10 }));
+      setInfiniteEnabled((prev) => ({ ...prev, viewed: true }));
+    }
+  };
+
+  const hasMoreItems = items && items.length > (isRecent ? visibleCount.recent : visibleCount.viewed);
   const viewAllLabel = isRecent ? "View All Activity" : "View All Datasets";
 
   return (
@@ -229,8 +257,11 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
       </div>
 
       {/* Tab Body */}
-      <div className="flex-1 max-h-[400px] p-2">
-        <div className="divide-y divide-gray-100">
+      <div 
+        className="flex-1 h-[550px] flex flex-col overflow-y-auto overflow-x-hidden p-2 scrollbar-thin scrollbar-thumb-gray-200"
+        onScroll={handleScroll}
+      >
+        <div className="flex-1 divide-y divide-gray-100">
           {isLoading && (
             <InlineState
               type="loading"
@@ -266,7 +297,7 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
               {items &&
                 items.length > 0 &&
                 items
-                  .slice(0, MAX_RECENT_ACTIVITY_VISIBLE_ITEMS)
+                  .slice(0, visibleCount.recent)
                   .map((item) => (
                     <TimelineActivityItem
                       key={item.id}
@@ -282,7 +313,7 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
               {items &&
                 items.length > 0 &&
                 (items as RecentlyViewed[])
-                  .slice(0, MAX_RECENTLY_VIEWED_VISIBLE_ITEMS)
+                  .slice(0, visibleCount.viewed)
                   .map((item) => (
                     <ActivityItemV2
                       key={item.id}
@@ -301,11 +332,23 @@ function ActivityContent({ activityQuery, recentlyViewedQuery }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-1">
-          <button className="text-indigo-600 text-xs hover:text-indigo-600 hover:underline transition-colors">
-            {viewAllLabel}
-          </button>
-        </div>
+        {hasMoreItems && !isInfinite && (
+          <div className="mt-auto px-6 py-3 text-center border-t border-transparent shrink-0">
+            <button 
+              onClick={handleLoadMore}
+              className="text-indigo-600 font-medium text-xs hover:text-indigo-800 hover:underline transition-colors"
+            >
+              {viewAllLabel}
+            </button>
+          </div>
+        )}
+
+        {!hasMoreItems && items && items.length > 0 && (
+          <div className="mt-auto pt-4 pb-2 text-center text-[10px] text-gray-400 flex items-center justify-center gap-1.5 shrink-0">
+            <CheckCircle2 size={12} />
+            <span>End of {isRecent ? "recent activity" : "recently viewed"}</span>
+          </div>
+        )}
       </div>
     </div>
   );

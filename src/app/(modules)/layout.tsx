@@ -24,7 +24,7 @@ export default function DashboardLayout({
   // }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f9fafb]">
+    <div className="flex h-screen overflow-hidden bg-[#fafcfd]">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
         <Header userName={MOCK_USER.name} />

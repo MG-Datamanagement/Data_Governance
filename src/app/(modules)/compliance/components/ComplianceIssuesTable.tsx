@@ -4,10 +4,10 @@ import { AlertCircle, ChevronDown, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { InlineState } from "@/components/ui/InlineState";
 import { Button } from "@/components/ui/Button";
+import { DataTableToolbar } from "@/components/ui/DataTableToolbar";
 import { Badge } from "@/components/ui/Badge";
 import { DataGrid, DataGridColumn } from "@/components/ui/DataGrid";
 import { Pagination } from "@/components/ui/Pagination";
-import { SearchInput } from "@/components/ui/SearchInput";
 
 interface ComplianceIssuesTableProps {
   issues: ApiComplianceIssue[];
@@ -17,12 +17,33 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedFramework, setSelectedFramework] = useState("all");
+  const [selectedSeverity, setSelectedSeverity] = useState("all");
+
+  const frameworkOptions = useMemo(() => {
+    const frameworks = Array.from(new Set(issues.map(i => i.framework))).filter(Boolean);
+    return [
+      { label: "All Frameworks", value: "all" },
+      ...frameworks.map(f => ({ label: f, value: f }))
+    ];
+  }, [issues]);
+
+  const severityOptions = [
+    { label: "All Severities", value: "all" },
+    { label: "High", value: "HIGH" },
+    { label: "Medium", value: "MEDIUM" },
+    { label: "Low", value: "LOW" },
+  ];
 
   const filteredIssues = useMemo(() => issues.filter(
-    (issue) =>
-      issue.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.dataset.toLowerCase().includes(searchTerm.toLowerCase()),
-  ), [issues, searchTerm]);
+    (issue) => {
+      const matchesSearch = issue.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            issue.dataset.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFramework = selectedFramework === "all" || issue.framework === selectedFramework;
+      const matchesSeverity = selectedSeverity === "all" || issue.severity === selectedSeverity;
+      return matchesSearch && matchesFramework && matchesSeverity;
+    }
+  ), [issues, searchTerm, selectedFramework, selectedSeverity]);
 
   const paginatedIssues = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -39,17 +60,17 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
     {
       key: "framework",
       header: "Framework",
-      render: (issue) => <Badge variant="framework" size="sm">{issue.framework}</Badge>
+      render: (issue) => <Badge variant="framework" size="xs">{issue.framework}</Badge>
     },
     {
       key: "severity",
       header: "Severity",
       render: (issue) => (
         <Badge
-          size="sm"
+          size="xs"
           variant={
             issue.severity === "HIGH" ? "error" :
-            issue.severity === "MEDIUM" ? "warning" : "info"
+              issue.severity === "MEDIUM" ? "warning" : "info"
           }
         >
           {issue.severity}
@@ -96,20 +117,32 @@ export function ComplianceIssuesTable({ issues }: ComplianceIssuesTableProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              onClear={() => setSearchTerm("")}
-              placeholder="Search issues or datasets..."
-            />
-          </div>
-          <Button disabled variant="outline" size="lg" className="gap-2 bg-white">
-            Filter
-            <ChevronDown size={16} className="text-gray-400" />
-          </Button>
-        </div>
+        <DataTableToolbar
+          search={{
+            value: searchTerm,
+            onChange: (val) => { setSearchTerm(val); setPage(1); },
+            onClear: () => { setSearchTerm(""); setPage(1); },
+            placeholder: "Search issues or datasets",
+          }}
+          filters={[
+            {
+              key: "framework",
+              label: "Framework",
+              options: frameworkOptions,
+              value: selectedFramework,
+              onChange: (val) => { setSelectedFramework(val); setPage(1); },
+              width: "w-36",
+            },
+            {
+              key: "severity",
+              label: "Severity",
+              options: severityOptions,
+              value: selectedSeverity,
+              onChange: (val) => { setSelectedSeverity(val); setPage(1); },
+              width: "w-36",
+            },
+          ]}
+        />
       </div>
 
       <div className="hidden md:block">
